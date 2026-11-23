@@ -424,7 +424,7 @@
           <canvas id="qrCanvas" width="240" height="240"></canvas>
         </div>
         <div class="qr-info">
-          <div class="qr-heading">スマホでQRを読み取って投票・回答</div>
+          <div id="qrHeading" class="qr-heading">スマホでQRを読み取って投票</div>
         </div>
       </div>
 
@@ -456,6 +456,14 @@
         ? pathname
         : pathname.replace(/[^/]+$/, '');
       return `${window.location.origin}${basePath}index.html`;
+    }
+
+    function updateQrHeading(isQuiz) {
+      const headingEl = document.getElementById('qrHeading');
+      if (!headingEl) return;
+      headingEl.textContent = isQuiz
+        ? 'スマホでQRを読み取って回答'
+        : 'スマホでQRを読み取って投票';
     }
 
     /* 外部通信なしで安定描画する軽量QRマトリクス生成（Byteモード・ECC Level L） */
@@ -742,6 +750,7 @@
         const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER' || currentState.status === 'CLOSED';
         const highlightAnswer = currentState.status === 'ANSWER' && isQuiz && question.answer;
 
+        updateQrHeading(isQuiz);
         document.getElementById('tagBadge').textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
         document.getElementById('qTitle').textContent = question ? question.question : '';
 
