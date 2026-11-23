@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -366,20 +366,20 @@
     /* OBS表示サイズ切替 */
     .size-switch-row {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
       margin-top: 8px;
     }
 
     button.size-btn {
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 800;
       color: #e2e8f0;
       background: #0b101b;
       border: 1.5px solid #334155;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 8px 8px;
       cursor: pointer;
       text-align: center;
     }
@@ -677,6 +677,7 @@
               <span class="lbl">OBS表示サイズ</span>
               <div id="sizeSwitchRow" class="size-switch-row" role="group" aria-label="OBS表示サイズ">
                 <button type="button" id="sizeBtnNormal" class="size-btn is-active" onclick="selectSizeButton('normal')">通常サイズ</button>
+                <button type="button" id="sizeBtnCompact" class="size-btn" onclick="selectSizeButton('compact')">コンパクト</button>
                 <button type="button" id="sizeBtnLarge" class="size-btn" onclick="selectSizeButton('large')">拡大表示（大）</button>
               </div>
             </div>
@@ -802,6 +803,12 @@
       { key: 'bottom-right',  label: '↘ 右下' }
     ];
 
+    const SIZE_LABELS = {
+      normal: '通常',
+      compact: 'コンパクト',
+      large: '拡大'
+    };
+
     let selectedTheme = 'dark';
     let selectedPosition = 'bottom-right';
     let selectedSize = 'normal';
@@ -894,20 +901,22 @@
     }
 
     function renderSizeButtons() {
-      const normalBtn = document.getElementById('sizeBtnNormal');
-      const largeBtn = document.getElementById('sizeBtnLarge');
-      if (normalBtn) {
-        normalBtn.classList.toggle('is-active', selectedSize === 'normal');
-        normalBtn.setAttribute('aria-pressed', String(selectedSize === 'normal'));
-      }
-      if (largeBtn) {
-        largeBtn.classList.toggle('is-active', selectedSize === 'large');
-        largeBtn.setAttribute('aria-pressed', String(selectedSize === 'large'));
-      }
+      const map = [
+        { id: 'sizeBtnNormal', key: 'normal' },
+        { id: 'sizeBtnCompact', key: 'compact' },
+        { id: 'sizeBtnLarge', key: 'large' }
+      ];
+      map.forEach(({ id, key }) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const active = selectedSize === key;
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
     }
 
     async function selectSizeButton(sizeKey) {
-      selectedSize = sizeKey === 'large' ? 'large' : 'normal';
+      selectedSize = (sizeKey === 'compact' || sizeKey === 'large') ? sizeKey : 'normal';
       isObsAppearanceDirty = true;
       renderSizeButtons();
       await applyObsAppearance();
@@ -986,7 +995,8 @@
       if (data.question) {
         if (metaEl) {
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
-          const sizeText = (currentState.size || selectedSize) === 'large' ? '拡大' : '通常';
+          const sizeKey = currentState.size || selectedSize;
+          const sizeText = SIZE_LABELS[sizeKey] || '通常';
           metaEl.textContent = `出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
         }
         if (qLabel) {
@@ -1129,7 +1139,7 @@
         selectedPosition = state.position;
         renderPositionButtons();
       }
-      if (state.size === 'normal' || state.size === 'large') {
+      if (state.size === 'normal' || state.size === 'compact' || state.size === 'large') {
         selectedSize = state.size;
         renderSizeButtons();
       }
@@ -1141,7 +1151,7 @@
       const size = selectedSize || 'normal';
       const res = await postGas({ action: 'set_state', theme, position, size });
       isObsAppearanceDirty = false;
-      setLog(res.ok ? `OBS表示を「${theme} / ${position} / ${size === 'large' ? '拡大' : '通常'}」に更新しました。` : res.error);
+      setLog(res.ok ? `OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : res.error);
       loadAll();
     }
 
