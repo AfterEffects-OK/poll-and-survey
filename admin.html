@@ -41,19 +41,50 @@
       border: 1px solid #4b5563;
     }
     .field-group { display: grid; gap: 12px; }
+    .options-list { display: grid; gap: 8px; margin-bottom: 8px; }
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .option-index {
+      font-size: 13px;
+      font-weight: 700;
+      color: #9ca3af;
+      min-width: 28px;
+      text-align: center;
+    }
+    .option-row input[type="text"] {
+      flex: 1;
+    }
+    button.icon-del {
+      padding: 10px 12px;
+      background: #374151;
+      color: #fca5a5;
+      font-weight: 700;
+      line-height: 1;
+    }
+    button.icon-del:hover:not(:disabled) {
+      background: #dc2626;
+      color: #fff;
+    }
+    button.icon-del:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
     .btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
     button { cursor: pointer; font-weight: 600; background: #2563eb; color: #fff; }
-    button:hover { background: #1d4ed8; }
+    button:hover:not(:disabled) { background: #1d4ed8; }
     button.secondary { background: #4b5563; }
-    button.secondary:hover { background: #6b7280; }
+    button.secondary:hover:not(:disabled) { background: #6b7280; }
     button.warn { background: #d97706; }
-    button.warn:hover { background: #b45309; }
+    button.warn:hover:not(:disabled) { background: #b45309; }
     button.success { background: #059669; }
-    button.success:hover { background: #047857; }
+    button.success:hover:not(:disabled) { background: #047857; }
     button.info { background: #0284c7; }
-    button.info:hover { background: #0369a1; }
+    button.info:hover:not(:disabled) { background: #0369a1; }
     button.danger { background: #dc2626; }
-    button.danger:hover { background: #b91c1c; }
+    button.danger:hover:not(:disabled) { background: #b91c1c; }
     .mode-pill {
       display: inline-block;
       font-size: 12px;
@@ -89,7 +120,7 @@
     .section-title {
       display: block;
       margin: 0 0 12px;
-      font-size: 16px;
+      font-size: 13px;
       color: #93c5fd;
     }
     .accordion-icon {
@@ -130,7 +161,7 @@
         <span class="accordion-icon">▼</span>
       </button>
 
-      <div id="questionAccordionPanel" class="accordion-panel">
+      <div id="questionAccordionPanel" class="accordion-panel" onfocusin="markEditing(true)">
         <div class="btn-row" style="margin-top: 0; margin-bottom: 14px;">
           <select id="editTargetSelect" onchange="onSelectEditTarget()">
             <option value="__NEW__">＋ 新しい質問を作成</option>
@@ -146,7 +177,7 @@
 
           <div>
             <label class="field-label" for="qTypeInput">種別</label>
-            <select id="qTypeInput" style="width: 100%;">
+            <select id="qTypeInput" style="width: 100%;" onchange="onQuestionTypeInputChange()">
               <option value="poll">アンケート（poll）</option>
               <option value="quiz">クイズ（quiz）</option>
             </select>
@@ -158,13 +189,14 @@
           </div>
 
           <div>
-            <label class="field-label" for="qOptionsInput">選択肢（カンマ「,」区切りで2つ以上）</label>
-            <input id="qOptionsInput" type="text" placeholder="例: 企画A, 企画B, 企画C, 企画D" />
+            <label class="field-label">選択肢（1つずつ別枠・2つ以上）</label>
+            <div id="optionsList" class="options-list"></div>
+            <button type="button" class="secondary" onclick="addOptionRow('')">＋ 選択肢を追加</button>
           </div>
 
-          <div>
-            <label class="field-label" for="qAnswerInput">クイズの正解（quizの場合のみ・選択肢と完全一致）</label>
-            <input id="qAnswerInput" type="text" placeholder="例: 企画B" />
+          <div id="quizAnswerWrap" style="display: none;">
+            <label class="field-label" for="qAnswerSelect">クイズの正解（quizの場合のみ）</label>
+            <select id="qAnswerSelect" style="width: 100%;"></select>
           </div>
         </div>
 
@@ -178,7 +210,7 @@
     <div class="card">
       <h2>
         3. OBS表示・投票ステータスの切り替え
-        <span id="statusModeBadge" class="mode-pill poll">アンケート</span>
+        <span id="statusModeBadge" class="mode-pill poll">POLL モード</span>
       </h2>
       <div id="statusBtnRow" class="btn-row"></div>
 
@@ -237,8 +269,8 @@
     let lastQuestionId = '';
     let latestQuestions = [];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right' };
-    let activeQuestionType = 'poll';
     let isObsAppearanceDirty = false;
+    let isEditingQuestionForm = false;
 
     const BUTTON_CONFIGS = {
       poll: [
@@ -256,10 +288,12 @@
       ]
     };
 
+    function markEditing(editing) {
+      isEditingQuestionForm = Boolean(editing);
+    }
+
     function renderStatusButtons(type) {
       const normalizedType = type === 'quiz' ? 'quiz' : 'poll';
-      activeQuestionType = normalizedType;
-
       const badge = document.getElementById('statusModeBadge');
       if (badge) {
         badge.textContent = normalizedType === 'quiz' ? 'QUIZ モード' : 'POLL モード';
@@ -296,8 +330,109 @@
       }
     }
 
+    function onQuestionTypeInputChange() {
+      const isQuiz = document.getElementById('qTypeInput').value === 'quiz';
+      document.getElementById('quizAnswerWrap').style.display = isQuiz ? 'block' : 'none';
+      if (isQuiz) {
+        syncAnswerSelectOptions();
+      }
+    }
+
+    function getOptionInputs() {
+      return [...document.querySelectorAll('#optionsList .option-row input[type="text"]')];
+    }
+
+    function getOptionValues() {
+      return getOptionInputs()
+        .map(inp => inp.value.trim())
+        .filter(Boolean);
+    }
+
+    function syncAnswerSelectOptions(preferredAnswer) {
+      const ansSel = document.getElementById('qAnswerSelect');
+      if (!ansSel) return;
+      const targetVal = typeof preferredAnswer === 'string' ? preferredAnswer : ansSel.value;
+      const opts = getOptionValues();
+
+      ansSel.innerHTML = '<option value="">（正解を選択してください）</option>';
+      opts.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt;
+        ansSel.appendChild(o);
+      });
+
+      if (targetVal && opts.includes(targetVal)) {
+        ansSel.value = targetVal;
+      } else {
+        ansSel.value = '';
+      }
+    }
+
+    function refreshOptionRowMeta() {
+      const rows = [...document.querySelectorAll('#optionsList .option-row')];
+      rows.forEach((row, idx) => {
+        const idxEl = row.querySelector('.option-index');
+        const delBtn = row.querySelector('.icon-del');
+        if (idxEl) idxEl.textContent = `${idx + 1}.`;
+        if (delBtn) delBtn.disabled = rows.length <= 2;
+      });
+      syncAnswerSelectOptions();
+    }
+
+    function addOptionRow(initialValue = '') {
+      markEditing(true);
+      const list = document.getElementById('optionsList');
+      const row = document.createElement('div');
+      row.className = 'option-row';
+
+      const idxSpan = document.createElement('span');
+      idxSpan.className = 'option-index';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = '選択肢を入力';
+      input.value = initialValue;
+      input.addEventListener('input', () => {
+        markEditing(true);
+        syncAnswerSelectOptions();
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'icon-del';
+      delBtn.title = 'この選択肢を削除';
+      delBtn.textContent = '×';
+      delBtn.onclick = () => {
+        markEditing(true);
+        if (list.querySelectorAll('.option-row').length <= 2) return;
+        row.remove();
+        refreshOptionRowMeta();
+      };
+
+      row.appendChild(idxSpan);
+      row.appendChild(input);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+
+      refreshOptionRowMeta();
+    }
+
+    function setOptionRows(optionsArr, selectedAnswer = '') {
+      const list = document.getElementById('optionsList');
+      list.innerHTML = '';
+      const items = Array.isArray(optionsArr) && optionsArr.length >= 2
+        ? optionsArr
+        : (Array.isArray(optionsArr) && optionsArr.length === 1 ? [optionsArr[0], ''] : ['', '']);
+      items.forEach(opt => addOptionRow(opt));
+      syncAnswerSelectOptions(selectedAnswer);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       renderStatusButtons('poll');
+      setOptionRows(['', ''], '');
+      onQuestionTypeInputChange();
+
       const tSel = document.getElementById('obsThemeSelect');
       const pSel = document.getElementById('obsPositionSelect');
       if (tSel) tSel.addEventListener('focus', () => { isObsAppearanceDirty = true; });
@@ -328,6 +463,9 @@
       const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !card.classList.contains('open');
       card.classList.toggle('open', nextOpen);
       btn.setAttribute('aria-expanded', String(nextOpen));
+      if (!nextOpen) {
+        markEditing(false);
+      }
     }
 
     function renderAdminCountdown() {
@@ -358,6 +496,7 @@
     }
 
     function onSelectEditTarget() {
+      markEditing(true);
       const val = document.getElementById('editTargetSelect').value;
       if (val === '__NEW__') {
         resetEditorForm();
@@ -368,8 +507,8 @@
       document.getElementById('qIdInput').value = q.id;
       document.getElementById('qTypeInput').value = q.type || 'poll';
       document.getElementById('qTextInput').value = q.question || '';
-      document.getElementById('qOptionsInput').value = (q.options || []).join(', ');
-      document.getElementById('qAnswerInput').value = q.answer || '';
+      onQuestionTypeInputChange();
+      setOptionRows(q.options || [], q.answer || '');
     }
 
     function resetEditorForm() {
@@ -377,24 +516,30 @@
       document.getElementById('qIdInput').value = '';
       document.getElementById('qTypeInput').value = 'poll';
       document.getElementById('qTextInput').value = '';
-      document.getElementById('qOptionsInput').value = '';
-      document.getElementById('qAnswerInput').value = '';
+      setOptionRows(['', ''], '');
+      onQuestionTypeInputChange();
+      markEditing(false);
     }
 
     async function saveQuestion() {
+      const qType = document.getElementById('qTypeInput').value;
+      const optionsArr = getOptionValues();
+      const answerVal = qType === 'quiz' ? document.getElementById('qAnswerSelect').value.trim() : '';
+
       const payload = {
         action: 'upsert_question',
         question: {
           id: document.getElementById('qIdInput').value.trim(),
-          type: document.getElementById('qTypeInput').value,
+          type: qType,
           question: document.getElementById('qTextInput').value.trim(),
-          options: document.getElementById('qOptionsInput').value,
-          answer: document.getElementById('qAnswerInput').value.trim()
+          options: optionsArr,
+          answer: answerVal
         }
       };
       const res = await postGas(payload);
       document.getElementById('actionLog').textContent = res.message || res.error;
       if (res.ok) {
+        markEditing(false);
         await loadAll();
         const editSel = document.getElementById('editTargetSelect');
         if ([...editSel.options].some(o => o.value === res.id)) {
@@ -425,8 +570,23 @@
 
         currentState = data.state;
         latestQuestions = data.questions || [];
-        refreshEditTargetSelect();
         syncObsAppearanceInputs(currentState);
+
+        const editSel = document.getElementById('editTargetSelect');
+        const accordionOpen = document.getElementById('questionAccordion').classList.contains('open');
+        if (!isEditingQuestionForm || !accordionOpen) {
+          refreshEditTargetSelect();
+        } else if (editSel) {
+          const prevVal = editSel.value;
+          const opts = ['<option value="__NEW__">＋ 新しい質問を作成</option>'];
+          latestQuestions.forEach(q => {
+            opts.push(`<option value="${escapeHtml(q.id)}">編集: [${escapeHtml(q.type)}] ${escapeHtml(q.id)} - ${escapeHtml(q.question)}</option>`);
+          });
+          editSel.innerHTML = opts.join('');
+          if ([...editSel.options].some(o => o.value === prevVal)) {
+            editSel.value = prevVal;
+          }
+        }
 
         const sel = document.getElementById('questionSelect');
         const prevSelected = sel.value;
