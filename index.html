@@ -406,6 +406,7 @@
     }
 
     .fill.bounce {
+      width: 0%;
       animation: barBounce 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
@@ -620,7 +621,8 @@
           if (isCorrect) badges += ' ★正解';
           if (isMyPick) badges += '（あなたの回答）';
 
-          const delayStyle = shouldBounce ? `animation-delay: ${Math.min(idx * 70, 350)}ms;` : '';
+          const delayMs = 1000 + Math.min(idx * 70, 350);
+          const delayStyle = shouldBounce ? `animation-delay: ${delayMs}ms;` : '';
           const bounceClass = shouldBounce ? 'bounce' : '';
 
           return `
