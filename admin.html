@@ -39,11 +39,28 @@
       margin-bottom: 16px;
     }
 
+    .header-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
     .header-title {
       margin: 0;
       font-size: 19px;
       font-weight: 800;
       color: #ffffff;
+    }
+
+    .context-pill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #0b101b;
+      color: #7dd3fc;
+      border: 1px solid #38bdf8;
     }
 
     .header-actions {
@@ -732,7 +749,10 @@
 <body>
   <div class="app-shell">
     <header class="header-bar">
-      <h1 class="header-title">配信投票・クイズ 管理パネル</h1>
+      <div class="header-left">
+        <h1 class="header-title">配信投票・クイズ 管理パネル</h1>
+        <span id="contextBadge" class="context-pill">room: default / admin: default</span>
+      </div>
       <div class="header-actions">
         <button type="button" class="copy-btn" onclick="copyPageUrl('obs.html')">OBS用URLをコピー</button>
         <button type="button" class="copy-btn" onclick="copyPageUrl('index.html')">回答者用URLをコピー</button>
@@ -811,7 +831,7 @@
         <section id="questionAccordion" class="card acc-card">
           <button type="button" class="acc-toggle" onclick="toggleAccordion()" aria-expanded="false" aria-controls="questionAccordionPanel">
             <span style="display:flex;align-items:center;gap:8px;">
-              <span class="step-num">3</span>質問の作成・編集・削除
+              <span class="step-num">3</span>質問の作成・編集・削除（admin共通）
             </span>
             <span class="acc-arrow">▼</span>
           </button>
@@ -914,6 +934,9 @@
 
   <script src="config.js"></script>
   <script>
+    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
+    const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
+
     let lastQuestionId = '';
     let latestQuestions = [];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
@@ -975,6 +998,13 @@
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
+
+    function renderContextBadge() {
+      const badge = document.getElementById('contextBadge');
+      if (badge) {
+        badge.textContent = `room: ${ROOM_ID} / admin: ${ADMIN_ID}`;
+      }
+    }
 
     function showConfirmPopup(message, options = {}) {
       const {
@@ -1139,7 +1169,10 @@
     }
 
     function copyPageUrl(filename) {
-      const url = new URL('./' + filename, window.location.href).href;
+      const url = typeof buildPageUrlWithContext === 'function'
+        ? buildPageUrlWithContext(filename)
+        : new URL('./' + filename, window.location.href).href;
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(url)
           .then(() => setLog(`${filename} のURLをコピーしました: ${url}`))
@@ -1206,7 +1239,7 @@
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
           const sizeKey = currentState.size || selectedSize;
           const sizeText = SIZE_LABELS[sizeKey] || '通常';
-          metaEl.textContent = `出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
+          metaEl.textContent = `[room: ${ROOM_ID}] 出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
         }
         if (qLabel) {
           qLabel.textContent = data.question.question;
@@ -1330,6 +1363,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      renderContextBadge();
       renderStatusButtons('poll');
       renderThemeChips();
       renderPositionButtons();
@@ -1358,9 +1392,9 @@
       const theme = selectedTheme || 'dark';
       const position = selectedPosition || 'bottom-right';
       const size = selectedSize || 'normal';
-      const res = await postGas({ action: 'set_state', theme, position, size });
+      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, theme, position, size });
       isObsAppearanceDirty = false;
-      setLog(res.ok ? `OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : res.error);
+      setLog(res.ok ? `[room: ${ROOM_ID}] OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : res.error);
       loadAll();
     }
 
@@ -1438,6 +1472,8 @@
 
       const payload = {
         action: 'upsert_question',
+        roomId: ROOM_ID,
+        adminId: ADMIN_ID,
         question: {
           id: document.getElementById('qIdInput').value.trim(),
           type: qType,
@@ -1465,7 +1501,7 @@
         return;
       }
       const targetObj = latestQuestions.find(q => q.id === targetId);
-      const confirmed = await showConfirmPopup('この質問を削除しますか？', {
+      const confirmed = await showConfirmPopup('この質問を削除しますか？（同じadminの全配信から削除されます）', {
         title: '質問の削除確認',
         detail: {
           id: targetId,
@@ -1473,7 +1509,7 @@
         }
       });
       if (!confirmed) return;
-      const res = await postGas({ action: 'delete_question', id: targetId });
+      const res = await postGas({ action: 'delete_question', roomId: ROOM_ID, adminId: ADMIN_ID, id: targetId });
       setLog(res.message || res.error);
       if (res.ok) {
         resetEditorForm();
@@ -1483,7 +1519,7 @@
 
     async function loadAll() {
       try {
-        const data = await fetchGas();
+        const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
 
         currentState = data.state;
@@ -1549,28 +1585,28 @@
 
     async function applyQuestion() {
       const questionId = document.getElementById('questionSelect').value;
-      const res = await postGas({ action: 'set_state', questionId });
-      setLog(res.ok ? `出題を「${questionId}」に切り替えました。` : res.error);
+      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
+      setLog(res.ok ? `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。` : res.error);
       loadAll();
     }
 
     async function setStatus(status) {
-      const res = await postGas({ action: 'set_state', status });
-      setLog(res.ok ? `ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : res.error);
+      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status });
+      setLog(res.ok ? `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : res.error);
       loadAll();
     }
 
     async function startTimedVoting() {
       const durationSec = Number(document.getElementById('timerSec').value);
-      const res = await postGas({ action: 'set_state', status: 'VOTING', durationSec });
-      setLog(res.ok ? `${durationSec}秒タイマーで受付を開始しました。` : res.error);
+      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status: 'VOTING', durationSec });
+      setLog(res.ok ? `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。` : res.error);
       loadAll();
     }
 
     async function clearCurrentVotes() {
       const questionId = document.getElementById('questionSelect').value;
       const selectedObj = latestQuestions.find(q => q.id === questionId);
-      const confirmed = await showConfirmPopup('現在選択中の質問の投票ログを削除しますか？', {
+      const confirmed = await showConfirmPopup(`配信「${ROOM_ID}」の現在選択中の質問の投票ログを削除しますか？`, {
         title: '投票ログの削除確認',
         detail: {
           id: questionId,
@@ -1578,7 +1614,7 @@
         }
       });
       if (!confirmed) return;
-      const res = await postGas({ action: 'clear_votes', questionId });
+      const res = await postGas({ action: 'clear_votes', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
       setLog(res.message || res.error);
       loadAll();
     }
