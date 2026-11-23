@@ -6,517 +6,540 @@
   <title>配信投票 管理パネル</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0b1120;
-      --surface: #111827;
-      --card: #182234;
-      --card-elevated: #1e293b;
-      --border: #2e3b52;
-      --border-strong: #475569;
-      --text: #f8fafc;
-      --text-sub: #cbd5e1;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --success: #10b981;
-      --success-hover: #059669;
-      --warn: #f59e0b;
-      --warn-hover: #d97706;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --info: #06b6d4;
-      --info-hover: #0891b2;
-      --radius: 14px;
-      --radius-sm: 10px;
-    }
-
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Noto Sans JP", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 20px 16px 48px;
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+      font-size: 15px;
       line-height: 1.5;
+      background: #090d16;
+      color: #f8fafc;
+      padding: 20px;
     }
 
-    .wrap {
-      max-width: 920px;
+    /* 全体コンテナ */
+    .app-shell {
+      max-width: 1240px;
       margin: 0 auto;
-      display: grid;
-      gap: 18px;
     }
 
-    /* ヘッダー＆ライブ状況バー */
-    .topbar {
-      background: linear-gradient(135deg, #172554 0%, #111827 65%, #0f172a 100%);
-      border: 1px solid #334155;
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-    }
-
-    .topbar-head {
+    /* 上部タイトルバー */
+    .header-bar {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      background: #141c2b;
+      border: 2px solid #2b3a55;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
     }
 
-    .app-title {
+    .header-title {
       margin: 0;
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 800;
+      color: #ffffff;
       letter-spacing: 0.02em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
 
-    .live-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 10px var(--success);
-      display: inline-block;
-    }
-
-    .quick-links {
+    .header-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .ghost-btn {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 7px 12px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--text-sub);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-    }
-
-    .ghost-btn:hover {
-      background: rgba(56, 189, 248, 0.15);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    .live-strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
       gap: 10px;
-      background: rgba(11, 17, 32, 0.65);
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
     }
 
-    .stat-box {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .stat-caption {
-      font-size: 11px;
+    .copy-btn {
+      font-family: inherit;
+      font-size: 14px;
       font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .stat-value {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      width: fit-content;
-      background: #334155;
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: #1e293b;
       color: #f8fafc;
+      border: 2px solid #475569;
+      cursor: pointer;
     }
-    .status-chip.waiting { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
-    .status-chip.voting { background: rgba(16, 185, 129, 0.22); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.5); }
-    .status-chip.closed { background: rgba(148, 163, 184, 0.2); color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.4); }
-    .status-chip.result { background: rgba(6, 182, 212, 0.22); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.5); }
-    .status-chip.answer { background: rgba(236, 72, 153, 0.22); color: #f9a8d4; border: 1px solid rgba(236, 72, 153, 0.5); }
+    .copy-btn:hover {
+      border-color: #38bdf8;
+      background: #263449;
+    }
 
-    /* グリッド */
-    .grid-2 {
+    /* 左右2カラムレイアウト */
+    .main-layout {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 18px;
+      gap: 20px;
+      align-items: start;
     }
-    @media (min-width: 760px) {
-      .grid-2 {
-        grid-template-columns: 1fr 1.25fr;
-        align-items: start;
+
+    @media (min-width: 960px) {
+      .main-layout {
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      }
+      .monitor-column {
+        position: sticky;
+        top: 20px;
       }
     }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+    .column-stack {
+      display: grid;
+      gap: 20px;
     }
 
-    .card-title {
-      margin: 0 0 14px;
-      font-size: 15px;
-      font-weight: 800;
-      color: #93c5fd;
+    /* カード共通 */
+    .card {
+      background: #141c2b;
+      border: 2px solid #2b3a55;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #233047;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: #7dd3fc;
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
 
-    .mode-pill {
-      display: inline-block;
-      font-size: 11px;
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 14px;
       font-weight: 800;
-      padding: 3px 10px;
-      border-radius: 999px;
-      letter-spacing: 0.03em;
     }
-    .mode-pill.poll { background: rgba(56, 189, 248, 0.18); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); }
-    .mode-pill.quiz { background: rgba(244, 114, 182, 0.18); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, 0.35); }
 
-    label.field-label {
+    .type-badge {
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #1e3a8a;
+      color: #dbeafe;
+      border: 1px solid #60a5fa;
+    }
+    .type-badge.quiz {
+      background: #831843;
+      color: #fce7f3;
+      border-color: #f472b6;
+    }
+
+    /* フォームパーツ */
+    .field {
+      margin-bottom: 16px;
+    }
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label.lbl {
       display: block;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
-      color: var(--text-sub);
+      color: #e2e8f0;
       margin-bottom: 6px;
     }
 
-    select, input[type="text"], button {
+    select, input[type="text"] {
+      width: 100%;
       font-family: inherit;
-      font-size: 14px;
-      padding: 10px 13px;
-      border-radius: var(--radius-sm);
-      border: none;
-      transition: background 0.15s, border-color 0.15s, transform 0.08s, box-shadow 0.15s;
-    }
-
-    select {
-      background: var(--card-elevated);
-      color: var(--text);
-      border: 1px solid var(--border-strong);
-      width: 100%;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border-strong);
+      font-size: 16px;
+      font-weight: 600;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #0b101b;
+      color: #ffffff;
+      border: 2px solid #475569;
     }
 
     select:focus, input[type="text"]:focus {
       outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22);
+      border-color: #38bdf8;
     }
 
-    .field-group { display: grid; gap: 14px; }
-
-    .options-list { display: grid; gap: 8px; margin-bottom: 10px; }
-    .option-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    /* 質問切替の横並び */
+    .inline-select-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
     }
-    .option-index {
-      font-size: 12px;
+
+    @media (max-width: 520px) {
+      .inline-select-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ステータスボタンの均等グリッド */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    button.btn {
+      font-family: inherit;
+      font-size: 15px;
       font-weight: 800;
-      color: var(--accent);
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.28);
+      padding: 13px 16px;
       border-radius: 8px;
-      min-width: 30px;
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      border: 2px solid transparent;
+      cursor: pointer;
+      color: #ffffff;
+      background: #2563eb;
+      text-align: center;
     }
-    .option-row input[type="text"] { flex: 1; }
-
-    button.icon-del {
-      padding: 10px 12px;
-      background: var(--card-elevated);
-      color: #fca5a5;
-      border: 1px solid rgba(248, 113, 113, 0.3);
-      font-weight: 800;
-      line-height: 1;
-    }
-    button.icon-del:hover:not(:disabled) {
-      background: var(--danger);
-      border-color: var(--danger);
-      color: #fff;
-    }
-    button.icon-del:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
+    button.btn:hover:not(:disabled) {
+      filter: brightness(1.12);
     }
 
-    .btn-row {
+    button.btn-green { background: #059669; }
+    button.btn-amber { background: #d97706; }
+    button.btn-sky { background: #0284c7; }
+    button.btn-red { background: #dc2626; }
+    button.btn-gray { background: #334155; border-color: #64748b; }
+
+    button.btn.is-current {
+      border-color: #ffffff;
+      outline: 3px solid #38bdf8;
+    }
+
+    /* タイマー行 */
+    .timer-row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
-      margin-top: 12px;
-    }
-    .btn-row.tight { margin-top: 0; }
-
-    button {
-      cursor: pointer;
-      font-weight: 700;
-      background: #2563eb;
-      color: #fff;
-      border: 1px solid transparent;
-    }
-    button:active:not(:disabled) { transform: translateY(1px); }
-    button:hover:not(:disabled) { background: #1d4ed8; }
-
-    button.secondary { background: #334155; border-color: #475569; }
-    button.secondary:hover:not(:disabled) { background: #475569; }
-
-    button.warn { background: var(--warn-hover); }
-    button.warn:hover:not(:disabled) { background: var(--warn); }
-
-    button.success { background: var(--success-hover); }
-    button.success:hover:not(:disabled) { background: var(--success); }
-
-    button.info { background: var(--info-hover); }
-    button.info:hover:not(:disabled) { background: var(--info); }
-
-    button.danger { background: var(--danger-hover); }
-    button.danger:hover:not(:disabled) { background: var(--danger); }
-
-    /* 現在有効なステータスボタンの強調 */
-    button.is-active {
-      box-shadow: 0 0 0 2px #ffffff, 0 0 16px rgba(56, 189, 248, 0.55);
-      filter: brightness(1.08);
     }
 
-    .sub-divider {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
+    .timer-row select {
+      width: auto;
+      min-width: 115px;
     }
 
-    .appearance-grid {
+    .timer-badge {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fde047;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: #0b101b;
+      border: 1px solid #eab308;
+    }
+    .timer-badge:empty {
+      display: none;
+    }
+
+    /* テーマ・位置の2列配置 */
+    .two-col-fields {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    .timer-readout {
-      font-size: 15px;
-      font-weight: 800;
-      color: #fbbf24;
-      padding: 4px 10px;
-      border-radius: 8px;
-      background: rgba(251, 191, 36, 0.12);
+    @media (max-width: 520px) {
+      .two-col-fields {
+        grid-template-columns: 1fr;
+      }
     }
-    .timer-readout:empty { display: none; }
 
-    /* 集計バー */
-    .bar-item {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      border: 1px solid rgba(148, 163, 184, 0.14);
+    .divider {
+      margin: 18px 0;
+      border: 0;
+      border-top: 2px solid #233047;
     }
-    .bar-item:first-child { margin-top: 0; }
-    .bar-top {
+
+    /* 操作ログ */
+    .log-panel {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #0b101b;
+      border-left: 5px solid #38bdf8;
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* 右カラム：現在の状態ボックス */
+    .live-card {
+      background: #182338;
+      border: 2px solid #3b82f6;
+    }
+
+    .live-status-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .state-pill {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 800;
+      background: #334155;
+      color: #ffffff;
+    }
+    .state-pill.voting { background: #047857; border: 2px solid #34d399; }
+    .state-pill.waiting { background: #b45309; border: 2px solid #fbbf24; }
+    .state-pill.closed { background: #334155; border: 2px solid #94a3b8; }
+    .state-pill.result { background: #0369a1; border: 2px solid #38bdf8; }
+    .state-pill.answer { background: #9d174d; border: 2px solid #f472b6; }
+
+    .live-metrics {
+      display: flex;
+      gap: 16px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .live-question-box {
+      background: #0b101b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .live-q-meta {
+      font-size: 13px;
+      font-weight: 700;
+      color: #93c5fd;
+      margin-bottom: 4px;
+    }
+
+    .live-q-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      word-break: break-word;
+    }
+
+    /* 集計プレビュー */
+    .result-item {
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #0b101b;
+      border: 1px solid #334155;
+    }
+    .result-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .result-top {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 8px;
-      font-size: 14px;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 700;
     }
-    .bar-label { font-weight: 700; color: var(--text); }
-    .bar-stat { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
-    .bar-bg {
-      background: #263349;
-      height: 11px;
-      border-radius: 999px;
+
+    .result-num {
+      font-size: 15px;
+      font-weight: 800;
+      color: #7dd3fc;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 14px;
+      background: #1e293b;
+      border-radius: 6px;
       overflow: hidden;
-      margin-top: 7px;
     }
+
     .bar-fill {
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
       height: 100%;
       width: 0%;
-      border-radius: 999px;
-      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      background: #38bdf8;
+      transition: width 0.3s ease;
     }
 
-    .log-banner {
-      margin-top: 14px;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.28);
-      color: #bae6fd;
-      font-size: 13px;
-      font-weight: 600;
-      min-height: 40px;
+    /* 選択肢の個別入力行 */
+    .opt-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .opt-item {
       display: flex;
       align-items: center;
+      gap: 10px;
     }
 
-    .meta-note {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 8px;
+    .opt-num {
+      font-size: 15px;
+      font-weight: 800;
+      color: #7dd3fc;
+      background: #0b101b;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      min-width: 38px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .opt-item input[type="text"] {
+      flex: 1;
+    }
+
+    button.btn-del-opt {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: #334155;
+      color: #fecaca;
+      border: 2px solid #ef4444;
+      cursor: pointer;
+    }
+    button.btn-del-opt:hover:not(:disabled) {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    button.btn-del-opt:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
 
     /* アコーディオン */
-    .accordion-card { padding: 0; overflow: hidden; }
-    button.accordion-header {
+    .acc-card {
+      padding: 0;
+      overflow: hidden;
+    }
+    button.acc-toggle {
       width: 100%;
-      background: transparent;
+      font-family: inherit;
+      background: #141c2b;
+      color: #7dd3fc;
+      border: none;
       padding: 18px 20px;
-      border-radius: 0;
+      font-size: 17px;
+      font-weight: 800;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
       text-align: left;
     }
-    button.accordion-header:hover {
-      background: rgba(255, 255, 255, 0.04);
+    button.acc-toggle:hover {
+      background: #1b263b;
     }
-    .section-title {
-      margin: 0;
-      font-size: 15px;
-      font-weight: 200;
-      color: #93c5fd;
-    }
-    .accordion-icon {
-      font-size: 13px;
-      color: #93c5fd;
-      transition: transform 0.25s ease;
-    }
-    .accordion-card.open .accordion-icon {
-      transform: rotate(180deg);
-    }
-    .accordion-panel {
+    .acc-body {
       display: none;
-      padding: 0 20px 20px;
-      border-top: 1px solid var(--border);
+      padding: 20px;
+      border-top: 2px solid #233047;
     }
-    .accordion-card.open .accordion-panel {
+    .acc-card.open .acc-body {
       display: block;
-      padding-top: 16px;
+    }
+    .acc-arrow {
+      transition: transform 0.2s ease;
+    }
+    .acc-card.open .acc-arrow {
+      transform: rotate(180deg);
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- ライブ状況ヘッダー -->
-    <header class="topbar">
-      <div class="topbar-head">
-        <h1 class="app-title">
-          <span class="live-dot"></span>
-          配信投票・クイズ 管理パネル
-        </h1>
-        <div class="quick-links">
-          <button type="button" class="ghost-btn" onclick="copyPageUrl('obs.html')">OBS用URLをコピー</button>
-          <button type="button" class="ghost-btn" onclick="copyPageUrl('index.html')">回答者用URLをコピー</button>
-        </div>
-      </div>
-
-      <div class="live-strip">
-        <div class="stat-box">
-          <span class="stat-caption">現在のステータス</span>
-          <span id="liveStatusChip" class="status-chip waiting">待機中</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-caption">出題中の質問</span>
-          <span id="liveQuestionText" class="stat-value">-</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-caption">総票数</span>
-          <span id="liveTotalVotes" class="stat-value">0 票</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-caption">タイマー残り</span>
-          <span id="liveTimerText" class="stat-value" style="color: #fbbf24;">-</span>
-        </div>
+  <div class="app-shell">
+    <!-- トップバー -->
+    <header class="header-bar">
+      <h1 class="header-title">配信投票・クイズ 管理パネル</h1>
+      <div class="header-actions">
+        <button type="button" class="copy-btn" onclick="copyPageUrl('obs.html')">OBS用URLをコピー</button>
+        <button type="button" class="copy-btn" onclick="copyPageUrl('index.html')">回答者用URLをコピー</button>
       </div>
     </header>
 
-    <!-- 上段2カラム：質問切替 ＋ ステータス・演出操作 -->
-    <div class="grid-2">
-      <section class="card">
-        <h2 class="card-title">1. 出題する質問の選択</h2>
-        <div class="field-group">
-          <div>
-            <label class="field-label" for="questionSelect">登録済みの質問</label>
-            <select id="questionSelect" onchange="onQuestionSelectChange()"></select>
+    <!-- メイン2カラム -->
+    <div class="main-layout">
+      <!-- 左カラム：操作パネル -->
+      <div class="column-stack">
+        <!-- 1. 出題する質問の選択 -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="step-num">1</span>出題する質問の選択</h2>
           </div>
-          <div class="btn-row tight">
-            <button type="button" onclick="applyQuestion()">この質問に切り替える</button>
+          <div class="field">
+            <label class="lbl" for="questionSelect">登録済みの質問</label>
+            <div class="inline-select-row">
+              <select id="questionSelect" onchange="onQuestionSelectChange()"></select>
+              <button type="button" class="btn" onclick="applyQuestion()">出題を切り替える</button>
+            </div>
           </div>
-        </div>
-        <div id="currentInfo" class="meta-note">現在の状態を読み込み中...</div>
-      </section>
+        </section>
 
-      <section class="card">
-        <h2 class="card-title">
-          <span>2. ステータス・OBS表示の切り替え</span>
-          <span id="statusModeBadge" class="mode-pill poll">POLL モード</span>
-        </h2>
-
-        <div id="statusBtnRow" class="btn-row tight"></div>
-
-        <div class="sub-divider">
-          <label class="field-label" for="timerSec">制限時間タイマー</label>
-          <div class="btn-row tight">
-            <select id="timerSec" style="width: auto; min-width: 110px;">
-              <option value="15">15秒</option>
-              <option value="30" selected>30秒</option>
-              <option value="45">45秒</option>
-              <option value="60">60秒</option>
-            </select>
-            <button type="button" id="timedVoteBtn" class="success" onclick="startTimedVoting()">タイマー付きで投票開始</button>
-            <span id="adminTimerReadout" class="timer-readout"></span>
+        <!-- 2. ステータス・テーマ・表示位置 -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="step-num">2</span>ステータス・OBS表示操作</h2>
+            <span id="statusModeTag" class="type-badge">アンケート</span>
           </div>
-        </div>
 
-        <div class="sub-divider">
-          <div class="appearance-grid">
+          <div class="field">
+            <label class="lbl">表示・受付ステータス</label>
+            <div id="statusBtnRow" class="status-grid"></div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="field">
+            <label class="lbl" for="timerSec">制限時間タイマー付き開始</label>
+            <div class="timer-row">
+              <select id="timerSec">
+                <option value="15">15秒</option>
+                <option value="30" selected>30秒</option>
+                <option value="45">45秒</option>
+                <option value="60">60秒</option>
+              </select>
+              <button type="button" id="timedVoteBtn" class="btn btn-green" onclick="startTimedVoting()">タイマー付きで投票開始</button>
+              <span id="adminTimerReadout" class="timer-badge"></span>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="two-col-fields">
             <div>
-              <label class="field-label" for="obsThemeSelect">テーマ（OBS＋回答者同期）</label>
+              <label class="lbl" for="obsThemeSelect">テーマ（OBS＋回答者同期）</label>
               <select id="obsThemeSelect" onchange="applyObsAppearance()">
                 <option value="dark">ダークモダン</option>
                 <option value="neon">ネオンアーケード</option>
@@ -528,7 +551,7 @@
             </div>
 
             <div>
-              <label class="field-label" for="obsPositionSelect">OBS表示位置</label>
+              <label class="lbl" for="obsPositionSelect">OBS表示位置</label>
               <select id="obsPositionSelect" onchange="applyObsAppearance()">
                 <option value="bottom-right">右下</option>
                 <option value="bottom-left">左下</option>
@@ -540,78 +563,101 @@
               </select>
             </div>
           </div>
-        </div>
 
-        <div class="sub-divider">
-          <div class="btn-row tight">
-            <button type="button" class="danger" onclick="clearCurrentVotes()">現在の質問の票をリセット</button>
-          </div>
-        </div>
+          <div id="actionLog" class="log-panel">操作結果がここに表示されます。</div>
+        </section>
 
-        <div id="actionLog" class="log-banner">操作ログがここに表示されます。</div>
-      </section>
-    </div>
+        <!-- 3. 質問の作成・編集・削除 -->
+        <section id="questionAccordion" class="card acc-card">
+          <button type="button" class="acc-toggle" onclick="toggleAccordion()" aria-expanded="false" aria-controls="questionAccordionPanel">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="step-num">3</span>質問の作成・編集・削除
+            </span>
+            <span class="acc-arrow">▼</span>
+          </button>
 
-    <!-- 3. アコーディオン式 質問の作成・編集・削除 -->
-    <section id="questionAccordion" class="card accordion-card">
-      <button type="button" class="accordion-header" onclick="toggleAccordion()" aria-expanded="false" aria-controls="questionAccordionPanel">
-        <span class="section-title">3. 質問の作成・編集・削除</span>
-        <span class="accordion-icon">▼</span>
-      </button>
-
-      <div id="questionAccordionPanel" class="accordion-panel" onfocusin="markEditing(true)">
-        <div class="btn-row tight" style="margin-bottom: 14px;">
-          <select id="editTargetSelect" onchange="onSelectEditTarget()" style="flex: 1; min-width: 220px;">
-            <option value="__NEW__">＋ 新しい質問を作成</option>
-          </select>
-          <button type="button" class="danger" onclick="deleteSelectedQuestion()">選択中の質問を削除</button>
-        </div>
-
-        <div class="field-group">
-          <div class="appearance-grid">
-            <div>
-              <label class="field-label" for="qIdInput">質問ID（空欄で自動採番）</label>
-              <input id="qIdInput" type="text" placeholder="例: q3" />
+          <div id="questionAccordionPanel" class="acc-body" onfocusin="markEditing(true)">
+            <div class="field">
+              <label class="lbl" for="editTargetSelect">編集対象</label>
+              <div class="inline-select-row">
+                <select id="editTargetSelect" onchange="onSelectEditTarget()">
+                  <option value="__NEW__">＋ 新しい質問を作成</option>
+                </select>
+                <button type="button" class="btn btn-red" onclick="deleteSelectedQuestion()">削除</button>
+              </div>
             </div>
 
-            <div>
-              <label class="field-label" for="qTypeInput">種別</label>
-              <select id="qTypeInput" onchange="onQuestionTypeInputChange()">
-                <option value="poll">アンケート（poll）</option>
-                <option value="quiz">クイズ（quiz）</option>
-              </select>
+            <div class="two-col-fields field">
+              <div>
+                <label class="lbl" for="qIdInput">質問ID（空欄で自動採番）</label>
+                <input id="qIdInput" type="text" placeholder="例: q3" />
+              </div>
+
+              <div>
+                <label class="lbl" for="qTypeInput">種別</label>
+                <select id="qTypeInput" onchange="onQuestionTypeInputChange()">
+                  <option value="poll">アンケート（poll）</option>
+                  <option value="quiz">クイズ（quiz）</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="lbl" for="qTextInput">質問文</label>
+              <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
+            </div>
+
+            <div class="field">
+              <label class="lbl">選択肢（1つずつ別枠・2つ以上）</label>
+              <div id="optionsList" class="opt-list"></div>
+              <button type="button" class="btn btn-gray" onclick="addOptionRow('', true)">＋ 選択肢を追加</button>
+            </div>
+
+            <div id="quizAnswerWrap" class="field" style="display: none;">
+              <label class="lbl" for="qAnswerSelect">クイズの正解（quizの場合のみ）</label>
+              <select id="qAnswerSelect"></select>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+              <button type="button" class="btn btn-green" onclick="saveQuestion()">質問を保存する</button>
+              <button type="button" class="btn btn-gray" onclick="resetEditorForm()">入力をクリア</button>
             </div>
           </div>
-
-          <div>
-            <label class="field-label" for="qTextInput">質問文</label>
-            <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
-          </div>
-
-          <div>
-            <label class="field-label">選択肢（1つずつ別枠・2つ以上）</label>
-            <div id="optionsList" class="options-list"></div>
-            <button type="button" class="secondary" onclick="addOptionRow('', true)">＋ 選択肢を追加</button>
-          </div>
-
-          <div id="quizAnswerWrap" style="display: none;">
-            <label class="field-label" for="qAnswerSelect">クイズの正解（quizの場合のみ）</label>
-            <select id="qAnswerSelect"></select>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button type="button" class="success" onclick="saveQuestion()">質問を保存する</button>
-          <button type="button" class="secondary" onclick="resetEditorForm()">入力をクリア</button>
-        </div>
+        </section>
       </div>
-    </section>
 
-    <!-- 4. リアルタイム集計プレビュー -->
-    <section class="card">
-      <h2 class="card-title">4. リアルタイム集計プレビュー</h2>
-      <div id="previewArea">読み込み中...</div>
-    </section>
+      <!-- 右カラム：常時監視エリア -->
+      <div class="column-stack monitor-column">
+        <!-- 現在の配信状態 -->
+        <section class="card live-card">
+          <div class="card-header">
+            <h2 class="card-title">現在の配信状態</h2>
+            <span id="liveTimerLabel" class="timer-badge"></span>
+          </div>
+
+          <div class="live-status-row">
+            <span id="liveStatusBadge" class="state-pill waiting">待機中</span>
+            <div class="live-metrics">
+              <span id="liveVotesLabel">総票数: 0 票</span>
+            </div>
+          </div>
+
+          <div class="live-question-box">
+            <div id="liveQuestionMeta" class="live-q-meta">出題中の質問</div>
+            <div id="liveQuestionLabel" class="live-q-title">読み込み中...</div>
+          </div>
+        </section>
+
+        <!-- リアルタイム集計 -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">リアルタイム集計結果</h2>
+            <button type="button" class="btn btn-red" style="padding:8px 12px;font-size:13px;" onclick="clearCurrentVotes()">票をリセット</button>
+          </div>
+          <div id="previewArea">読み込み中...</div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>
@@ -632,17 +678,17 @@
 
     const BUTTON_CONFIGS = {
       poll: [
-        { status: 'WAITING', label: '非表示（待機）', className: 'warn' },
-        { status: 'VOTING', label: '投票受付中（無制限）', className: 'success' },
-        { status: 'CLOSED', label: '投票受付終了', className: 'secondary' },
-        { status: 'RESULT', label: 'アンケート結果表示', className: 'info' }
+        { status: 'WAITING', label: '非表示（待機）', cls: 'btn-amber' },
+        { status: 'VOTING', label: '投票受付中（無制限）', cls: 'btn-green' },
+        { status: 'CLOSED', label: '投票受付終了', cls: 'btn-gray' },
+        { status: 'RESULT', label: 'アンケート結果表示', cls: 'btn-sky' }
       ],
       quiz: [
-        { status: 'WAITING', label: '非表示（待機）', className: 'warn' },
-        { status: 'VOTING', label: '回答受付中（無制限）', className: 'success' },
-        { status: 'CLOSED', label: '回答受付終了', className: 'secondary' },
-        { status: 'RESULT', label: '集計結果表示', className: 'info' },
-        { status: 'ANSWER', label: 'クイズ正解表示', className: 'success' }
+        { status: 'WAITING', label: '非表示（待機）', cls: 'btn-amber' },
+        { status: 'VOTING', label: '回答受付中（無制限）', cls: 'btn-green' },
+        { status: 'CLOSED', label: '回答受付終了', cls: 'btn-gray' },
+        { status: 'RESULT', label: '集計結果表示', cls: 'btn-sky' },
+        { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
 
@@ -670,10 +716,10 @@
 
     function renderStatusButtons(type) {
       const normalizedType = type === 'quiz' ? 'quiz' : 'poll';
-      const badge = document.getElementById('statusModeBadge');
-      if (badge) {
-        badge.textContent = normalizedType === 'quiz' ? 'QUIZ モード' : 'POLL モード';
-        badge.className = 'mode-pill ' + normalizedType;
+      const tag = document.getElementById('statusModeTag');
+      if (tag) {
+        tag.textContent = normalizedType === 'quiz' ? 'クイズ' : 'アンケート';
+        tag.className = 'type-badge' + (normalizedType === 'quiz' ? ' quiz' : '');
       }
 
       const timedBtn = document.getElementById('timedVoteBtn');
@@ -692,31 +738,38 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = def.label;
-        const classes = [];
-        if (def.className) classes.push(def.className);
-        if (currentState && currentState.status === def.status) classes.push('is-active');
+        const classes = ['btn'];
+        if (def.cls) classes.push(def.cls);
+        if (currentState && currentState.status === def.status) classes.push('is-current');
         btn.className = classes.join(' ');
         btn.onclick = () => setStatus(def.status);
         row.appendChild(btn);
       });
     }
 
-    function updateLiveHeader(data) {
-      const chip = document.getElementById('liveStatusChip');
+    function updateMonitorPanel(data) {
       const st = (data.state && data.state.status) || 'WAITING';
-      if (chip) {
-        chip.textContent = STATUS_LABELS[st] || st;
-        chip.className = 'status-chip ' + st.toLowerCase();
+      const badge = document.getElementById('liveStatusBadge');
+      if (badge) {
+        badge.textContent = STATUS_LABELS[st] || st;
+        badge.className = 'state-pill ' + st.toLowerCase();
       }
 
-      const qEl = document.getElementById('liveQuestionText');
-      if (qEl && data.question) {
-        qEl.textContent = `${data.question.id}: ${data.question.question}`;
+      const vLabel = document.getElementById('liveVotesLabel');
+      if (vLabel) {
+        vLabel.textContent = `総票数: ${Number(data.totalVotes || 0)} 票`;
       }
 
-      const vEl = document.getElementById('liveTotalVotes');
-      if (vEl) {
-        vEl.textContent = `${Number(data.totalVotes || 0)} 票`;
+      const metaEl = document.getElementById('liveQuestionMeta');
+      const qLabel = document.getElementById('liveQuestionLabel');
+      if (data.question) {
+        if (metaEl) {
+          const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
+          metaEl.textContent = `出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position}`;
+        }
+        if (qLabel) {
+          qLabel.textContent = data.question.question;
+        }
       }
     }
 
@@ -737,7 +790,7 @@
     }
 
     function getOptionInputs() {
-      return [...document.querySelectorAll('#optionsList .option-row input[type="text"]')];
+      return [...document.querySelectorAll('#optionsList .opt-item input[type="text"]')];
     }
 
     function getOptionValues() {
@@ -768,11 +821,11 @@
     }
 
     function refreshOptionRowMeta() {
-      const rows = [...document.querySelectorAll('#optionsList .option-row')];
+      const rows = [...document.querySelectorAll('#optionsList .opt-item')];
       rows.forEach((row, idx) => {
-        const idxEl = row.querySelector('.option-index');
-        const delBtn = row.querySelector('.icon-del');
-        if (idxEl) idxEl.textContent = `${idx + 1}`;
+        const numEl = row.querySelector('.opt-num');
+        const delBtn = row.querySelector('.btn-del-opt');
+        if (numEl) numEl.textContent = `${idx + 1}`;
         if (delBtn) delBtn.disabled = rows.length <= 2;
       });
       syncAnswerSelectOptions();
@@ -782,10 +835,10 @@
       markEditing(true);
       const list = document.getElementById('optionsList');
       const row = document.createElement('div');
-      row.className = 'option-row';
+      row.className = 'opt-item';
 
-      const idxSpan = document.createElement('span');
-      idxSpan.className = 'option-index';
+      const numSpan = document.createElement('span');
+      numSpan.className = 'opt-num';
 
       const input = document.createElement('input');
       input.type = 'text';
@@ -804,17 +857,17 @@
 
       const delBtn = document.createElement('button');
       delBtn.type = 'button';
-      delBtn.className = 'icon-del';
+      delBtn.className = 'btn-del-opt';
       delBtn.title = 'この選択肢を削除';
       delBtn.textContent = '×';
       delBtn.onclick = () => {
         markEditing(true);
-        if (list.querySelectorAll('.option-row').length <= 2) return;
+        if (list.querySelectorAll('.opt-item').length <= 2) return;
         row.remove();
         refreshOptionRowMeta();
       };
 
-      row.appendChild(idxSpan);
+      row.appendChild(numSpan);
       row.appendChild(input);
       row.appendChild(delBtn);
       list.appendChild(row);
@@ -865,7 +918,7 @@
 
     function toggleAccordion(forceOpen) {
       const card = document.getElementById('questionAccordion');
-      const btn = card.querySelector('.accordion-header');
+      const btn = card.querySelector('.acc-toggle');
       const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !card.classList.contains('open');
       card.classList.toggle('open', nextOpen);
       btn.setAttribute('aria-expanded', String(nextOpen));
@@ -876,7 +929,7 @@
 
     function renderAdminCountdown() {
       const badgeEl = document.getElementById('adminTimerReadout');
-      const liveEl = document.getElementById('liveTimerText');
+      const liveEl = document.getElementById('liveTimerLabel');
       if (currentState.status === 'VOTING' && currentState.deadlineAt) {
         const remainSec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
         const txt = `残り ${remainSec}秒`;
@@ -884,7 +937,7 @@
         if (liveEl) liveEl.textContent = txt;
       } else {
         if (badgeEl) badgeEl.textContent = '';
-        if (liveEl) liveEl.textContent = '-';
+        if (liveEl) liveEl.textContent = '';
       }
     }
 
@@ -980,7 +1033,7 @@
         currentState = data.state;
         latestQuestions = data.questions || [];
         syncObsAppearanceInputs(currentState);
-        updateLiveHeader(data);
+        updateMonitorPanel(data);
 
         const editSel = document.getElementById('editTargetSelect');
         const accordionOpen = document.getElementById('questionAccordion').classList.contains('open');
@@ -1019,17 +1072,16 @@
         const selectedObj = latestQuestions.find(q => q.id === sel.value) || data.question;
         renderStatusButtons(selectedObj ? selectedObj.type : 'poll');
 
-        document.getElementById('currentInfo').textContent =
-          `出題中: ${data.question.id}（${data.question.question}） / 種別: ${data.question.type} / テーマ: ${currentState.theme} / 位置: ${currentState.position}`;
-
         const prev = document.getElementById('previewArea');
         prev.innerHTML = (data.results || []).map(r => `
-          <div class="bar-item">
-            <div class="bar-top">
-              <span class="bar-label">${escapeHtml(r.label)}</span>
-              <span class="bar-stat"><strong>${r.count}票</strong> (${r.pct}%)</span>
+          <div class="result-item">
+            <div class="result-top">
+              <span>${escapeHtml(r.label)}</span>
+              <span class="result-num">${r.count}票 (${r.pct}%)</span>
             </div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${r.pct}%"></div></div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${r.pct}%"></div>
+            </div>
           </div>
         `).join('');
 
