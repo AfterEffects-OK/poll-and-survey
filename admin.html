@@ -13,106 +13,106 @@
     body {
       margin: 0;
       font-family: "Noto Sans JP", system-ui, sans-serif;
-      font-size: 15px;
-      line-height: 1.5;
+      font-size: 14px;
+      line-height: 1.45;
       background: #090d16;
       color: #f8fafc;
-      padding: 20px;
+      padding: 16px;
     }
 
     .app-shell {
-      max-width: 1240px;
+      max-width: 1280px;
       margin: 0 auto;
     }
 
-    /* 上部タイトルバー */
+    /* ヘッダー */
     .header-bar {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 10px 16px;
       background: #141c2b;
       border: 2px solid #2b3a55;
       border-radius: 12px;
-      padding: 14px 20px;
-      margin-bottom: 20px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
     }
 
     .header-title {
       margin: 0;
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
       color: #ffffff;
-      letter-spacing: 0.02em;
     }
 
     .header-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .copy-btn {
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      padding: 9px 14px;
+      padding: 7px 12px;
       border-radius: 8px;
       background: #1e293b;
-      color: #f8fafc;
-      border: 2px solid #475569;
+      color: #e2e8f0;
+      border: 1px solid #475569;
       cursor: pointer;
     }
     .copy-btn:hover {
       border-color: #38bdf8;
       background: #263449;
+      color: #ffffff;
     }
 
-    /* 左右2カラムレイアウト */
+    /* 2カラムレイアウト */
     .main-layout {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 20px;
+      gap: 16px;
       align-items: start;
     }
 
-    @media (min-width: 960px) {
+    @media (min-width: 980px) {
       .main-layout {
         grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
       }
       .monitor-column {
         position: sticky;
-        top: 20px;
+        top: 16px;
       }
     }
 
     .column-stack {
       display: grid;
-      gap: 20px;
+      gap: 16px;
     }
 
-    /* カード共通 */
+    /* カード */
     .card {
       background: #141c2b;
       border: 2px solid #2b3a55;
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px 18px;
     }
 
     .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #233047;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #24334d;
     }
 
     .card-title {
       margin: 0;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #7dd3fc;
       display: flex;
@@ -124,20 +124,20 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 26px;
-      height: 26px;
+      width: 22px;
+      height: 22px;
       border-radius: 6px;
       background: #2563eb;
       color: #ffffff;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 800;
     }
 
     .type-badge {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
       background: #1e3a8a;
       color: #dbeafe;
       border: 1px solid #60a5fa;
@@ -148,9 +148,9 @@
       border-color: #f472b6;
     }
 
-    /* フォームパーツ */
+    /* フォーム・ラベル */
     .field {
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .field:last-child {
       margin-bottom: 0;
@@ -158,22 +158,22 @@
 
     .lbl {
       display: block;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      color: #e2e8f0;
-      margin-bottom: 8px;
+      color: #cbd5e1;
+      margin-bottom: 6px;
     }
 
     select, input[type="text"] {
       width: 100%;
       font-family: inherit;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      padding: 11px 14px;
+      padding: 9px 12px;
       border-radius: 8px;
       background: #0b101b;
       color: #ffffff;
-      border: 2px solid #475569;
+      border: 1.5px solid #475569;
     }
 
     select:focus, input[type="text"]:focus {
@@ -184,7 +184,7 @@
     .inline-select-row {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 10px;
+      gap: 8px;
     }
 
     @media (max-width: 520px) {
@@ -193,27 +193,31 @@
       }
     }
 
-    /* ステータスボタンの均等グリッド */
+    /* ステータスボタン */
     .status-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
     }
 
     button.btn {
       font-family: inherit;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
-      padding: 13px 16px;
+      padding: 10px 14px;
       border-radius: 8px;
       border: 2px solid transparent;
       cursor: pointer;
       color: #ffffff;
       background: #2563eb;
       text-align: center;
+      transition: filter 0.12s ease, transform 0.06s ease;
     }
     button.btn:hover:not(:disabled) {
       filter: brightness(1.12);
+    }
+    button.btn:active:not(:disabled) {
+      transform: scale(0.98);
     }
 
     button.btn-green { background: #059669; }
@@ -224,7 +228,7 @@
 
     button.btn.is-current {
       border-color: #ffffff;
-      outline: 3px solid #38bdf8;
+      box-shadow: 0 0 0 2px #38bdf8;
     }
 
     /* タイマー行 */
@@ -232,19 +236,19 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .timer-row select {
       width: auto;
-      min-width: 115px;
+      min-width: 100px;
     }
 
     .timer-badge {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
       color: #fde047;
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 8px;
       background: #0b101b;
       border: 1px solid #eab308;
@@ -253,27 +257,48 @@
       display: none;
     }
 
-    /* テーマチップボタン群 */
+    /* OBS表示設定：2カラム整理 */
+    .obs-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 680px) {
+      .obs-controls-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+        align-items: start;
+      }
+    }
+
+    .obs-sub-box {
+      background: #0e1522;
+      border: 1px solid #25344f;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    /* テーマチップ */
     .theme-chip-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 7px;
     }
 
     button.theme-chip {
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 800;
       color: #f1f5f9;
       background: #0b101b;
-      border: 2px solid #334155;
+      border: 1.5px solid #334155;
       border-radius: 999px;
-      padding: 8px 13px;
+      padding: 6px 11px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+      gap: 7px;
+      transition: border-color 0.12s ease, background 0.12s ease;
     }
 
     button.theme-chip:hover {
@@ -281,46 +306,41 @@
       background: #172236;
     }
 
-    button.theme-chip:active {
-      transform: scale(0.98);
-    }
-
     button.theme-chip.is-active {
       color: #ffffff;
       background: #1e2d47;
       border-color: var(--chip-color, #38bdf8);
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.18);
     }
 
     .chip-dot {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       background: var(--chip-color, #38bdf8);
-      border: 2px solid rgba(255, 255, 255, 0.55);
+      border: 1.5px solid rgba(255, 255, 255, 0.6);
       flex-shrink: 0;
     }
 
-    /* OBS表示位置 3x3 グリッドボタン */
+    /* OBS表示位置 3x3 */
     .pos-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
 
     button.pos-btn {
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       color: #e2e8f0;
       background: #0b101b;
-      border: 2px solid #334155;
-      border-radius: 8px;
-      padding: 10px 8px;
+      border: 1.5px solid #334155;
+      border-radius: 7px;
+      padding: 8px 6px;
       cursor: pointer;
       text-align: center;
-      line-height: 1.25;
-      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+      line-height: 1.2;
     }
 
     button.pos-btn:hover {
@@ -329,43 +349,39 @@
       color: #ffffff;
     }
 
-    button.pos-btn:active {
-      transform: scale(0.98);
-    }
-
     button.pos-btn.is-active {
       color: #ffffff;
       background: #1d4ed8;
       border-color: #ffffff;
-      outline: 2px solid #38bdf8;
+      box-shadow: 0 0 0 2px #38bdf8;
     }
 
     .pos-spacer {
       background: rgba(15, 23, 42, 0.35);
       border: 1px dashed #233047;
-      border-radius: 8px;
-      min-height: 40px;
+      border-radius: 7px;
+      min-height: 34px;
     }
 
-    /* OBS表示サイズ切替ボタン */
+    /* OBS表示サイズ切替 */
     .size-switch-row {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     button.size-btn {
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
       color: #e2e8f0;
       background: #0b101b;
-      border: 2px solid #334155;
+      border: 1.5px solid #334155;
       border-radius: 8px;
-      padding: 11px 14px;
+      padding: 8px 10px;
       cursor: pointer;
       text-align: center;
-      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
     }
 
     button.size-btn:hover {
@@ -374,38 +390,34 @@
       color: #ffffff;
     }
 
-    button.size-btn:active {
-      transform: scale(0.98);
-    }
-
     button.size-btn.is-active {
       color: #ffffff;
       background: #0284c7;
       border-color: #ffffff;
-      outline: 2px solid #38bdf8;
+      box-shadow: 0 0 0 2px #38bdf8;
     }
 
     .divider {
-      margin: 18px 0;
+      margin: 14px 0;
       border: 0;
-      border-top: 2px solid #233047;
+      border-top: 1px solid #24334d;
     }
 
     /* 操作ログ */
     .log-panel {
-      margin-top: 16px;
-      padding: 12px 14px;
+      margin-top: 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       background: #0b101b;
-      border-left: 5px solid #38bdf8;
-      color: #f8fafc;
-      font-size: 14px;
+      border-left: 4px solid #38bdf8;
+      color: #e2e8f0;
+      font-size: 13px;
       font-weight: 700;
     }
 
-    /* 右カラム：現在の状態ボックス */
+    /* 右カラム：現在の状態 */
     .live-card {
-      background: #182338;
+      background: #172236;
       border: 2px solid #3b82f6;
     }
 
@@ -414,48 +426,47 @@
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 14px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .state-pill {
       display: inline-block;
-      padding: 6px 14px;
+      padding: 5px 12px;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 800;
       background: #334155;
       color: #ffffff;
     }
-    .state-pill.voting { background: #047857; border: 2px solid #34d399; }
-    .state-pill.waiting { background: #b45309; border: 2px solid #fbbf24; }
-    .state-pill.closed { background: #334155; border: 2px solid #94a3b8; }
-    .state-pill.result { background: #0369a1; border: 2px solid #38bdf8; }
-    .state-pill.answer { background: #9d174d; border: 2px solid #f472b6; }
+    .state-pill.voting { background: #047857; border: 1.5px solid #34d399; }
+    .state-pill.waiting { background: #b45309; border: 1.5px solid #fbbf24; }
+    .state-pill.closed { background: #334155; border: 1.5px solid #94a3b8; }
+    .state-pill.result { background: #0369a1; border: 1.5px solid #38bdf8; }
+    .state-pill.answer { background: #9d174d; border: 1.5px solid #f472b6; }
 
     .live-metrics {
-      display: flex;
-      gap: 16px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
+      color: #fde047;
     }
 
     .live-question-box {
       background: #0b101b;
       border: 1px solid #334155;
       border-radius: 8px;
-      padding: 14px;
+      padding: 12px;
     }
 
     .live-q-meta {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       color: #93c5fd;
       margin-bottom: 4px;
     }
 
     .live-q-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 800;
       color: #ffffff;
       word-break: break-word;
@@ -463,11 +474,11 @@
 
     /* 集計プレビュー */
     .result-item {
-      margin-bottom: 12px;
-      padding: 12px 14px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
       border-radius: 8px;
       background: #0b101b;
-      border: 1px solid #334155;
+      border: 1px solid #2b3b55;
     }
     .result-item:last-child {
       margin-bottom: 0;
@@ -477,14 +488,14 @@
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 10px;
-      margin-bottom: 8px;
-      font-size: 15px;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 14px;
       font-weight: 700;
     }
 
     .result-num {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 800;
       color: #7dd3fc;
       white-space: nowrap;
@@ -492,9 +503,9 @@
 
     .bar-track {
       width: 100%;
-      height: 14px;
+      height: 11px;
       background: #1e293b;
-      border-radius: 6px;
+      border-radius: 999px;
       overflow: hidden;
     }
 
@@ -505,28 +516,28 @@
       transition: width 0.3s ease;
     }
 
-    /* 選択肢の個別入力行 */
+    /* 選択肢入力行 */
     .opt-list {
       display: grid;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .opt-item {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .opt-num {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 800;
       color: #7dd3fc;
       background: #0b101b;
-      border: 2px solid #3b82f6;
+      border: 1.5px solid #3b82f6;
       border-radius: 8px;
-      min-width: 38px;
-      height: 46px;
+      min-width: 34px;
+      height: 40px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -538,13 +549,13 @@
 
     button.btn-del-opt {
       font-family: inherit;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
-      padding: 11px 14px;
+      padding: 8px 12px;
       border-radius: 8px;
       background: #334155;
       color: #fecaca;
-      border: 2px solid #ef4444;
+      border: 1.5px solid #ef4444;
       cursor: pointer;
     }
     button.btn-del-opt:hover:not(:disabled) {
@@ -567,8 +578,8 @@
       background: #141c2b;
       color: #7dd3fc;
       border: none;
-      padding: 18px 20px;
-      font-size: 17px;
+      padding: 14px 18px;
+      font-size: 16px;
       font-weight: 800;
       display: flex;
       justify-content: space-between;
@@ -581,8 +592,8 @@
     }
     .acc-body {
       display: none;
-      padding: 20px;
-      border-top: 2px solid #233047;
+      padding: 16px 18px;
+      border-top: 1px solid #24334d;
     }
     .acc-card.open .acc-body {
       display: block;
@@ -597,7 +608,6 @@
 </head>
 <body>
   <div class="app-shell">
-    <!-- トップバー -->
     <header class="header-bar">
       <h1 class="header-title">配信投票・クイズ 管理パネル</h1>
       <div class="header-actions">
@@ -606,29 +616,22 @@
       </div>
     </header>
 
-    <!-- メイン2カラム -->
     <div class="main-layout">
-      <!-- 左カラム：操作パネル -->
+      <!-- 左カラム：配信中操作＋OBS表示設定＋質問編集 -->
       <div class="column-stack">
-        <!-- 1. 出題する質問の選択 -->
+        <!-- 1. 出題切替＆ステータス・タイマー -->
         <section class="card">
           <div class="card-header">
-            <h2 class="card-title"><span class="step-num">1</span>出題する質問の選択</h2>
+            <h2 class="card-title"><span class="step-num">1</span>出題・受付ステータス操作</h2>
+            <span id="statusModeTag" class="type-badge">アンケート</span>
           </div>
+
           <div class="field">
-            <label class="lbl" for="questionSelect">登録済みの質問</label>
+            <label class="lbl" for="questionSelect">出題する質問</label>
             <div class="inline-select-row">
               <select id="questionSelect" onchange="onQuestionSelectChange()"></select>
-              <button type="button" class="btn" onclick="applyQuestion()">出題を切り替える</button>
+              <button type="button" class="btn" onclick="applyQuestion()">出題切替</button>
             </div>
-          </div>
-        </section>
-
-        <!-- 2. ステータス・テーマ・表示位置・サイズ -->
-        <section class="card">
-          <div class="card-header">
-            <h2 class="card-title"><span class="step-num">2</span>ステータス・OBS表示操作</h2>
-            <span id="statusModeTag" class="type-badge">アンケート</span>
           </div>
 
           <div class="field">
@@ -636,10 +639,8 @@
             <div id="statusBtnRow" class="status-grid"></div>
           </div>
 
-          <hr class="divider" />
-
           <div class="field">
-            <label class="lbl" for="timerSec">制限時間タイマー付き開始</label>
+            <label class="lbl" for="timerSec">制限時間タイマー</label>
             <div class="timer-row">
               <select id="timerSec">
                 <option value="15">15秒</option>
@@ -652,34 +653,37 @@
             </div>
           </div>
 
-          <hr class="divider" />
-
-          <div class="field">
-            <span class="lbl">テーマ（OBS＋回答者同期・ワンクリック切替）</span>
-            <div id="themeChipGrid" class="theme-chip-grid" role="group" aria-label="テーマ選択"></div>
-          </div>
-
-          <hr class="divider" />
-
-          <div class="field">
-            <span class="lbl">OBS表示位置（3×3配置・ワンクリック切替）</span>
-            <div id="posGrid" class="pos-grid" role="group" aria-label="OBS表示位置"></div>
-          </div>
-
-          <hr class="divider" />
-
-          <div class="field">
-            <span class="lbl">OBS表示サイズ（ワンクリック切替）</span>
-            <div id="sizeSwitchRow" class="size-switch-row" role="group" aria-label="OBS表示サイズ">
-              <button type="button" id="sizeBtnNormal" class="size-btn is-active" onclick="selectSizeButton('normal')">通常サイズ</button>
-              <button type="button" id="sizeBtnLarge" class="size-btn" onclick="selectSizeButton('large')">拡大表示（大）</button>
-            </div>
-          </div>
-
           <div id="actionLog" class="log-panel">操作結果がここに表示されます。</div>
         </section>
 
-        <!-- 3. 質問の作成・編集・削除 -->
+        <!-- 2. OBS表示設定（テーマ・3×3位置・サイズ） -->
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="step-num">2</span>OBS表示設定（テーマ・位置・サイズ）</h2>
+          </div>
+
+          <div class="obs-controls-grid">
+            <div class="obs-sub-box">
+              <span class="lbl">テーマ（OBS＋回答者同期）</span>
+              <div id="themeChipGrid" class="theme-chip-grid" role="group" aria-label="テーマ選択"></div>
+            </div>
+
+            <div class="obs-sub-box">
+              <span class="lbl">OBS表示位置（3×3配置）</span>
+              <div id="posGrid" class="pos-grid" role="group" aria-label="OBS表示位置"></div>
+
+              <hr class="divider" style="margin:10px 0;" />
+
+              <span class="lbl">OBS表示サイズ</span>
+              <div id="sizeSwitchRow" class="size-switch-row" role="group" aria-label="OBS表示サイズ">
+                <button type="button" id="sizeBtnNormal" class="size-btn is-active" onclick="selectSizeButton('normal')">通常サイズ</button>
+                <button type="button" id="sizeBtnLarge" class="size-btn" onclick="selectSizeButton('large')">拡大表示（大）</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. 質問の作成・編集・削除（折りたたみ） -->
         <section id="questionAccordion" class="card acc-card">
           <button type="button" class="acc-toggle" onclick="toggleAccordion()" aria-expanded="false" aria-controls="questionAccordionPanel">
             <span style="display:flex;align-items:center;gap:8px;">
@@ -730,7 +734,7 @@
               <select id="qAnswerSelect"></select>
             </div>
 
-            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
               <button type="button" class="btn btn-green" onclick="saveQuestion()">質問を保存する</button>
               <button type="button" class="btn btn-gray" onclick="resetEditorForm()">入力をクリア</button>
             </div>
@@ -738,9 +742,8 @@
         </section>
       </div>
 
-      <!-- 右カラム：常時監視エリア -->
+      <!-- 右カラム：現在の状態＋リアルタイム集計 -->
       <div class="column-stack monitor-column">
-        <!-- 現在の配信状態 -->
         <section class="card live-card">
           <div class="card-header">
             <h2 class="card-title">現在の配信状態</h2>
@@ -749,9 +752,7 @@
 
           <div class="live-status-row">
             <span id="liveStatusBadge" class="state-pill waiting">待機中</span>
-            <div class="live-metrics">
-              <span id="liveVotesLabel">総票数: 0 票</span>
-            </div>
+            <span id="liveVotesLabel" class="live-metrics">総票数: 0 票</span>
           </div>
 
           <div class="live-question-box">
@@ -760,11 +761,10 @@
           </div>
         </section>
 
-        <!-- リアルタイム集計 -->
         <section class="card">
           <div class="card-header">
             <h2 class="card-title">リアルタイム集計結果</h2>
-            <button type="button" class="btn btn-red" style="padding:8px 12px;font-size:13px;" onclick="clearCurrentVotes()">票をリセット</button>
+            <button type="button" class="btn btn-red" style="padding:6px 12px;font-size:12.5px;" onclick="clearCurrentVotes()">票をリセット</button>
           </div>
           <div id="previewArea">読み込み中...</div>
         </section>
@@ -817,13 +817,13 @@
     const BUTTON_CONFIGS = {
       poll: [
         { status: 'WAITING', label: '非表示（待機）', cls: 'btn-amber' },
-        { status: 'VOTING', label: '投票受付中（無制限）', cls: 'btn-green' },
+        { status: 'VOTING', label: '投票受付中', cls: 'btn-green' },
         { status: 'CLOSED', label: '投票受付終了', cls: 'btn-gray' },
         { status: 'RESULT', label: 'アンケート結果表示', cls: 'btn-sky' }
       ],
       quiz: [
         { status: 'WAITING', label: '非表示（待機）', cls: 'btn-amber' },
-        { status: 'VOTING', label: '回答受付中（無制限）', cls: 'btn-green' },
+        { status: 'VOTING', label: '回答受付中', cls: 'btn-green' },
         { status: 'CLOSED', label: '回答受付終了', cls: 'btn-gray' },
         { status: 'RESULT', label: '集計結果表示', cls: 'btn-sky' },
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
