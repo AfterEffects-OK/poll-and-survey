@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票 管理パネル</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -12,7 +13,7 @@
       color: #f9fafb;
       padding: 24px;
     }
-    .wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+    .wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 20px; }
     .card {
       background: #1f2937;
       border-radius: 12px;
@@ -20,32 +21,47 @@
       border: 1px solid #374151;
     }
     h2 { margin: 0 0 12px; font-size: 16px; color: #93c5fd; }
-    select, button {
+    label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 4px; }
+    select, input[type="text"], button {
       font-size: 15px;
       padding: 10px 14px;
       border-radius: 8px;
       border: none;
     }
-    select { background: #374151; color: #fff; min-width: 260px; }
+    select { background: #374151; color: #fff; min-width: 240px; }
+    input[type="text"] {
+      width: 100%;
+      background: #111827;
+      color: #fff;
+      border: 1px solid #4b5563;
+    }
+    .field-group { display: grid; gap: 12px; }
     .btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
     button { cursor: pointer; font-weight: 600; background: #2563eb; color: #fff; }
     button:hover { background: #1d4ed8; }
+    button.secondary { background: #4b5563; }
+    button.secondary:hover { background: #6b7280; }
     button.warn { background: #d97706; }
+    button.warn:hover { background: #b45309; }
     button.success { background: #059669; }
+    button.success:hover { background: #047857; }
     button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
     .timer-readout { font-size: 16px; font-weight: 800; color: #fbbf24; margin-left: 6px; }
     .bar-item { margin-top: 10px; }
     .bar-bg { background: #374151; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.3s; }
-    .meta { color: #9ca3af; font-size: 14px; margin-top: 8px; }
+    .meta { color: #9ca3af; font-size: 14px; margin-top: 8px; min-height: 20px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h2>1. 出題する質問の選択</h2>
-      <select id="questionSelect"></select>
-      <button onclick="applyQuestion()">この質問に切り替える</button>
+      <div class="btn-row" style="margin-top: 0;">
+        <select id="questionSelect"></select>
+        <button onclick="applyQuestion()">この質問に切り替える</button>
+      </div>
       <div class="meta" id="currentInfo">現在の状態: -</div>
     </div>
 
@@ -77,7 +93,52 @@
     </div>
 
     <div class="card">
-      <h2>3. リアルタイム集計プレビュー</h2>
+      <h2>3. 質問の作成・編集・削除（スプレッドシート不要）</h2>
+      <div class="btn-row" style="margin-top: 0; margin-bottom: 14px;">
+        <select id="editTargetSelect" onchange="onSelectEditTarget()">
+          <option value="__NEW__">＋ 新しい質問を作成</option>
+        </select>
+        <button class="danger" onclick="deleteSelectedQuestion()">選択中の質問を削除</button>
+      </div>
+
+      <div class="field-group">
+        <div>
+          <label for="qIdInput">質問ID（空欄なら自動採番 / 既存編集時は変更しない）</label>
+          <input id="qIdInput" type="text" placeholder="例: q3" />
+        </div>
+
+        <div>
+          <label for="qTypeInput">種別</label>
+          <select id="qTypeInput" style="width: 100%;">
+            <option value="poll">アンケート（poll）</option>
+            <option value="quiz">クイズ（quiz）</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="qTextInput">質問文</label>
+          <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
+        </div>
+
+        <div>
+          <label for="qOptionsInput">選択肢（カンマ「,」区切りで2つ以上）</label>
+          <input id="qOptionsInput" type="text" placeholder="例: 企画A, 企画B, 企画C, 企画D" />
+        </div>
+
+        <div>
+          <label for="qAnswerInput">クイズの正解（quizの場合のみ・選択肢と完全一致）</label>
+          <input id="qAnswerInput" type="text" placeholder="例: 企画B" />
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="success" onclick="saveQuestion()">質問を保存する</button>
+        <button class="secondary" onclick="resetEditorForm()">入力をクリア</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>4. リアルタイム集計プレビュー</h2>
       <div id="previewArea">読み込み中...</div>
     </div>
   </div>
@@ -85,6 +146,7 @@
   <script src="config.js"></script>
   <script>
     let lastQuestionId = '';
+    let latestQuestions = [];
     let currentState = { status: 'WAITING', deadlineAt: 0 };
 
     function renderAdminCountdown() {
@@ -98,33 +160,112 @@
       }
     }
 
+    function refreshEditTargetSelect() {
+      const editSel = document.getElementById('editTargetSelect');
+      if (!editSel) return;
+      const prevVal = editSel.value;
+      editSel.innerHTML = '<option value="__NEW__">＋ 新しい質問を作成</option>';
+      latestQuestions.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = `編集: [${q.type}] ${q.id} - ${q.question}`;
+        editSel.appendChild(opt);
+      });
+      if ([...editSel.options].some(o => o.value === prevVal)) {
+        editSel.value = prevVal;
+      }
+    }
+
+    function onSelectEditTarget() {
+      const val = document.getElementById('editTargetSelect').value;
+      if (val === '__NEW__') {
+        resetEditorForm();
+        return;
+      }
+      const q = latestQuestions.find(item => item.id === val);
+      if (!q) return;
+      document.getElementById('qIdInput').value = q.id;
+      document.getElementById('qTypeInput').value = q.type || 'poll';
+      document.getElementById('qTextInput').value = q.question || '';
+      document.getElementById('qOptionsInput').value = (q.options || []).join(', ');
+      document.getElementById('qAnswerInput').value = q.answer || '';
+    }
+
+    function resetEditorForm() {
+      document.getElementById('editTargetSelect').value = '__NEW__';
+      document.getElementById('qIdInput').value = '';
+      document.getElementById('qTypeInput').value = 'poll';
+      document.getElementById('qTextInput').value = '';
+      document.getElementById('qOptionsInput').value = '';
+      document.getElementById('qAnswerInput').value = '';
+    }
+
+    async function saveQuestion() {
+      const payload = {
+        action: 'upsert_question',
+        question: {
+          id: document.getElementById('qIdInput').value.trim(),
+          type: document.getElementById('qTypeInput').value,
+          question: document.getElementById('qTextInput').value.trim(),
+          options: document.getElementById('qOptionsInput').value,
+          answer: document.getElementById('qAnswerInput').value.trim()
+        }
+      };
+      const res = await postGas(payload);
+      document.getElementById('actionLog').textContent = res.message || res.error;
+      if (res.ok) {
+        await loadAll();
+        const editSel = document.getElementById('editTargetSelect');
+        if ([...editSel.options].some(o => o.value === res.id)) {
+          editSel.value = res.id;
+        }
+      }
+    }
+
+    async function deleteSelectedQuestion() {
+      const targetId = document.getElementById('editTargetSelect').value;
+      if (targetId === '__NEW__') {
+        alert('削除する既存質問をドロップダウンから選択してください。');
+        return;
+      }
+      if (!confirm(`質問「${targetId}」を削除しますか？`)) return;
+      const res = await postGas({ action: 'delete_question', id: targetId });
+      document.getElementById('actionLog').textContent = res.message || res.error;
+      if (res.ok) {
+        resetEditorForm();
+        await loadAll();
+      }
+    }
+
     async function loadAll() {
       try {
         const data = await fetchGas();
         if (!data.ok) return;
 
         currentState = data.state;
+        latestQuestions = data.questions || [];
+        refreshEditTargetSelect();
 
         const sel = document.getElementById('questionSelect');
-        if (sel.options.length !== data.questions.length) {
-          sel.innerHTML = '';
-          data.questions.forEach(q => {
-            const opt = document.createElement('option');
-            opt.value = q.id;
-            opt.textContent = `[${q.type}] ${q.id}: ${q.question}`;
-            sel.appendChild(opt);
-          });
-        }
+        sel.innerHTML = '';
+        latestQuestions.forEach(q => {
+          const opt = document.createElement('option');
+          opt.value = q.id;
+          opt.textContent = `[${q.type}] ${q.id}: ${q.question}`;
+          sel.appendChild(opt);
+        });
         if (data.state.questionId !== lastQuestionId) {
           sel.value = data.state.questionId;
           lastQuestionId = data.state.questionId;
+        } else if ([...sel.options].some(o => o.value === data.state.questionId)) {
+          sel.value = data.state.questionId;
         }
 
         document.getElementById('currentInfo').textContent =
           `出題中: ${data.question.id}（${data.question.question}） / ステータス: ${data.state.status} / 総票数: ${data.totalVotes}`;
 
         const prev = document.getElementById('previewArea');
-        prev.innerHTML = data.results.map(r => `
+        prev.innerHTML = (data.results || []).map(r => `
           <div class="bar-item">
             <div>${escapeHtml(r.label)}: <strong>${r.count}票</strong> (${r.pct}%)</div>
             <div class="bar-bg"><div class="bar-fill" style="width:${r.pct}%"></div></div>
