@@ -59,6 +59,60 @@
       --shadow: 0 10px 0 #1e293b;
     }
 
+    [data-theme="cyber"] {
+      --bg: #040d0a;
+      --card: #071912;
+      --card-border: #10b981;
+      --opt-bg: #0b241b;
+      --opt-hover: #103528;
+      --accent: #34d399;
+      --accent-soft: rgba(52, 211, 153, 0.2);
+      --text: #ecfdf5;
+      --muted: #6ee7b7;
+      --ok: #a3e635;
+      --warn: #fbbf24;
+      --timer: #2dd4bf;
+      --radius: 4px;
+      --btn-radius: 2px;
+      --shadow: 0 0 24px rgba(16, 185, 129, 0.3);
+    }
+
+    [data-theme="sakura"] {
+      --bg: #fff1f2;
+      --card: #ffffff;
+      --card-border: #fda4af;
+      --opt-bg: #ffe4e6;
+      --opt-hover: #fecdd3;
+      --accent: #e11d48;
+      --accent-soft: rgba(225, 29, 72, 0.14);
+      --text: #3f1d28;
+      --muted: #881337;
+      --ok: #059669;
+      --warn: #d97706;
+      --timer: #db2777;
+      --radius: 26px;
+      --btn-radius: 18px;
+      --shadow: 0 14px 32px rgba(244, 114, 182, 0.22);
+    }
+
+    [data-theme="broadcast"] {
+      --bg: #0b132b;
+      --card: #132247;
+      --card-border: #ef4444;
+      --opt-bg: #1c2f5e;
+      --opt-hover: #263e7a;
+      --accent: #f87171;
+      --accent-soft: rgba(239, 68, 68, 0.2);
+      --text: #ffffff;
+      --muted: #cbd5e1;
+      --ok: #38bdf8;
+      --warn: #facc15;
+      --timer: #fde047;
+      --radius: 8px;
+      --btn-radius: 6px;
+      --shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -161,6 +215,9 @@
           <option value="dark">ダーク</option>
           <option value="neon">ネオン</option>
           <option value="pop">ポップ</option>
+          <option value="cyber">サイバー</option>
+          <option value="sakura">サクラ</option>
+          <option value="broadcast">ニュース風</option>
         </select>
       </div>
     </div>
@@ -171,7 +228,7 @@
 
   <script src="config.js"></script>
   <script>
-    const ALLOWED_THEMES = ['dark', 'neon', 'pop'];
+    const ALLOWED_THEMES = ['dark', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     const THEME_STORAGE_KEY = 'obs_poll_voter_theme';
 
     function initTheme() {
