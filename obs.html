@@ -305,12 +305,12 @@
     .qr-box {
       display: none;
       margin-top: 12px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       border-radius: var(--item-radius);
       background: var(--item-bg);
       border: 1.5px solid var(--accent);
       align-items: center;
-      gap: 12px;
+      gap: 14px;
     }
 
     .qr-box.show {
@@ -328,8 +328,8 @@
     }
 
     #qrCanvas {
-      width: 84px;
-      height: 84px;
+      width: 88px;
+      height: 88px;
       display: block;
     }
 
@@ -339,17 +339,12 @@
     }
 
     .qr-heading {
-      font-size: 14px;
-      font-weight: 800;
+      font-size: 20px;
+      font-weight: 900;
       color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .qr-url {
-      font-size: 11px;
-      color: var(--muted);
+      line-height: 1.35;
       overflow-wrap: anywhere;
-      word-break: break-all;
+      word-break: break-word;
     }
 
     .footer-meta {
@@ -400,16 +395,12 @@
     }
 
     html[data-size="large"] #qrCanvas {
-      width: 116px;
-      height: 116px;
+      width: 120px;
+      height: 120px;
     }
 
     html[data-size="large"] .qr-heading {
-      font-size: 18px;
-    }
-
-    html[data-size="large"] .qr-url {
-      font-size: 13px;
+      font-size: 28px;
     }
 
     html[data-size="large"] .footer-meta {
@@ -434,7 +425,6 @@
         </div>
         <div class="qr-info">
           <div class="qr-heading">スマホでQRを読み取って投票・回答</div>
-          <div id="qrUrlText" class="qr-url"></div>
         </div>
       </div>
 
@@ -653,7 +643,6 @@
     function renderQrIfNeeded(isVoting) {
       const box = document.getElementById('qrBox');
       const canvas = document.getElementById('qrCanvas');
-      const urlText = document.getElementById('qrUrlText');
       if (!box || !canvas) return;
 
       if (!isVoting) {
@@ -662,7 +651,6 @@
       }
 
       const targetUrl = getVoteTargetUrl();
-      if (urlText) urlText.textContent = targetUrl;
       box.classList.add('show');
 
       if (renderedQrUrl === targetUrl) return;
