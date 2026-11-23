@@ -135,6 +135,11 @@
       margin-bottom: 16px;
     }
 
+    .room-switcher-bar.is-locked {
+      opacity: 0.85;
+      border-color: #334155;
+    }
+
     .room-switcher-form {
       display: flex;
       flex-wrap: wrap;
@@ -170,9 +175,23 @@
       border-radius: 8px;
     }
 
+    .room-input-wrap input[type="text"]:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      background: #0f172a;
+      color: #94a3b8;
+    }
+
     .room-input-wrap .btn {
       white-space: nowrap;
       flex-shrink: 0;
+    }
+
+    .room-lock-note {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fbbf24;
+      white-space: nowrap;
     }
 
     .room-history-list {
@@ -202,16 +221,22 @@
       white-space: nowrap;
     }
 
-    button.room-chip:hover {
+    button.room-chip:hover:not(:disabled) {
       border-color: #38bdf8;
       color: #ffffff;
       background: #172236;
+    }
+
+    button.room-chip:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
     button.room-chip.is-current {
       background: #1d4ed8;
       color: #ffffff;
       border-color: #60a5fa;
+      opacity: 1;
     }
 
     /* 2カラムレイアウト */
@@ -370,7 +395,7 @@
       transform: scale(0.98);
     }
     button.btn:disabled {
-      opacity: 0.55;
+      opacity: 0.45;
       cursor: not-allowed;
     }
 
@@ -1340,7 +1365,7 @@
     </header>
 
     <!-- 配信（room）即時切替バー -->
-    <section class="room-switcher-bar" aria-label="配信ルーム切替">
+    <section id="roomSwitcherBar" class="room-switcher-bar" aria-label="配信ルーム切替">
       <form class="room-switcher-form" onsubmit="handleRoomSwitchSubmit(event)">
         <label class="room-switcher-label" for="roomSwitchInput">配信（room）ID</label>
         <div class="room-input-wrap">
@@ -1350,10 +1375,11 @@
             placeholder="例: 12345678"
             autocomplete="off"
           />
-          <button type="button" class="btn btn-indigo btn-sm" onclick="generateRandomRoomId()">ID生成</button>
-          <button type="submit" class="btn btn-sky btn-sm">配信切替</button>
-          <button type="button" class="btn btn-gray btn-sm" onclick="switchRoom('default')">default</button>
+          <button type="button" id="generateRoomBtn" class="btn btn-indigo btn-sm" onclick="generateRandomRoomId()">ID生成</button>
+          <button type="submit" id="switchRoomBtn" class="btn btn-sky btn-sm">配信切替</button>
+          <button type="button" id="defaultRoomBtn" class="btn btn-gray btn-sm" onclick="switchRoom('default')">default</button>
         </div>
+        <span id="roomLockNote" class="room-lock-note" style="display:none;">admin が default のため room は default 固定</span>
       </form>
       <div id="roomHistoryList" class="room-history-list"></div>
     </section>
@@ -1676,7 +1702,7 @@
             <h4><span class="help-step-pill">手順</span> 配信開始から終了までの基本ステップ</h4>
             <ol class="help-list">
               <li><strong>adminアカウントを登録・復元する</strong>：ヘッダーの「アカウント登録・復元」から8桁英字の <span class="help-code">adminId</span> を作成（または復元）します。</li>
-              <li><strong>配信ルームを決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のIDを入力して <span class="help-code">配信切替</span> を押します。</li>
+              <li><strong>配信ルームを決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のIDを入力して <span class="help-code">配信切替</span> を押します（※ <span class="help-code">admin</span> が <span class="help-code">default</span> の場合は <span class="help-code">default</span> 固定）。</li>
               <li><strong>URLを配置・配布する</strong>：「OBS用URLをコピー」でOBSブラウザソースに設定し、「回答者用URLをコピー」で視聴者に共有します。</li>
               <li><strong>質問を選ぶ</strong>：左「1. 出題・受付ステータス操作」で質問を選び、<span class="help-code">出題切替</span> を押します。</li>
               <li><strong>投票・回答を受け付ける</strong>：<span class="help-code">投票受付中</span>（またはタイマー付き開始）で受付を開きます。</li>
@@ -1719,7 +1745,7 @@
             <ul class="help-list">
               <li><strong>OBS用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">obs.html</span> のURLをクリップボードへコピーします。</li>
               <li><strong>回答者用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">index.html</span> のURLをコピーします。</li>
-              <li><strong>room と admin の違い</strong>：<span class="help-code">room</span> は配信ごとの状態・票・ログを分離し、<span class="help-code">admin</span> は質問リストを共有管理します。</li>
+              <li><strong>room と admin の違い</strong>：<span class="help-code">room</span> は配信ごとの状態・票・ログを分離し、<span class="help-code">admin</span> は質問リストを共有管理します（<span class="help-code">admin</span> が <span class="help-code">default</span> の時は <span class="help-code">room</span> も <span class="help-code">default</span> 固定）。</li>
             </ul>
           </section>
         </div>
@@ -1897,8 +1923,8 @@
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
     const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
-    let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
     let ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : DEFAULT_ADMIN;
+    let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
 
     let lastQuestionId = '';
     let latestQuestions = [];
@@ -1966,6 +1992,35 @@
     };
 
     const HELP_TAB_KEYS = ['flow', 'buttons', 'obs', 'logs', 'trouble'];
+
+    function isDefaultAdmin() {
+      return ADMIN_ID === DEFAULT_ADMIN;
+    }
+
+    function enforceRoomRuleForAdmin() {
+      const cleanedRoom = String(ROOM_ID || '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_@-]/g, '') || DEFAULT_ROOM;
+      ROOM_ID = isDefaultAdmin() ? DEFAULT_ROOM : cleanedRoom;
+
+      const locked = isDefaultAdmin();
+      const bar = document.getElementById('roomSwitcherBar');
+      const input = document.getElementById('roomSwitchInput');
+      const genBtn = document.getElementById('generateRoomBtn');
+      const switchBtn = document.getElementById('switchRoomBtn');
+      const defaultBtn = document.getElementById('defaultRoomBtn');
+      const lockNote = document.getElementById('roomLockNote');
+
+      if (bar) bar.classList.toggle('is-locked', locked);
+      if (input) {
+        input.value = ROOM_ID;
+        input.disabled = locked;
+      }
+      if (genBtn) genBtn.disabled = locked;
+      if (switchBtn) switchBtn.disabled = locked;
+      if (defaultBtn) defaultBtn.disabled = locked;
+      if (lockNote) lockNote.style.display = locked ? 'inline' : 'none';
+    }
 
     function normalizeAdminId(raw) {
       const cleaned = String(raw || '')
@@ -2051,6 +2106,7 @@
     }
 
     function syncUrlParams() {
+      enforceRoomRuleForAdmin();
       try {
         const url = new URL(window.location.href);
         if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
@@ -2085,14 +2141,19 @@
       const { announcePrefix = '' } = options;
       const nextAdmin = normalizeAdminId(nextAdminRaw);
       ADMIN_ID = nextAdmin;
+      if (isDefaultAdmin()) {
+        ROOM_ID = DEFAULT_ROOM;
+      }
       lastQuestionId = '';
       latestVoteLogs = [];
       isObsAppearanceDirty = false;
-      syncUrlParams();
+      syncRoomInputAndUrl();
       renderContextBadge();
+      renderRoomHistoryChips();
       updateModalAdminHeader();
       renderAdminAccountsTable();
-      setLog(`${announcePrefix}admin「${ADMIN_ID}」を呼び出しました。`);
+      const roomSuffix = isDefaultAdmin() ? '（roomはdefault固定）' : '';
+      setLog(`${announcePrefix}admin「${ADMIN_ID}」を呼び出しました。${roomSuffix}`);
       await Promise.all([loadAll(), fetchVoteLogs(false)]);
     }
 
@@ -2352,6 +2413,9 @@
     });
 
     function normalizeRoomId(raw) {
+      if (isDefaultAdmin()) {
+        return DEFAULT_ROOM;
+      }
       const cleaned = String(raw || '')
         .trim()
         .replace(/[^a-zA-Z0-9_@-]/g, '');
@@ -2368,6 +2432,11 @@
     }
 
     async function generateRandomRoomId() {
+      if (isDefaultAdmin()) {
+        enforceRoomRuleForAdmin();
+        setLog('admin が default のため room は default で固定されています。');
+        return;
+      }
       const randomRoom = createRandom8DigitRoomId();
       const input = document.getElementById('roomSwitchInput');
       if (input) {
@@ -2381,7 +2450,9 @@
       try {
         const raw = localStorage.getItem(ROOM_HISTORY_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed.map(r => normalizeRoomId(r)).filter(Boolean) : [];
+        return Array.isArray(parsed)
+          ? parsed.map(r => String(r || '').trim().replace(/[^a-zA-Z0-9_@-]/g, '')).filter(Boolean)
+          : [];
       } catch (e) {
         return [];
       }
@@ -2406,26 +2477,33 @@
         return;
       }
 
+      const locked = isDefaultAdmin();
       wrap.innerHTML = '<span class="room-history-caption">履歴:</span>';
       rooms.forEach(room => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'room-chip' + (room === ROOM_ID ? ' is-current' : '');
         btn.textContent = room;
+        btn.disabled = locked && room !== DEFAULT_ROOM;
         btn.onclick = () => switchRoom(room);
         wrap.appendChild(btn);
       });
     }
 
     function syncRoomInputAndUrl() {
-      const input = document.getElementById('roomSwitchInput');
-      if (input) {
-        input.value = ROOM_ID;
-      }
+      enforceRoomRuleForAdmin();
       syncUrlParams();
     }
 
     async function switchRoom(nextRoomRaw) {
+      if (isDefaultAdmin()) {
+        ROOM_ID = DEFAULT_ROOM;
+        enforceRoomRuleForAdmin();
+        renderContextBadge();
+        renderRoomHistoryChips();
+        setLog('admin が default のため room は default で固定されています。');
+        return;
+      }
       const nextRoom = normalizeRoomId(nextRoomRaw);
       ROOM_ID = nextRoom;
       lastQuestionId = '';
@@ -2440,11 +2518,17 @@
 
     function handleRoomSwitchSubmit(event) {
       event.preventDefault();
+      if (isDefaultAdmin()) {
+        enforceRoomRuleForAdmin();
+        setLog('admin が default のため room は default で固定されています。');
+        return;
+      }
       const input = document.getElementById('roomSwitchInput');
       switchRoom(input ? input.value : DEFAULT_ROOM);
     }
 
     function renderContextBadge() {
+      enforceRoomRuleForAdmin();
       const badge = document.getElementById('contextBadge');
       if (badge) {
         badge.textContent = `room: ${ROOM_ID} / admin: ${ADMIN_ID}`;
@@ -2531,6 +2615,7 @@
     }
 
     async function fetchVoteLogs(showFeedback = false) {
+      enforceRoomRuleForAdmin();
       const targetRoomAtStart = ROOM_ID;
       try {
         const res = await fetchGas({
@@ -2760,6 +2845,7 @@
     }
 
     function copyPageUrl(filename) {
+      enforceRoomRuleForAdmin();
       const url = new URL('./' + filename, window.location.href);
       if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
         url.searchParams.set('room', ROOM_ID);
@@ -2991,6 +3077,7 @@
     }
 
     async function applyObsAppearance() {
+      enforceRoomRuleForAdmin();
       const theme = selectedTheme || 'dark';
       const position = selectedPosition || 'bottom-right';
       const size = selectedSize || 'normal';
@@ -3068,6 +3155,7 @@
     }
 
     async function saveQuestion() {
+      enforceRoomRuleForAdmin();
       const qType = document.getElementById('qTypeInput').value;
       const optionsArr = getOptionValues();
       const answerVal = qType === 'quiz' ? document.getElementById('qAnswerSelect').value.trim() : '';
@@ -3097,6 +3185,7 @@
     }
 
     async function deleteSelectedQuestion() {
+      enforceRoomRuleForAdmin();
       const targetId = document.getElementById('editTargetSelect').value;
       if (targetId === '__NEW__') {
         alert('削除する既存質問をドロップダウンから選択してください。');
@@ -3120,6 +3209,7 @@
     }
 
     async function loadAll() {
+      enforceRoomRuleForAdmin();
       const targetRoomAtStart = ROOM_ID;
       try {
         const data = await fetchGas({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
@@ -3192,6 +3282,7 @@
     }
 
     async function applyQuestion() {
+      enforceRoomRuleForAdmin();
       const questionId = document.getElementById('questionSelect').value;
       const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
       setLog(res.ok ? `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。` : res.error);
@@ -3199,12 +3290,14 @@
     }
 
     async function setStatus(status) {
+      enforceRoomRuleForAdmin();
       const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status });
       setLog(res.ok ? `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : res.error);
       loadAll();
     }
 
     async function startTimedVoting() {
+      enforceRoomRuleForAdmin();
       const durationSec = Number(document.getElementById('timerSec').value);
       const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status: 'VOTING', durationSec });
       setLog(res.ok ? `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。` : res.error);
@@ -3212,6 +3305,7 @@
     }
 
     async function clearCurrentVotes() {
+      enforceRoomRuleForAdmin();
       const questionId = document.getElementById('questionSelect').value;
       const selectedObj = latestQuestions.find(q => q.id === questionId);
       const confirmed = await showConfirmPopup(`配信「${ROOM_ID}」の現在選択中の質問の投票ログを削除しますか？`, {
