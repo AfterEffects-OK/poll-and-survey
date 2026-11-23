@@ -145,7 +145,7 @@
     .type-badge.quiz {
       background: #831843;
       color: #fce7f3;
-      border: 1px solid #f472b6;
+      border-color: #f472b6;
     }
 
     /* フォームパーツ */
@@ -345,6 +345,44 @@
       border: 1px dashed #233047;
       border-radius: 8px;
       min-height: 40px;
+    }
+
+    /* OBS表示サイズ切替ボタン */
+    .size-switch-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    button.size-btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      color: #e2e8f0;
+      background: #0b101b;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      padding: 11px 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+    }
+
+    button.size-btn:hover {
+      border-color: #38bdf8;
+      background: #172236;
+      color: #ffffff;
+    }
+
+    button.size-btn:active {
+      transform: scale(0.98);
+    }
+
+    button.size-btn.is-active {
+      color: #ffffff;
+      background: #0284c7;
+      border-color: #ffffff;
+      outline: 2px solid #38bdf8;
     }
 
     .divider {
@@ -586,7 +624,7 @@
           </div>
         </section>
 
-        <!-- 2. ステータス・テーマ・表示位置 -->
+        <!-- 2. ステータス・テーマ・表示位置・サイズ -->
         <section class="card">
           <div class="card-header">
             <h2 class="card-title"><span class="step-num">2</span>ステータス・OBS表示操作</h2>
@@ -626,6 +664,16 @@
           <div class="field">
             <span class="lbl">OBS表示位置（3×3配置・ワンクリック切替）</span>
             <div id="posGrid" class="pos-grid" role="group" aria-label="OBS表示位置"></div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="field">
+            <span class="lbl">OBS表示サイズ（ワンクリック切替）</span>
+            <div id="sizeSwitchRow" class="size-switch-row" role="group" aria-label="OBS表示サイズ">
+              <button type="button" id="sizeBtnNormal" class="size-btn is-active" onclick="selectSizeButton('normal')">通常サイズ</button>
+              <button type="button" id="sizeBtnLarge" class="size-btn" onclick="selectSizeButton('large')">拡大表示（大）</button>
+            </div>
           </div>
 
           <div id="actionLog" class="log-panel">操作結果がここに表示されます。</div>
@@ -728,7 +776,7 @@
   <script>
     let lastQuestionId = '';
     let latestQuestions = [];
-    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right' };
+    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
 
@@ -756,6 +804,7 @@
 
     let selectedTheme = 'dark';
     let selectedPosition = 'bottom-right';
+    let selectedSize = 'normal';
 
     const STATUS_LABELS = {
       WAITING: '待機中（非表示）',
@@ -844,6 +893,26 @@
       await applyObsAppearance();
     }
 
+    function renderSizeButtons() {
+      const normalBtn = document.getElementById('sizeBtnNormal');
+      const largeBtn = document.getElementById('sizeBtnLarge');
+      if (normalBtn) {
+        normalBtn.classList.toggle('is-active', selectedSize === 'normal');
+        normalBtn.setAttribute('aria-pressed', String(selectedSize === 'normal'));
+      }
+      if (largeBtn) {
+        largeBtn.classList.toggle('is-active', selectedSize === 'large');
+        largeBtn.setAttribute('aria-pressed', String(selectedSize === 'large'));
+      }
+    }
+
+    async function selectSizeButton(sizeKey) {
+      selectedSize = sizeKey === 'large' ? 'large' : 'normal';
+      isObsAppearanceDirty = true;
+      renderSizeButtons();
+      await applyObsAppearance();
+    }
+
     function setLog(message) {
       const el = document.getElementById('actionLog');
       if (el && message) {
@@ -917,7 +986,8 @@
       if (data.question) {
         if (metaEl) {
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
-          metaEl.textContent = `出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position}`;
+          const sizeText = (currentState.size || selectedSize) === 'large' ? '拡大' : '通常';
+          metaEl.textContent = `出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
         }
         if (qLabel) {
           qLabel.textContent = data.question.question;
@@ -1044,6 +1114,7 @@
       renderStatusButtons('poll');
       renderThemeChips();
       renderPositionButtons();
+      renderSizeButtons();
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
     });
@@ -1058,14 +1129,19 @@
         selectedPosition = state.position;
         renderPositionButtons();
       }
+      if (state.size === 'normal' || state.size === 'large') {
+        selectedSize = state.size;
+        renderSizeButtons();
+      }
     }
 
     async function applyObsAppearance() {
       const theme = selectedTheme || 'dark';
       const position = selectedPosition || 'bottom-right';
-      const res = await postGas({ action: 'set_state', theme, position });
+      const size = selectedSize || 'normal';
+      const res = await postGas({ action: 'set_state', theme, position, size });
       isObsAppearanceDirty = false;
-      setLog(res.ok ? `テーマ・表示位置を「${theme} / ${position}」に更新しました。` : res.error);
+      setLog(res.ok ? `OBS表示を「${theme} / ${position} / ${size === 'large' ? '拡大' : '通常'}」に更新しました。` : res.error);
       loadAll();
     }
 
