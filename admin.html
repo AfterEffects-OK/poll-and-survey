@@ -36,7 +36,7 @@
       border: 2px solid #2b3a55;
       border-radius: 12px;
       padding: 12px 18px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .header-left {
@@ -84,6 +84,87 @@
       border-color: #38bdf8;
       background: #263449;
       color: #ffffff;
+    }
+
+    /* 配信（room）切替バー */
+    .room-switcher-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 14px;
+      background: #111827;
+      border: 2px solid #2b3a55;
+      border-radius: 12px;
+      padding: 10px 18px;
+      margin-bottom: 16px;
+    }
+
+    .room-switcher-form {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 320px;
+    }
+
+    .room-switcher-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #93c5fd;
+      white-space: nowrap;
+    }
+
+    .room-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 220px;
+      max-width: 360px;
+    }
+
+    .room-input-wrap input[type="text"] {
+      font-size: 14px;
+      font-weight: 700;
+      padding: 7px 11px;
+      border-radius: 8px;
+    }
+
+    .room-history-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .room-history-caption {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    button.room-chip {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #0b101b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      cursor: pointer;
+    }
+
+    button.room-chip:hover {
+      border-color: #38bdf8;
+      color: #ffffff;
+      background: #172236;
+    }
+
+    button.room-chip.is-current {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #60a5fa;
     }
 
     /* 2カラムレイアウト */
@@ -229,6 +310,10 @@
       background: #2563eb;
       text-align: center;
       transition: filter 0.12s ease, transform 0.06s ease;
+    }
+    button.btn.btn-sm {
+      font-size: 13px;
+      padding: 7px 12px;
     }
     button.btn:hover:not(:disabled) {
       filter: brightness(1.12);
@@ -759,6 +844,24 @@
       </div>
     </header>
 
+    <!-- 配信（room）即時切替バー -->
+    <section class="room-switcher-bar" aria-label="配信ルーム切替">
+      <form class="room-switcher-form" onsubmit="handleRoomSwitchSubmit(event)">
+        <label class="room-switcher-label" for="roomSwitchInput">配信（room）ID</label>
+        <div class="room-input-wrap">
+          <input
+            id="roomSwitchInput"
+            type="text"
+            placeholder="例: live_20261123"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-sky btn-sm">配信切替</button>
+          <button type="button" class="btn btn-gray btn-sm" onclick="switchRoom('default')">default</button>
+        </div>
+      </form>
+      <div id="roomHistoryList" class="room-history-list"></div>
+    </section>
+
     <div class="main-layout">
       <!-- 左カラム：配信中操作＋OBS表示設定＋質問編集 -->
       <div class="column-stack">
@@ -934,8 +1037,12 @@
 
   <script src="config.js"></script>
   <script>
-    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
-    const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
+    const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
+    const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
+    const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
+
+    let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
+    let ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : DEFAULT_ADMIN;
 
     let lastQuestionId = '';
     let latestQuestions = [];
@@ -998,6 +1105,88 @@
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
+
+    function normalizeRoomId(raw) {
+      const cleaned = String(raw || '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_@-]/g, '');
+      return cleaned || DEFAULT_ROOM;
+    }
+
+    function getRecentRooms() {
+      try {
+        const raw = localStorage.getItem(ROOM_HISTORY_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map(r => normalizeRoomId(r)).filter(Boolean) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function rememberRoom(roomId) {
+      const safe = normalizeRoomId(roomId);
+      const list = [safe, ...getRecentRooms().filter(r => r !== safe)].slice(0, 6);
+      try {
+        localStorage.setItem(ROOM_HISTORY_KEY, JSON.stringify(list));
+      } catch (e) {}
+      renderRoomHistoryChips();
+    }
+
+    function renderRoomHistoryChips() {
+      const wrap = document.getElementById('roomHistoryList');
+      if (!wrap) return;
+
+      const rooms = getRecentRooms();
+      if (!rooms.length) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = '<span class="room-history-caption">履歴:</span>';
+      rooms.forEach(room => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'room-chip' + (room === ROOM_ID ? ' is-current' : '');
+        btn.textContent = room;
+        btn.onclick = () => switchRoom(room);
+        wrap.appendChild(btn);
+      });
+    }
+
+    function syncRoomInputAndUrl() {
+      const input = document.getElementById('roomSwitchInput');
+      if (input) {
+        input.value = ROOM_ID;
+      }
+
+      try {
+        const url = new URL(window.location.href);
+        if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
+          url.searchParams.set('room', ROOM_ID);
+        } else {
+          url.searchParams.delete('room');
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+
+    async function switchRoom(nextRoomRaw) {
+      const nextRoom = normalizeRoomId(nextRoomRaw);
+      ROOM_ID = nextRoom;
+      lastQuestionId = '';
+      isObsAppearanceDirty = false;
+      syncRoomInputAndUrl();
+      renderContextBadge();
+      rememberRoom(ROOM_ID);
+      setLog(`配信「${ROOM_ID}」に切り替えました。`);
+      await loadAll();
+    }
+
+    function handleRoomSwitchSubmit(event) {
+      event.preventDefault();
+      const input = document.getElementById('roomSwitchInput');
+      switchRoom(input ? input.value : DEFAULT_ROOM);
+    }
 
     function renderContextBadge() {
       const badge = document.getElementById('contextBadge');
@@ -1169,16 +1358,21 @@
     }
 
     function copyPageUrl(filename) {
-      const url = typeof buildPageUrlWithContext === 'function'
-        ? buildPageUrlWithContext(filename)
-        : new URL('./' + filename, window.location.href).href;
+      const url = new URL('./' + filename, window.location.href);
+      if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
+        url.searchParams.set('room', ROOM_ID);
+      }
+      if (ADMIN_ID && ADMIN_ID !== DEFAULT_ADMIN) {
+        url.searchParams.set('admin', ADMIN_ID);
+      }
+      const href = url.href;
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url)
-          .then(() => setLog(`${filename} のURLをコピーしました: ${url}`))
-          .catch(() => setLog(`URL: ${url}`));
+        navigator.clipboard.writeText(href)
+          .then(() => setLog(`${filename} のURLをコピーしました: ${href}`))
+          .catch(() => setLog(`URL: ${href}`));
       } else {
-        setLog(`URL: ${url}`);
+        setLog(`URL: ${href}`);
       }
     }
 
@@ -1363,7 +1557,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      syncRoomInputAndUrl();
       renderContextBadge();
+      rememberRoom(ROOM_ID);
       renderStatusButtons('poll');
       renderThemeChips();
       renderPositionButtons();
@@ -1518,9 +1714,10 @@
     }
 
     async function loadAll() {
+      const targetRoomAtStart = ROOM_ID;
       try {
-        const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
-        if (!data.ok) return;
+        const data = await fetchGas({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
+        if (!data.ok || targetRoomAtStart !== ROOM_ID) return;
 
         currentState = data.state;
         latestQuestions = data.questions || [];
