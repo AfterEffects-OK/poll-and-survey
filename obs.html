@@ -368,8 +368,8 @@
     /* コンパクト表示（html[data-size="compact"]）：QRコード・「読み取って」直前改行メッセージ・受付ステータスのみ表示 */
     html[data-size="compact"] .overlay-card {
       width: auto;
-      max-width: 360px;
-      padding: 10px 12px;
+      max-width: 420px;
+      padding: 12px 14px;
     }
 
     html[data-size="compact"] .top-bar,
@@ -383,29 +383,29 @@
       display: flex;
       margin-top: 0;
       padding: 8px 10px;
-      gap: 12px;
+      gap: 14px;
       background: transparent;
       border: none;
     }
 
     html[data-size="compact"] #qrCanvas {
-      width: 72px;
-      height: 72px;
+      width: 84px;
+      height: 84px;
     }
 
     html[data-size="compact"] .qr-heading {
-      font-size: 16px;
+      font-size: 22px;
       line-height: 1.3;
       white-space: pre-line;
     }
 
     html[data-size="compact"] .qr-status {
       display: inline-block;
-      margin-top: 6px;
-      padding: 2px 8px;
+      margin-top: 8px;
+      padding: 3px 10px;
       border-radius: 999px;
       background: var(--accent-soft);
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 800;
       color: var(--timer);
     }
