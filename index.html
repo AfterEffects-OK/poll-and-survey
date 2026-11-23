@@ -387,6 +387,15 @@
       transition: width 0.35s ease;
     }
 
+    @keyframes barSmooth {
+      0% {
+        width: 0%;
+      }
+      100% {
+        width: var(--target-pct, 0%);
+      }
+    }
+
     @keyframes barBounce {
       0% {
         width: 0%;
@@ -407,6 +416,11 @@
 
     .fill.bounce {
       width: 0%;
+      animation: barSmooth 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    [data-theme="pop"] .fill.bounce,
+    [data-theme="sakura"] .fill.bounce {
       animation: barBounce 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
