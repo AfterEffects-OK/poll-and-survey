@@ -45,6 +45,26 @@
       --shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
     }
 
+    [data-theme="yellow"] {
+      --font-main: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif;
+      --font-num: "Fredoka", "Noto Sans JP", sans-serif;
+      --card-bg: rgba(24, 22, 15, 0.95);
+      --card-border: #facc15;
+      --item-bg: rgba(41, 37, 24, 0.92);
+      --text: #fefce8;
+      --muted: #fde047;
+      --accent: #facc15;
+      --accent-soft: rgba(250, 204, 21, 0.22);
+      --ok: #4ade80;
+      --correct-bg: rgba(74, 222, 128, 0.24);
+      --timer: #fb923c;
+      --track-bg: rgba(250, 204, 21, 0.2);
+      --bar-grad: linear-gradient(90deg, #facc15, #f59e0b);
+      --radius: 14px;
+      --item-radius: 10px;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 18px rgba(250, 204, 21, 0.25);
+    }
+
     [data-theme="neon"] {
       --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
       --font-num: "Orbitron", sans-serif;
@@ -145,7 +165,6 @@
       --shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
     }
 
-    /* 画面内の表示位置コントロール（はみ出し防止のため余白・最大高さを制限） */
     .stage {
       position: relative;
       width: 100%;
@@ -310,7 +329,7 @@
 
   <script src="config.js"></script>
   <script>
-    const ALLOWED_THEMES = ['dark', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
+    const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     const ALLOWED_POSITIONS = [
       'bottom-right', 'bottom-left', 'bottom-center',
       'top-right', 'top-left', 'top-center', 'center'
