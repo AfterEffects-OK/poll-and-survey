@@ -52,6 +52,42 @@
     .bar-bg { background: #374151; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.3s; }
     .meta { color: #9ca3af; font-size: 14px; margin-top: 8px; min-height: 20px; }
+
+    /* アコーディオン用スタイル */
+    .accordion-card { padding: 0; overflow: hidden; }
+    .accordion-header {
+      width: 100%;
+      background: transparent;
+      color: #93c5fd;
+      padding: 18px 20px;
+      border-radius: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .accordion-icon {
+      font-size: 14px;
+      color: #9ca3af;
+      transition: transform 0.25s ease;
+    }
+    .accordion-card.open .accordion-icon {
+      transform: rotate(180deg);
+    }
+    .accordion-panel {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px solid #374151;
+    }
+    .accordion-card.open .accordion-panel {
+      display: block;
+      padding-top: 16px;
+    }
   </style>
 </head>
 <body>
@@ -92,48 +128,55 @@
       <div class="meta" id="actionLog"></div>
     </div>
 
-    <div class="card">
-      <h2>3. 質問の作成・編集・削除（スプレッドシート不要）</h2>
-      <div class="btn-row" style="margin-top: 0; margin-bottom: 14px;">
-        <select id="editTargetSelect" onchange="onSelectEditTarget()">
-          <option value="__NEW__">＋ 新しい質問を作成</option>
-        </select>
-        <button class="danger" onclick="deleteSelectedQuestion()">選択中の質問を削除</button>
-      </div>
+    <!-- 3. アコーディオン式 質問の作成・編集・削除 -->
+    <div id="questionAccordion" class="card accordion-card">
+      <button type="button" class="accordion-header" onclick="toggleAccordion()" aria-expanded="false" aria-controls="questionAccordionPanel">
+        <span>3. 質問の作成・編集・削除（スプレッドシート不要）</span>
+        <span class="accordion-icon">▼</span>
+      </button>
 
-      <div class="field-group">
-        <div>
-          <label for="qIdInput">質問ID（空欄なら自動採番 / 既存編集時は変更しない）</label>
-          <input id="qIdInput" type="text" placeholder="例: q3" />
-        </div>
-
-        <div>
-          <label for="qTypeInput">種別</label>
-          <select id="qTypeInput" style="width: 100%;">
-            <option value="poll">アンケート（poll）</option>
-            <option value="quiz">クイズ（quiz）</option>
+      <div id="questionAccordionPanel" class="accordion-panel">
+        <div class="btn-row" style="margin-top: 0; margin-bottom: 14px;">
+          <select id="editTargetSelect" onchange="onSelectEditTarget()">
+            <option value="__NEW__">＋ 新しい質問を作成</option>
           </select>
+          <button class="danger" onclick="deleteSelectedQuestion()">選択中の質問を削除</button>
         </div>
 
-        <div>
-          <label for="qTextInput">質問文</label>
-          <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
+        <div class="field-group">
+          <div>
+            <label for="qIdInput">質問ID（空欄なら自動採番 / 既存編集時は変更しない）</label>
+            <input id="qIdInput" type="text" placeholder="例: q3" />
+          </div>
+
+          <div>
+            <label for="qTypeInput">種別</label>
+            <select id="qTypeInput" style="width: 100%;">
+              <option value="poll">アンケート（poll）</option>
+              <option value="quiz">クイズ（quiz）</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="qTextInput">質問文</label>
+            <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
+          </div>
+
+          <div>
+            <label for="qOptionsInput">選択肢（カンマ「,」区切りで2つ以上）</label>
+            <input id="qOptionsInput" type="text" placeholder="例: 企画A, 企画B, 企画C, 企画D" />
+          </div>
+
+          <div>
+            <label for="qAnswerInput">クイズの正解（quizの場合のみ・選択肢と完全一致）</label>
+            <input id="qAnswerInput" type="text" placeholder="例: 企画B" />
+          </div>
         </div>
 
-        <div>
-          <label for="qOptionsInput">選択肢（カンマ「,」区切りで2つ以上）</label>
-          <input id="qOptionsInput" type="text" placeholder="例: 企画A, 企画B, 企画C, 企画D" />
+        <div class="btn-row">
+          <button class="success" onclick="saveQuestion()">質問を保存する</button>
+          <button class="secondary" onclick="resetEditorForm()">入力をクリア</button>
         </div>
-
-        <div>
-          <label for="qAnswerInput">クイズの正解（quizの場合のみ・選択肢と完全一致）</label>
-          <input id="qAnswerInput" type="text" placeholder="例: 企画B" />
-        </div>
-      </div>
-
-      <div class="btn-row">
-        <button class="success" onclick="saveQuestion()">質問を保存する</button>
-        <button class="secondary" onclick="resetEditorForm()">入力をクリア</button>
       </div>
     </div>
 
@@ -148,6 +191,14 @@
     let lastQuestionId = '';
     let latestQuestions = [];
     let currentState = { status: 'WAITING', deadlineAt: 0 };
+
+    function toggleAccordion(forceOpen) {
+      const card = document.getElementById('questionAccordion');
+      const btn = card.querySelector('.accordion-header');
+      const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !card.classList.contains('open');
+      card.classList.toggle('open', nextOpen);
+      btn.setAttribute('aria-expanded', String(nextOpen));
+    }
 
     function renderAdminCountdown() {
       const el = document.getElementById('adminTimerReadout');
