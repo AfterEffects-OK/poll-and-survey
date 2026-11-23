@@ -125,9 +125,17 @@
       --shadow: 0 0 20px rgba(16, 185, 129, 0.35);
     }
 
+    html[data-theme="cyber"] .overlay-card {
+      background-image:
+        linear-gradient(to right, rgba(16, 185, 129, 0.11) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(16, 185, 129, 0.11) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
     html[data-theme="sakura"] {
       --font-main: "Zen Maru Gothic", sans-serif;
       --font-num: "Zen Maru Gothic", sans-serif;
+      --bg: rgba(255, 248, 250, 0.96);
       --card-bg: rgba(255, 248, 250, 0.96);
       --card-border: #fb7185;
       --item-bg: rgba(255, 228, 230, 0.85);
