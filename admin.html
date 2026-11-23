@@ -1825,7 +1825,7 @@
           <section class="help-section">
             <h4><span class="help-step-pill">質問編集</span> セクション3の各ボタン・入力欄の使い方</h4>
             <ul class="help-list">
-              <li><strong>編集対象</strong>：<span class="help-code">＋ 新しい質問を作成</span> を選ぶと新規作成モード、既存質問を選ぶと既存データの読み込み・上書きモードになります（<span class="help-code">admin</span> が <span class="help-code">default</span> の時は新規作成不可、質問ID <span class="help-code">default</span> は編集・削除・選択肢追加不可）。</li>
+              <li><strong>編集対象</strong>：<span class="help-code">＋ 新しい質問を作成</span> を選ぶと新規作成モード、既存質問を選ぶと既存データの読み込み・上書きモードになります（<span class="help-code">admin_id</span> が <span class="help-code">default</span> のレコードは編集・削除・保存ができません）。</li>
               <li><strong>質問ID</strong>：任意ID（例: <span class="help-code">q3</span>）を指定できます。空欄の場合は <span class="help-code">q_...</span> で自動採番されます。</li>
               <li><strong>種別</strong>：<span class="help-code">アンケート（poll）</span> は正解なし、<span class="help-code">クイズ（quiz）</span> は正解選択肢を指定できます。</li>
               <li><strong>＋ 選択肢を追加 / × ボタン</strong>：選択肢は常時2つ以上必要です（2つ以下になると × ボタンは無効化されます）。入力欄で <span class="help-code">Enter</span> キーを押すと新しい選択肢行を追加できます。</li>
@@ -1945,7 +1945,6 @@
   <script>
     const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
     const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
-    const DEFAULT_QUESTION_ID = 'default';
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
     const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
@@ -2023,13 +2022,24 @@
       return ADMIN_ID === DEFAULT_ADMIN;
     }
 
-    function isDefaultQuestionId(qId) {
-      return String(qId || '').trim() === DEFAULT_QUESTION_ID;
-    }
-
     function getActiveEditTargetId() {
       const editSel = document.getElementById('editTargetSelect');
       return editSel ? editSel.value : '__NEW__';
+    }
+
+    function isDefaultAdminQuestionRecord(questionIdOrObj) {
+      if (questionIdOrObj && typeof questionIdOrObj === 'object') {
+        const recAdmin = String(questionIdOrObj.adminId || questionIdOrObj.admin_id || '').trim();
+        return recAdmin === DEFAULT_ADMIN;
+      }
+      const targetId = String(questionIdOrObj || '').trim();
+      if (!targetId) return false;
+      const found = latestQuestions.find(q => String(q.id).trim() === targetId);
+      if (found) {
+        const recAdmin = String(found.adminId || found.admin_id || ADMIN_ID || '').trim();
+        return recAdmin === DEFAULT_ADMIN;
+      }
+      return isDefaultAdmin();
     }
 
     function updateQuestionEditorLockState() {
@@ -2047,13 +2057,11 @@
       const adminIsDefault = isDefaultAdmin();
       const targetVal = editSel ? editSel.value : '__NEW__';
       const isCreatingNew = targetVal === '__NEW__';
-      const isDefaultQuestionSelected = !isCreatingNew && isDefaultQuestionId(targetVal);
 
       if (newOpt) {
         newOpt.disabled = adminIsDefault;
       }
 
-      // admin が default の場合、新規作成モード（__NEW__）のままなら最初の質問へ寄せる
       if (adminIsDefault && isCreatingNew && editSel) {
         const firstNonNew = [...editSel.options].find(o => o.value !== '__NEW__');
         if (firstNonNew) {
@@ -2070,8 +2078,17 @@
       }
 
       const currentTarget = editSel ? editSel.value : '__NEW__';
-      const nowDefaultQuestion = currentTarget !== '__NEW__' && isDefaultQuestionId(currentTarget);
-      const formLocked = (adminIsDefault && currentTarget === '__NEW__') || nowDefaultQuestion;
+      const selectedQuestion = currentTarget !== '__NEW__'
+        ? latestQuestions.find(item => String(item.id).trim() === String(currentTarget).trim())
+        : null;
+      const inputQId = qIdInput ? qIdInput.value.trim() : '';
+
+      const lockedByRecord =
+        (selectedQuestion && isDefaultAdminQuestionRecord(selectedQuestion)) ||
+        (currentTarget !== '__NEW__' && isDefaultAdminQuestionRecord(currentTarget)) ||
+        (inputQId && isDefaultAdminQuestionRecord(inputQId));
+
+      const formLocked = adminIsDefault || Boolean(lockedByRecord);
 
       if (qIdInput) qIdInput.disabled = formLocked;
       if (qTypeInput) qTypeInput.disabled = formLocked;
@@ -2079,10 +2096,10 @@
       if (addOptBtn) addOptBtn.disabled = formLocked;
       if (ansSel) ansSel.disabled = formLocked;
       if (saveBtn) saveBtn.disabled = formLocked;
-      if (deleteBtn) deleteBtn.disabled = nowDefaultQuestion || currentTarget === '__NEW__';
+      if (deleteBtn) deleteBtn.disabled = formLocked || currentTarget === '__NEW__';
 
       const optRows = [...document.querySelectorAll('#optionsList .opt-item')];
-      optRows.forEach((row, idx) => {
+      optRows.forEach((row) => {
         const inp = row.querySelector('input[type="text"]');
         const delBtn = row.querySelector('.btn-del-opt');
         if (inp) inp.disabled = formLocked;
@@ -2090,11 +2107,8 @@
       });
 
       if (banner) {
-        if (nowDefaultQuestion) {
-          banner.textContent = '質問ID「default」は編集・削除・選択肢の追加ができません。';
-          banner.classList.add('show');
-        } else if (adminIsDefault) {
-          banner.textContent = 'admin ID が「default」のため、新しい質問の作成はできません（アカウント登録・復元から専用admin IDを作成してください）。';
+        if (adminIsDefault || lockedByRecord) {
+          banner.textContent = 'admin_id が「default」の質問レコードは編集・削除・保存ができません（新規作成も不可）。';
           banner.classList.add('show');
         } else {
           banner.textContent = '';
@@ -3096,13 +3110,8 @@
     }
 
     function addOptionRow(initialValue = '', focusNew = false) {
-      if (isDefaultQuestionId(getActiveEditTargetId())) {
-        setLog('質問ID「default」の選択肢は追加できません。');
-        updateQuestionEditorLockState();
-        return;
-      }
-      if (isDefaultAdmin() && getActiveEditTargetId() === '__NEW__') {
-        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+      if (isDefaultAdmin() || isDefaultAdminQuestionRecord(getActiveEditTargetId())) {
+        setLog('admin_id が「default」の質問レコードは選択肢を追加できません。');
         updateQuestionEditorLockState();
         return;
       }
@@ -3136,7 +3145,7 @@
       delBtn.title = 'この選択肢を削除';
       delBtn.textContent = '×';
       delBtn.onclick = () => {
-        if (isDefaultQuestionId(getActiveEditTargetId())) return;
+        if (isDefaultAdmin() || isDefaultAdminQuestionRecord(getActiveEditTargetId())) return;
         markEditing(true);
         if (list.querySelectorAll('.opt-item').length <= 2) return;
         row.remove();
@@ -3245,7 +3254,8 @@
       latestQuestions.forEach(q => {
         const opt = document.createElement('option');
         opt.value = q.id;
-        opt.textContent = `編集: [${q.type}] ${q.id} - ${q.question}`;
+        const recAdmin = q.adminId || ADMIN_ID;
+        opt.textContent = `編集: [${q.type}] ${q.id} - ${q.question}${recAdmin === DEFAULT_ADMIN ? ' (default/ロック)' : ''}`;
         editSel.appendChild(opt);
       });
       if (prevVal === '__NEW__' && !disableNew) {
@@ -3265,7 +3275,7 @@
       const val = document.getElementById('editTargetSelect').value;
       if (val === '__NEW__') {
         if (isDefaultAdmin()) {
-          setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+          setLog('admin_id が「default」のため、新しい質問の作成はできません。');
           refreshEditTargetSelect();
           return;
         }
@@ -3280,13 +3290,13 @@
       document.getElementById('qTextInput').value = q.question || '';
       onQuestionTypeInputChange();
       setOptionRows(q.options || [], q.answer || '');
-      markEditing(!isDefaultQuestionId(q.id));
+      markEditing(!isDefaultAdminQuestionRecord(q));
       updateQuestionEditorLockState();
     }
 
     function resetEditorForm() {
       if (isDefaultAdmin()) {
-        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+        setLog('admin_id が「default」のため、新しい質問の作成はできません。');
         updateQuestionEditorLockState();
         return;
       }
@@ -3303,14 +3313,10 @@
     async function saveQuestion() {
       enforceRoomRuleForAdmin();
       const targetVal = getActiveEditTargetId();
-      if (isDefaultAdmin() && targetVal === '__NEW__') {
-        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
-        updateQuestionEditorLockState();
-        return;
-      }
       const rawId = document.getElementById('qIdInput').value.trim();
-      if (isDefaultQuestionId(targetVal) || isDefaultQuestionId(rawId)) {
-        setLog('質問ID「default」は編集・保存できません。');
+
+      if (isDefaultAdmin() || isDefaultAdminQuestionRecord(targetVal) || isDefaultAdminQuestionRecord(rawId)) {
+        setLog('admin_id が「default」の質問レコードは保存・編集できません。');
         updateQuestionEditorLockState();
         return;
       }
@@ -3351,12 +3357,12 @@
         alert('削除する既存質問をドロップダウンから選択してください。');
         return;
       }
-      if (isDefaultQuestionId(targetId)) {
-        setLog('質問ID「default」は削除できません。');
+      const targetObj = latestQuestions.find(q => q.id === targetId);
+      if (isDefaultAdmin() || isDefaultAdminQuestionRecord(targetObj) || isDefaultAdminQuestionRecord(targetId)) {
+        setLog('admin_id が「default」の質問レコードは削除できません。');
         updateQuestionEditorLockState();
         return;
       }
-      const targetObj = latestQuestions.find(q => q.id === targetId);
       const confirmed = await showConfirmPopup('この質問を削除しますか？（同じadminの全配信から削除されます）', {
         title: '質問の削除確認',
         detail: {
@@ -3384,7 +3390,10 @@
         if (!data.ok || targetRoomAtStart !== ROOM_ID) return;
 
         currentState = data.state;
-        latestQuestions = data.questions || [];
+        latestQuestions = (data.questions || []).map(q => ({
+          ...q,
+          adminId: String(q.adminId || q.admin_id || data.adminId || ADMIN_ID).trim()
+        }));
         refreshLogQuestionFilter();
         if (Array.isArray(data.logs)) {
           latestVoteLogs = data.logs.map(normalizeLogEntry).filter(Boolean).reverse();
@@ -3402,7 +3411,8 @@
           const disableNew = isDefaultAdmin();
           const opts = [`<option id="newQuestionOption" value="__NEW__"${disableNew ? ' disabled' : ''}>＋ 新しい質問を作成</option>`];
           latestQuestions.forEach(q => {
-            opts.push(`<option value="${escapeHtml(q.id)}">編集: [${escapeHtml(q.type)}] ${escapeHtml(q.id)} - ${escapeHtml(q.question)}</option>`);
+            const recAdmin = q.adminId || ADMIN_ID;
+            opts.push(`<option value="${escapeHtml(q.id)}">編集: [${escapeHtml(q.type)}] ${escapeHtml(q.id)} - ${escapeHtml(q.question)}${recAdmin === DEFAULT_ADMIN ? ' (default/ロック)' : ''}</option>`);
           });
           editSel.innerHTML = opts.join('');
           if (prevVal === '__NEW__' && !disableNew) {
