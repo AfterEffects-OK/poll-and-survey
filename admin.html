@@ -119,17 +119,24 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      flex: 1 1 220px;
-      max-width: 360px;
+      flex: 1 1 240px;
+      max-width: 400px;
+      min-width: 0;
     }
-
+    
     .room-input-wrap input[type="text"] {
+      flex: 1 1 auto;
+      min-width: 0;
       font-size: 14px;
       font-weight: 700;
       padding: 7px 11px;
       border-radius: 8px;
     }
-
+    
+    .room-input-wrap .btn {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
     .room-history-list {
       display: flex;
       flex-wrap: wrap;
