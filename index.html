@@ -255,7 +255,6 @@
       word-break: break-word;
     }
 
-    /* 待機画面 */
     .waiting-box {
       text-align: center;
       padding: 36px 16px;
@@ -274,7 +273,6 @@
       line-height: 1.6;
     }
 
-    /* 選択肢ボタンリスト */
     .choices {
       display: grid;
       gap: 12px;
@@ -328,7 +326,6 @@
       flex-shrink: 0;
     }
 
-    /* 結果・正解表示行 */
     .results {
       display: grid;
       gap: 10px;
@@ -384,13 +381,34 @@
 
     .fill {
       height: 100%;
-      width: 0%;
+      width: var(--target-pct, 0%);
       border-radius: 999px;
       background: var(--bar-grad);
-      transition: width 0.4s ease;
+      transition: width 0.35s ease;
     }
 
-    /* ステータスバナー・フッター */
+    @keyframes barBounce {
+      0% {
+        width: 0%;
+      }
+      58% {
+        width: calc(min(100%, var(--target-pct, 0%) * 1.18 + 3%));
+      }
+      78% {
+        width: calc(max(0%, var(--target-pct, 0%) * 0.92));
+      }
+      90% {
+        width: calc(min(100%, var(--target-pct, 0%) * 1.04));
+      }
+      100% {
+        width: var(--target-pct, 0%);
+      }
+    }
+
+    .fill.bounce {
+      animation: barBounce 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
     .notice-banner {
       margin-top: 16px;
       padding: 12px 14px;
@@ -439,6 +457,7 @@
   <script>
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark' };
+    let lastResultSignature = '';
     let isSubmitting = false;
 
     function getClientId() {
@@ -513,6 +532,7 @@
 
         const card = document.getElementById('appCard');
         if (!state || state.status === 'WAITING' || !question) {
+          lastResultSignature = '';
           card.innerHTML = `
             <div class="waiting-box">
               <p class="waiting-title">次のアンケート・クイズを待機中です</p>
@@ -527,6 +547,7 @@
         const tagText = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
 
         if (state.status === 'VOTING') {
+          lastResultSignature = '';
           const choicesHtml = (question.options || []).map(opt => {
             const isSelected = myChoice === opt;
             return `
@@ -564,6 +585,7 @@
         }
 
         if (state.status === 'CLOSED') {
+          lastResultSignature = '';
           card.innerHTML = `
             <div class="top-bar">
               <span class="tag">${tagText}</span>
@@ -583,16 +605,23 @@
         }
 
         // RESULT / ANSWER 画面
+        const resultSig = `${question.id || ''}::${state.status}`;
+        const shouldBounce = lastResultSignature !== resultSig;
+        lastResultSignature = resultSig;
+
         const isAnswerMode = state.status === 'ANSWER' && isQuiz && question.answer;
-        const rowsHtml = (results || []).map(r => {
+        const rowsHtml = (results || []).map((r, idx) => {
           const isCorrect = isAnswerMode && r.label === question.answer;
           const isMyPick = myChoice === r.label;
           const isWrongPick = isAnswerMode && isMyPick && !isCorrect;
-          const pct = Number(r.pct || 0);
+          const pct = Math.max(0, Math.min(100, Number(r.pct || 0)));
 
           let badges = '';
           if (isCorrect) badges += ' ★正解';
           if (isMyPick) badges += '（あなたの回答）';
+
+          const delayStyle = shouldBounce ? `animation-delay: ${Math.min(idx * 70, 350)}ms;` : '';
+          const bounceClass = shouldBounce ? 'bounce' : '';
 
           return `
             <div class="result-row ${isCorrect ? 'correct' : ''} ${isWrongPick ? 'wrong-pick' : ''}">
@@ -601,7 +630,7 @@
                 <span class="result-stat">${r.count}票 (${pct}%)</span>
               </div>
               <div class="track">
-                <div class="fill" style="width: ${pct}%;"></div>
+                <div class="fill ${bounceClass}" style="--target-pct: ${pct}%; ${delayStyle}"></div>
               </div>
             </div>
           `;
