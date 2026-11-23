@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>OBS Overlay</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     html, body {
       background-color: transparent !important;
@@ -52,6 +53,16 @@
     .status-pill.voting { background: #10b981; }
     .status-pill.closed { background: #f59e0b; }
     .status-pill.answer { background: #ec4899; }
+    .right-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .timer-badge {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fbbf24;
+    }
     .total-label {
       font-size: 15px;
       color: #cbd5e1;
@@ -98,16 +109,60 @@
     .row.correct .fill {
       background: linear-gradient(90deg, #10b981, #34d399);
     }
+    .qr-box {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .qr-box.active {
+      display: flex;
+    }
+    .qr-canvas {
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 8px;
+      line-height: 0;
+      flex-shrink: 0;
+    }
+    .qr-text {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.45;
+    }
+    .qr-text strong {
+      color: #38bdf8;
+      font-size: 15px;
+    }
+    .qr-url {
+      font-size: 12px;
+      color: #94a3b8;
+      word-break: break-all;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
   <div id="overlay" class="overlay-wrap">
     <div class="top-bar">
       <span id="statusPill" class="status-pill">STANDBY</span>
-      <span id="totalLabel" class="total-label">0票</span>
+      <div class="right-meta">
+        <span id="timerBadge" class="timer-badge"></span>
+        <span id="totalLabel" class="total-label">0票</span>
+      </div>
     </div>
     <div id="qTitle" class="q-title"></div>
     <div id="bars"></div>
+    <div id="qrBox" class="qr-box">
+      <div id="qrCodeCanvas" class="qr-canvas"></div>
+      <div class="qr-text">
+        <strong>スマホで投票・回答</strong><br>
+        QRコードを読み取ってアクセス
+        <div id="qrUrlLabel" class="qr-url"></div>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>
@@ -119,20 +174,67 @@
       ANSWER: '正解発表'
     };
 
+    let currentState = { status: 'WAITING', deadlineAt: 0 };
+    let expiredTriggered = false;
+
+    (function initQrCode() {
+      const voterUrl = new URL('./index.html', window.location.href).href;
+      const labelEl = document.getElementById('qrUrlLabel');
+      if (labelEl) labelEl.textContent = voterUrl;
+
+      const target = document.getElementById('qrCodeCanvas');
+      if (target && typeof QRCode !== 'undefined') {
+        new QRCode(target, {
+          text: voterUrl,
+          width: 76,
+          height: 76,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+    })();
+
+    function renderCountdown() {
+      const el = document.getElementById('timerBadge');
+      const qrBox = document.getElementById('qrBox');
+      if (!el) return;
+
+      if (currentState.status === 'VOTING' && currentState.deadlineAt) {
+        const remainSec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
+        el.textContent = `残り ${remainSec}秒`;
+        if (remainSec === 0 && !expiredTriggered) {
+          expiredTriggered = true;
+          if (qrBox) qrBox.classList.remove('active');
+          setTimeout(updateOverlay, 400);
+        }
+      } else {
+        el.textContent = '';
+      }
+    }
+
     async function updateOverlay() {
       try {
         const data = await fetchGas();
         if (!data.ok) return;
 
         const overlay = document.getElementById('overlay');
+        const qrBox = document.getElementById('qrBox');
         const { state, question, totalVotes, results } = data;
+
+        currentState = state;
+        if (state.status === 'VOTING' && state.deadlineAt && Date.now() < Number(state.deadlineAt)) {
+          expiredTriggered = false;
+        }
 
         if (state.status === 'WAITING') {
           overlay.classList.remove('visible');
+          if (qrBox) qrBox.classList.remove('active');
           return;
         }
 
         overlay.classList.add('visible');
+        if (qrBox) {
+          qrBox.classList.toggle('active', state.status === 'VOTING');
+        }
 
         const pill = document.getElementById('statusPill');
         pill.textContent = STATUS_TEXT[state.status] || state.status;
@@ -161,6 +263,8 @@
             </div>
           `;
         }).join('');
+
+        renderCountdown();
       } catch (e) {
         console.error(e);
       }
@@ -174,6 +278,7 @@
 
     updateOverlay();
     setInterval(updateOverlay, CONFIG.POLL_INTERVAL_MS);
+    setInterval(renderCountdown, 200);
   </script>
 </body>
 </html>
