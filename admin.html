@@ -20,7 +20,6 @@
       padding: 20px;
     }
 
-    /* 全体コンテナ */
     .app-shell {
       max-width: 1240px;
       margin: 0 auto;
@@ -157,12 +156,12 @@
       margin-bottom: 0;
     }
 
-    label.lbl {
+    .lbl {
       display: block;
       font-size: 14px;
       font-weight: 700;
       color: #e2e8f0;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     select, input[type="text"] {
@@ -182,7 +181,6 @@
       border-color: #38bdf8;
     }
 
-    /* 質問切替の横並び */
     .inline-select-row {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -255,17 +253,98 @@
       display: none;
     }
 
-    /* テーマ・位置の2列配置 */
-    .two-col-fields {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    /* テーマチップボタン群 */
+    .theme-chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    @media (max-width: 520px) {
-      .two-col-fields {
-        grid-template-columns: 1fr;
-      }
+    button.theme-chip {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: #f1f5f9;
+      background: #0b101b;
+      border: 2px solid #334155;
+      border-radius: 999px;
+      padding: 8px 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+    }
+
+    button.theme-chip:hover {
+      border-color: #94a3b8;
+      background: #172236;
+    }
+
+    button.theme-chip:active {
+      transform: scale(0.98);
+    }
+
+    button.theme-chip.is-active {
+      color: #ffffff;
+      background: #1e2d47;
+      border-color: var(--chip-color, #38bdf8);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+    }
+
+    .chip-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--chip-color, #38bdf8);
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      flex-shrink: 0;
+    }
+
+    /* OBS表示位置 3x3 グリッドボタン */
+    .pos-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    button.pos-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: #e2e8f0;
+      background: #0b101b;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      padding: 10px 8px;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.25;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
+    }
+
+    button.pos-btn:hover {
+      border-color: #38bdf8;
+      background: #172236;
+      color: #ffffff;
+    }
+
+    button.pos-btn:active {
+      transform: scale(0.98);
+    }
+
+    button.pos-btn.is-active {
+      color: #ffffff;
+      background: #1d4ed8;
+      border-color: #ffffff;
+      outline: 2px solid #38bdf8;
+    }
+
+    .pos-spacer {
+      background: rgba(15, 23, 42, 0.35);
+      border: 1px dashed #233047;
+      border-radius: 8px;
+      min-height: 40px;
     }
 
     .divider {
@@ -515,7 +594,7 @@
           </div>
 
           <div class="field">
-            <label class="lbl">表示・受付ステータス</label>
+            <span class="lbl">表示・受付ステータス</span>
             <div id="statusBtnRow" class="status-grid"></div>
           </div>
 
@@ -537,32 +616,16 @@
 
           <hr class="divider" />
 
-          <div class="two-col-fields">
-            <div>
-              <label class="lbl" for="obsThemeSelect">テーマ（OBS＋回答者同期）</label>
-              <select id="obsThemeSelect" onchange="applyObsAppearance()">
-                <option value="dark">ダークモダン</option>
-                <option value="yellow">サンシャインイエロー</option>
-                <option value="neon">ネオンアーケード</option>
-                <option value="pop">ライトポップ</option>
-                <option value="cyber">サイバーグリーン</option>
-                <option value="sakura">サクラパステル</option>
-                <option value="broadcast">TVニュース風</option>
-              </select>
-            </div>
+          <div class="field">
+            <span class="lbl">テーマ（OBS＋回答者同期・ワンクリック切替）</span>
+            <div id="themeChipGrid" class="theme-chip-grid" role="group" aria-label="テーマ選択"></div>
+          </div>
 
-            <div>
-              <label class="lbl" for="obsPositionSelect">OBS表示位置</label>
-              <select id="obsPositionSelect" onchange="applyObsAppearance()">
-                <option value="bottom-right">右下</option>
-                <option value="bottom-left">左下</option>
-                <option value="bottom-center">下部中央</option>
-                <option value="top-right">右上</option>
-                <option value="top-left">左上</option>
-                <option value="top-center">上部中央</option>
-                <option value="center">画面中央</option>
-              </select>
-            </div>
+          <hr class="divider" />
+
+          <div class="field">
+            <span class="lbl">OBS表示位置（3×3配置・ワンクリック切替）</span>
+            <div id="posGrid" class="pos-grid" role="group" aria-label="OBS表示位置"></div>
           </div>
 
           <div id="actionLog" class="log-panel">操作結果がここに表示されます。</div>
@@ -588,7 +651,7 @@
               </div>
             </div>
 
-            <div class="two-col-fields field">
+            <div class="inline-select-row field">
               <div>
                 <label class="lbl" for="qIdInput">質問ID（空欄で自動採番）</label>
                 <input id="qIdInput" type="text" placeholder="例: q3" />
@@ -609,7 +672,7 @@
             </div>
 
             <div class="field">
-              <label class="lbl">選択肢（1つずつ別枠・2つ以上）</label>
+              <span class="lbl">選択肢（1つずつ別枠・2つ以上）</span>
               <div id="optionsList" class="opt-list"></div>
               <button type="button" class="btn btn-gray" onclick="addOptionRow('', true)">＋ 選択肢を追加</button>
             </div>
@@ -669,6 +732,31 @@
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
 
+    const THEME_OPTIONS = [
+      { key: 'dark',      label: 'ダークモダン',       color: '#38bdf8' },
+      { key: 'yellow',    label: 'サンシャインイエロー', color: '#facc15' },
+      { key: 'neon',      label: 'ネオンアーケード',     color: '#ec4899' },
+      { key: 'pop',       label: 'ライトポップ',       color: '#2563eb' },
+      { key: 'cyber',     label: 'サイバーグリーン',   color: '#10b981' },
+      { key: 'sakura',    label: 'サクラパステル',     color: '#fb7185' },
+      { key: 'broadcast', label: 'TVニュース風',       color: '#ef4444' }
+    ];
+
+    const POSITION_SLOTS = [
+      { key: 'top-left',      label: '↖ 左上' },
+      { key: 'top-center',    label: '↑ 上部中央' },
+      { key: 'top-right',     label: '↗ 右上' },
+      { key: null,            label: '' },
+      { key: 'center',        label: '◎ 中央' },
+      { key: null,            label: '' },
+      { key: 'bottom-left',   label: '↙ 左下' },
+      { key: 'bottom-center', label: '↓ 下部中央' },
+      { key: 'bottom-right',  label: '↘ 右下' }
+    ];
+
+    let selectedTheme = 'dark';
+    let selectedPosition = 'bottom-right';
+
     const STATUS_LABELS = {
       WAITING: '待機中（非表示）',
       VOTING: '受付中',
@@ -692,6 +780,69 @@
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
+
+    function renderThemeChips() {
+      const grid = document.getElementById('themeChipGrid');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+      THEME_OPTIONS.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'theme-chip' + (selectedTheme === item.key ? ' is-active' : '');
+        btn.style.setProperty('--chip-color', item.color);
+        btn.setAttribute('aria-pressed', String(selectedTheme === item.key));
+
+        const dot = document.createElement('span');
+        dot.className = 'chip-dot';
+
+        const txt = document.createElement('span');
+        txt.textContent = item.label;
+
+        btn.appendChild(dot);
+        btn.appendChild(txt);
+        btn.onclick = () => selectThemeChip(item.key);
+        grid.appendChild(btn);
+      });
+    }
+
+    async function selectThemeChip(themeKey) {
+      selectedTheme = themeKey;
+      isObsAppearanceDirty = true;
+      renderThemeChips();
+      await applyObsAppearance();
+    }
+
+    function renderPositionButtons() {
+      const grid = document.getElementById('posGrid');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+      POSITION_SLOTS.forEach(slot => {
+        if (!slot.key) {
+          const spacer = document.createElement('div');
+          spacer.className = 'pos-spacer';
+          spacer.setAttribute('aria-hidden', 'true');
+          grid.appendChild(spacer);
+          return;
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pos-btn' + (selectedPosition === slot.key ? ' is-active' : '');
+        btn.textContent = slot.label;
+        btn.setAttribute('aria-pressed', String(selectedPosition === slot.key));
+        btn.onclick = () => selectPositionButton(slot.key);
+        grid.appendChild(btn);
+      });
+    }
+
+    async function selectPositionButton(posKey) {
+      selectedPosition = posKey;
+      isObsAppearanceDirty = true;
+      renderPositionButtons();
+      await applyObsAppearance();
+    }
 
     function setLog(message) {
       const el = document.getElementById('actionLog');
@@ -891,26 +1042,27 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       renderStatusButtons('poll');
+      renderThemeChips();
+      renderPositionButtons();
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
-
-      const tSel = document.getElementById('obsThemeSelect');
-      const pSel = document.getElementById('obsPositionSelect');
-      if (tSel) tSel.addEventListener('focus', () => { isObsAppearanceDirty = true; });
-      if (pSel) pSel.addEventListener('focus', () => { isObsAppearanceDirty = true; });
     });
 
     function syncObsAppearanceInputs(state) {
-      if (isObsAppearanceDirty) return;
-      const tSel = document.getElementById('obsThemeSelect');
-      const pSel = document.getElementById('obsPositionSelect');
-      if (tSel && state.theme) tSel.value = state.theme;
-      if (pSel && state.position) pSel.value = state.position;
+      if (isObsAppearanceDirty || !state) return;
+      if (state.theme && THEME_OPTIONS.some(t => t.key === state.theme)) {
+        selectedTheme = state.theme;
+        renderThemeChips();
+      }
+      if (state.position && POSITION_SLOTS.some(p => p.key === state.position)) {
+        selectedPosition = state.position;
+        renderPositionButtons();
+      }
     }
 
     async function applyObsAppearance() {
-      const theme = document.getElementById('obsThemeSelect').value;
-      const position = document.getElementById('obsPositionSelect').value;
+      const theme = selectedTheme || 'dark';
+      const position = selectedPosition || 'bottom-right';
       const res = await postGas({ action: 'set_state', theme, position });
       isObsAppearanceDirty = false;
       setLog(res.ok ? `テーマ・表示位置を「${theme} / ${position}」に更新しました。` : res.error);
