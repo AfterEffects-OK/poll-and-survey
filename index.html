@@ -1,176 +1,303 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="yellow">
+<html lang="ja" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票・クイズ 回答ページ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@500;700;800&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    :root, [data-theme="yellow"] {
-      --font-main: "M PLUS Rounded 1c", "Noto Sans JP", system-ui, sans-serif;
-      --font-num: "Fredoka", "Noto Sans JP", sans-serif;
-      --bg: #14120b;
-      --card-bg: #1e1b11;
-      --card-border: #facc15;
-      --choice-bg: #2b2617;
-      --choice-border: #856d14;
-      --choice-hover-bg: #38311b;
-      --choice-selected-bg: rgba(250, 204, 21, 0.22);
-      --text: #fefce8;
-      --muted: #fde047;
-      --subtext: #e7dec0;
-      --accent: #facc15;
-      --accent-text: #181406;
-      --accent-soft: rgba(250, 204, 21, 0.18);
-      --ok: #4ade80;
-      --correct-bg: rgba(74, 222, 128, 0.22);
-      --warn: #fb923c;
-      --track-bg: rgba(250, 204, 21, 0.2);
-      --bar-grad: linear-gradient(90deg, #facc15, #f59e0b);
-      --radius: 18px;
-      --choice-radius: 12px;
-      --shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 22px rgba(250, 204, 21, 0.2);
-    }
-
-    [data-theme="dark"] {
+    :root, [data-theme="dark"] {
       --font-main: "Noto Sans JP", system-ui, sans-serif;
       --font-num: "Noto Sans JP", sans-serif;
-      --bg: #090d16;
-      --card-bg: #121a2b;
+      --bg: #0b1120;
+      --card-bg: #141c2b;
       --card-border: #38bdf8;
-      --choice-bg: #1a253b;
-      --choice-border: #334155;
-      --choice-hover-bg: #22314d;
-      --choice-selected-bg: rgba(56, 189, 248, 0.2);
+      --item-bg: #1e293b;
+      --item-border: #334155;
+      --item-hover: #263449;
       --text: #f8fafc;
-      --muted: #7dd3fc;
-      --subtext: #cbd5e1;
+      --muted: #cbd5e1;
       --accent: #38bdf8;
-      --accent-text: #061322;
-      --accent-soft: rgba(56, 189, 248, 0.18);
+      --accent-text: #090d16;
+      --accent-soft: rgba(56, 189, 248, 0.2);
       --ok: #22c55e;
       --correct-bg: rgba(34, 197, 94, 0.22);
-      --warn: #fbbf24;
+      --ng: #ef4444;
+      --ng-bg: rgba(239, 68, 68, 0.18);
+      --timer: #fbbf24;
       --track-bg: rgba(255, 255, 255, 0.14);
       --bar-grad: linear-gradient(90deg, #38bdf8, #818cf8);
-      --radius: 18px;
-      --choice-radius: 12px;
-      --shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+      --radius: 16px;
+      --item-radius: 12px;
+      --shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+    }
+
+    [data-theme="yellow"] {
+      --font-main: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif;
+      --font-num: "Fredoka", "Noto Sans JP", sans-serif;
+      --bg: #100e09;
+      --card-bg: #1a1810;
+      --card-border: #facc15;
+      --item-bg: #292518;
+      --item-border: #524826;
+      --item-hover: #38321f;
+      --text: #fefce8;
+      --muted: #fde047;
+      --accent: #facc15;
+      --accent-text: #14120a;
+      --accent-soft: rgba(250, 204, 21, 0.22);
+      --ok: #4ade80;
+      --correct-bg: rgba(74, 222, 128, 0.22);
+      --ng: #f87171;
+      --ng-bg: rgba(248, 113, 113, 0.18);
+      --timer: #fb923c;
+      --track-bg: rgba(250, 204, 21, 0.2);
+      --bar-grad: linear-gradient(90deg, #facc15, #f59e0b);
+      --radius: 16px;
+      --item-radius: 12px;
+      --shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 18px rgba(250, 204, 21, 0.2);
+    }
+
+    [data-theme="neon"] {
+      --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
+      --font-num: "Orbitron", sans-serif;
+      --bg: #090712;
+      --card-bg: #120e22;
+      --card-border: #ec4899;
+      --item-bg: #1e1736;
+      --item-border: #701a75;
+      --item-hover: #2c214f;
+      --text: #fdf4ff;
+      --muted: #e879f9;
+      --accent: #22d3ee;
+      --accent-text: #090712;
+      --accent-soft: rgba(34, 211, 238, 0.22);
+      --ok: #4ade80;
+      --correct-bg: rgba(74, 222, 128, 0.22);
+      --ng: #fb7185;
+      --ng-bg: rgba(251, 113, 133, 0.2);
+      --timer: #f472b6;
+      --track-bg: rgba(236, 72, 153, 0.22);
+      --bar-grad: linear-gradient(90deg, #22d3ee, #ec4899);
+      --radius: 10px;
+      --item-radius: 8px;
+      --shadow: 0 0 26px rgba(236, 72, 153, 0.35);
+    }
+
+    [data-theme="pop"] {
+      --font-main: "M PLUS Rounded 1c", sans-serif;
+      --font-num: "Fredoka", "M PLUS Rounded 1c", sans-serif;
+      --bg: #fef3c7;
+      --card-bg: #fffbeb;
+      --card-border: #1e293b;
+      --item-bg: #ffffff;
+      --item-border: #cbd5e1;
+      --item-hover: #eff6ff;
+      --text: #0f172a;
+      --muted: #334155;
+      --accent: #2563eb;
+      --accent-text: #ffffff;
+      --accent-soft: rgba(37, 99, 235, 0.16);
+      --ok: #16a34a;
+      --correct-bg: rgba(22, 163, 74, 0.18);
+      --ng: #dc2626;
+      --ng-bg: rgba(220, 38, 38, 0.14);
+      --timer: #ea580c;
+      --track-bg: #e2e8f0;
+      --bar-grad: linear-gradient(90deg, #3b82f6, #f59e0b);
+      --radius: 22px;
+      --item-radius: 14px;
+      --shadow: 0 8px 0 #1e293b;
+    }
+
+    [data-theme="cyber"] {
+      --font-main: "DotGothic16", monospace;
+      --font-num: "Share Tech Mono", monospace;
+      --bg: #03120d;
+      --card-bg: #071d16;
+      --card-border: #10b981;
+      --item-bg: #0d2e23;
+      --item-border: #059669;
+      --item-hover: #134233;
+      --text: #ecfdf5;
+      --muted: #6ee7b7;
+      --accent: #34d399;
+      --accent-text: #03120d;
+      --accent-soft: rgba(52, 211, 153, 0.22);
+      --ok: #a3e635;
+      --correct-bg: rgba(163, 230, 53, 0.22);
+      --ng: #f87171;
+      --ng-bg: rgba(248, 113, 113, 0.18);
+      --timer: #2dd4bf;
+      --track-bg: rgba(16, 185, 129, 0.22);
+      --bar-grad: linear-gradient(90deg, #10b981, #a3e635);
+      --radius: 8px;
+      --item-radius: 6px;
+      --shadow: 0 0 22px rgba(16, 185, 129, 0.3);
+    }
+
+    [data-theme="sakura"] {
+      --font-main: "Zen Maru Gothic", sans-serif;
+      --font-num: "Zen Maru Gothic", sans-serif;
+      --bg: #ffe4e6;
+      --card-bg: #fff8fa;
+      --card-border: #fb7185;
+      --item-bg: #ffe4e6;
+      --item-border: #fda4af;
+      --item-hover: #fecdd3;
+      --text: #3f1d28;
+      --muted: #881337;
+      --accent: #e11d48;
+      --accent-text: #ffffff;
+      --accent-soft: rgba(225, 29, 72, 0.15);
+      --ok: #059669;
+      --correct-bg: rgba(5, 150, 105, 0.18);
+      --ng: #be123c;
+      --ng-bg: rgba(190, 18, 60, 0.14);
+      --timer: #db2777;
+      --track-bg: #fecdd3;
+      --bar-grad: linear-gradient(90deg, #fb7185, #f472b6);
+      --radius: 24px;
+      --item-radius: 16px;
+      --shadow: 0 12px 28px rgba(244, 114, 182, 0.25);
+    }
+
+    [data-theme="broadcast"] {
+      --font-main: "Shippori Mincho", serif;
+      --font-num: "Oswald", sans-serif;
+      --bg: #060b19;
+      --card-bg: #0d1733;
+      --card-border: #ef4444;
+      --item-bg: #172754;
+      --item-border: #3b528f;
+      --item-hover: #213775;
+      --text: #ffffff;
+      --muted: #e2e8f0;
+      --accent: #ef4444;
+      --accent-text: #ffffff;
+      --accent-soft: rgba(239, 68, 68, 0.24);
+      --ok: #38bdf8;
+      --correct-bg: rgba(56, 189, 248, 0.24);
+      --ng: #fca5a5;
+      --ng-bg: rgba(239, 68, 68, 0.2);
+      --timer: #fde047;
+      --track-bg: rgba(255, 255, 255, 0.18);
+      --bar-grad: linear-gradient(90deg, #ef4444, #f97316);
+      --radius: 10px;
+      --item-radius: 8px;
+      --shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
     }
 
     body {
       margin: 0;
       min-height: 100vh;
+      font-family: var(--font-main);
       background: var(--bg);
       color: var(--text);
-      font-family: var(--font-main);
-      padding: 18px 14px 36px;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: center;
+      padding: 20px 16px;
       transition: background 0.25s ease, color 0.25s ease;
     }
 
     .container {
       width: 100%;
-      max-width: 560px;
-      display: grid;
-      gap: 14px;
+      max-width: 540px;
     }
 
     .card {
       background: var(--card-bg);
       border: 2px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 20px 18px;
+      padding: 24px 22px;
       box-shadow: var(--shadow);
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .top-meta {
+    .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    .tag {
+      display: inline-block;
       font-size: 12px;
       font-weight: 800;
       padding: 4px 12px;
       border-radius: 999px;
       background: var(--accent-soft);
-      color: var(--muted);
-      border: 1px solid var(--card-border);
+      color: var(--accent);
     }
 
-    .status-chip {
-      font-size: 12px;
-      font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(250, 204, 21, 0.14);
-      color: var(--warn);
-    }
-
-    .status-chip.voting {
-      background: rgba(74, 222, 128, 0.18);
-      color: var(--ok);
-    }
-
-    .timer-box {
+    .timer-txt {
       font-family: var(--font-num);
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--warn);
-      text-align: right;
-      margin-bottom: 6px;
-      min-height: 22px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--timer);
     }
 
     .q-title {
-      margin: 0 0 16px;
-      font-size: clamp(19px, 4.8vw, 24px);
+      margin: 0 0 18px;
+      font-size: 21px;
       font-weight: 800;
       line-height: 1.4;
-      color: var(--text);
       overflow-wrap: anywhere;
       word-break: break-word;
     }
 
+    /* 待機画面 */
+    .waiting-box {
+      text-align: center;
+      padding: 36px 16px;
+    }
+
+    .waiting-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .waiting-sub {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* 選択肢ボタンリスト */
     .choices {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     button.choice-btn {
       width: 100%;
-      font-family: var(--font-main);
+      text-align: left;
+      font-family: inherit;
       font-size: 16px;
       font-weight: 800;
-      text-align: left;
-      padding: 14px 16px;
-      border-radius: var(--choice-radius);
-      background: var(--choice-bg);
       color: var(--text);
-      border: 2px solid var(--choice-border);
+      background: var(--item-bg);
+      border: 2px solid var(--item-border);
+      border-radius: var(--item-radius);
+      padding: 15px 16px;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
-      overflow-wrap: anywhere;
-      word-break: break-word;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
     }
 
     button.choice-btn:hover:not(:disabled) {
-      background: var(--choice-hover-bg);
+      background: var(--item-hover);
       border-color: var(--accent);
     }
 
@@ -178,94 +305,77 @@
       transform: scale(0.99);
     }
 
-    button.choice-btn.selected {
-      background: var(--choice-selected-bg);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
-    }
-
     button.choice-btn:disabled {
-      opacity: 0.72;
-      cursor: not-allowed;
+      cursor: default;
     }
 
-    .submit-btn {
-      width: 100%;
-      margin-top: 16px;
-      font-family: var(--font-main);
-      font-size: 16px;
+    button.choice-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .choice-badge {
+      font-size: 12px;
       font-weight: 800;
-      padding: 14px 18px;
-      border-radius: var(--choice-radius);
-      border: none;
+      padding: 3px 9px;
+      border-radius: 999px;
       background: var(--accent);
       color: var(--accent-text);
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(250, 204, 21, 0.28);
-      transition: filter 0.15s ease, transform 0.06s ease, opacity 0.15s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    .submit-btn:hover:not(:disabled) {
-      filter: brightness(1.06);
-    }
-
-    .submit-btn:active:not(:disabled) {
-      transform: scale(0.99);
-    }
-
-    .submit-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    .msg-box {
-      margin-top: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--muted);
-      min-height: 20px;
-      text-align: center;
+    /* 結果・正解表示行 */
+    .results {
+      display: grid;
+      gap: 10px;
     }
 
     .result-row {
-      background: var(--choice-bg);
-      border: 1px solid var(--choice-border);
-      border-radius: var(--choice-radius);
+      background: var(--item-bg);
+      border: 2px solid var(--item-border);
+      border-radius: var(--item-radius);
       padding: 12px 14px;
-      margin-bottom: 10px;
-    }
-
-    .result-row:last-child {
-      margin-bottom: 0;
     }
 
     .result-row.correct {
       background: var(--correct-bg);
       border-color: var(--ok);
-      box-shadow: inset 0 0 0 1.5px var(--ok);
+    }
+
+    .result-row.wrong-pick {
+      background: var(--ng-bg);
+      border-color: var(--ng);
     }
 
     .result-head {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: flex-start;
       gap: 10px;
       font-size: 15px;
       font-weight: 800;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
 
-    .result-num {
+    .result-label {
+      flex: 1;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .result-stat {
       font-family: var(--font-num);
-      color: var(--muted);
+      font-size: 14px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .track {
-      height: 10px;
-      border-radius: 999px;
+      width: 100%;
+      height: 11px;
       background: var(--track-bg);
+      border-radius: 999px;
       overflow: hidden;
     }
 
@@ -274,238 +384,237 @@
       width: 0%;
       border-radius: 999px;
       background: var(--bar-grad);
-      transition: width 0.35s ease;
+      transition: width 0.4s ease;
     }
 
-    .waiting-box {
+    /* ステータスバナー・フッター */
+    .notice-banner {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: var(--item-radius);
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      font-size: 14px;
+      font-weight: 800;
       text-align: center;
-      padding: 24px 10px;
-      color: var(--subtext);
-      font-size: 15px;
-      font-weight: 700;
+    }
+
+    .notice-banner.ok {
+      background: var(--correct-bg);
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    .notice-banner.ng {
+      background: var(--ng-bg);
+      border-color: var(--ng);
+      color: var(--ng);
+    }
+
+    .footer-meta {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <main class="card">
-      <div class="top-meta">
-        <span id="modeBadge" class="badge">POLL / アンケート</span>
-        <span id="statusChip" class="status-chip">待機中</span>
+    <main id="appCard" class="card">
+      <div class="waiting-box">
+        <p class="waiting-title">読み込み中...</p>
+        <p class="waiting-sub">配信画面と接続しています</p>
       </div>
-
-      <div id="timerBox" class="timer-box"></div>
-      <h1 id="qTitle" class="q-title">読み込み中...</h1>
-
-      <div id="contentArea">
-        <div class="waiting-box">配信の投票・クイズ開始をお待ちください</div>
-      </div>
-
-      <div id="msgBox" class="msg-box"></div>
     </main>
   </div>
 
   <script src="config.js"></script>
   <script>
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
-    let currentState = { status: 'WAITING', questionId: '', deadlineAt: 0, resetSeq: 0, theme: 'yellow' };
-    let currentQuestion = null;
-    let selectedChoice = '';
+    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark' };
     let isSubmitting = false;
+
+    function getClientId() {
+      const key = 'stream_poll_client_id';
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = 'u_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        localStorage.setItem(key, id);
+      }
+      return id;
+    }
+
+    function getSavedChoice(questionId) {
+      return localStorage.getItem('stream_poll_choice_' + questionId) || '';
+    }
+
+    function setSavedChoice(questionId, option) {
+      localStorage.setItem('stream_poll_choice_' + questionId, option);
+    }
 
     function applyTheme(state) {
       const params = new URLSearchParams(window.location.search);
-      const qTheme = params.get('theme');
-      const sTheme = state && typeof state.theme === 'string' ? state.theme.trim() : '';
-      const theme = ALLOWED_THEMES.includes(sTheme)
-        ? sTheme
-        : (ALLOWED_THEMES.includes(qTheme) ? qTheme : 'yellow');
+      const theme = (state && ALLOWED_THEMES.includes(state.theme))
+        ? state.theme
+        : (ALLOWED_THEMES.includes(params.get('theme')) ? params.get('theme') : 'dark');
       document.documentElement.setAttribute('data-theme', theme);
     }
 
-    function getVoteStorageKey(questionId, resetSeq) {
-      return `poll_voted_${questionId || 'default'}_seq_${Number(resetSeq || 0)}`;
-    }
-
-    function hasAlreadyVoted(questionId, resetSeq) {
-      try {
-        return Boolean(localStorage.getItem(getVoteStorageKey(questionId, resetSeq)));
-      } catch (e) {
-        return false;
-      }
-    }
-
-    function markVoted(questionId, resetSeq, choice) {
-      try {
-        localStorage.setItem(getVoteStorageKey(questionId, resetSeq), String(choice || '1'));
-      } catch (e) {}
-    }
-
-    function updateTimer() {
-      const el = document.getElementById('timerBox');
+    function updateCountdown() {
+      const el = document.getElementById('timerDisplay');
       if (!el) return;
       if (currentState.status === 'VOTING' && currentState.deadlineAt) {
-        const rem = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
-        el.textContent = `残り ${rem}秒`;
+        const sec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
+        el.textContent = `残り ${sec}秒`;
       } else {
         el.textContent = '';
       }
     }
 
-    function renderView(data) {
-      const { state, question, results, totalVotes } = data;
-      currentState = Object.assign({}, currentState, state || {});
-      currentQuestion = question || null;
-      applyTheme(currentState);
-
-      const status = currentState.status || 'WAITING';
-      const qId = (currentQuestion && currentQuestion.id) || currentState.questionId || 'q1';
-      const resetSeq = Number(currentState.resetSeq || 0);
-      const isQuiz = Boolean(currentQuestion && currentQuestion.type === 'quiz');
-      const alreadyVoted = hasAlreadyVoted(qId, resetSeq);
-
-      const badge = document.getElementById('modeBadge');
-      badge.textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
-
-      const chip = document.getElementById('statusChip');
-      const statusTextMap = {
-        WAITING: '待機中',
-        VOTING: isQuiz ? '回答受付中' : '投票受付中',
-        CLOSED: '受付終了',
-        RESULT: '集計結果',
-        ANSWER: '正解発表'
-      };
-      chip.textContent = statusTextMap[status] || status;
-      chip.className = 'status-chip' + (status === 'VOTING' ? ' voting' : '');
-
-      const titleEl = document.getElementById('qTitle');
-      const areaEl = document.getElementById('contentArea');
-      const msgEl = document.getElementById('msgBox');
-
-      if (status === 'WAITING' || !currentQuestion) {
-        titleEl.textContent = 'ただいま準備中です';
-        areaEl.innerHTML = '<div class="waiting-box">次の出題が始まるまでお待ちください</div>';
-        msgEl.textContent = '';
-        updateTimer();
-        return;
-      }
-
-      titleEl.textContent = currentQuestion.question;
-
-      if (status === 'VOTING') {
-        const choices = Array.isArray(currentQuestion.choices) && currentQuestion.choices.length
-          ? currentQuestion.choices
-          : (Array.isArray(currentQuestion.options) ? currentQuestion.options : []);
-
-        if (alreadyVoted) {
-          areaEl.innerHTML = `<div class="waiting-box">${isQuiz ? '回答を送信済みです。' : '投票を送信済みです。'}<br>結果発表をお待ちください。</div>`;
-          msgEl.textContent = '送信完了';
-          updateTimer();
-          return;
-        }
-
-        if (!choices.includes(selectedChoice)) {
-          selectedChoice = '';
-        }
-
-        areaEl.innerHTML = `
-          <div id="choicesBox" class="choices">
-            ${choices.map(c => `
-              <button type="button" class="choice-btn ${selectedChoice === c ? 'selected' : ''}" data-choice="${escapeAttr(c)}">
-                ${escapeHtml(c)}
-              </button>
-            `).join('')}
-          </div>
-          <button type="button" id="submitVoteBtn" class="submit-btn" ${(!selectedChoice || isSubmitting) ? 'disabled' : ''}>
-            ${isQuiz ? '回答を送信する' : '投票を送信する'}
-          </button>
-        `;
-
-        areaEl.querySelectorAll('.choice-btn').forEach(btn => {
-          btn.onclick = () => {
-            if (isSubmitting) return;
-            selectedChoice = btn.getAttribute('data-choice') || '';
-            areaEl.querySelectorAll('.choice-btn').forEach(b => {
-              b.classList.toggle('selected', b.getAttribute('data-choice') === selectedChoice);
-            });
-            const subBtn = document.getElementById('submitVoteBtn');
-            if (subBtn) subBtn.disabled = !selectedChoice;
-          };
-        });
-
-        const subBtn = document.getElementById('submitVoteBtn');
-        if (subBtn) {
-          subBtn.onclick = () => submitVote(qId, resetSeq);
-        }
-        msgEl.textContent = selectedChoice ? `選択中: ${selectedChoice}` : '選択肢をタップしてください';
-      } else {
-        const showCounts = status === 'RESULT' || status === 'ANSWER' || status === 'CLOSED';
-        const highlightAnswer = status === 'ANSWER' && isQuiz && currentQuestion.answer;
-        const rows = Array.isArray(results) ? results : [];
-
-        areaEl.innerHTML = `
-          <div>
-            ${rows.map(r => {
-              const isCorrect = highlightAnswer && r.label === currentQuestion.answer;
-              const pct = showCounts ? Number(r.pct || 0) : 0;
-              const statText = showCounts ? `${Number(r.count || 0)}票 (${pct}%)` : '受付終了';
-              return `
-                <div class="result-row ${isCorrect ? 'correct' : ''}">
-                  <div class="result-head">
-                    <span>${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
-                    <span class="result-num">${statText}</span>
-                  </div>
-                  <div class="track">
-                    <div class="fill" style="width:${pct}%;"></div>
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `;
-        msgEl.textContent = showCounts ? `合計 ${Number(totalVotes || 0)} 票` : 'ただいま受付を終了しています';
-      }
-
-      updateTimer();
-    }
-
-    async function submitVote(questionId, resetSeq) {
-      if (!selectedChoice || isSubmitting) return;
+    async function submitVote(questionId, option) {
+      if (isSubmitting) return;
       isSubmitting = true;
-      const subBtn = document.getElementById('submitVoteBtn');
-      const msgEl = document.getElementById('msgBox');
-      if (subBtn) subBtn.disabled = true;
-      if (msgEl) msgEl.textContent = '送信中...';
+      setSavedChoice(questionId, option);
+      await pollState();
 
       try {
-        const res = await fetchGas({
+        const res = await postGas({
           action: 'vote',
           questionId,
-          choice: selectedChoice
+          option,
+          clientId: getClientId()
         });
-        if (!res || !res.ok) {
-          if (msgEl) msgEl.textContent = (res && res.error) ? res.error : '送信に失敗しました';
-          isSubmitting = false;
-          if (subBtn) subBtn.disabled = !selectedChoice;
-          return;
+        if (!res.ok && res.error) {
+          alert(res.error);
         }
-        markVoted(questionId, resetSeq, selectedChoice);
-        selectedChoice = '';
-        isSubmitting = false;
-        await pollParticipant();
       } catch (e) {
-        if (msgEl) msgEl.textContent = '通信エラーが発生しました';
+        console.error(e);
+      } finally {
         isSubmitting = false;
-        if (subBtn) subBtn.disabled = !selectedChoice;
+        await pollState();
       }
     }
 
-    async function pollParticipant() {
+    async function pollState() {
       try {
         const data = await fetchGas();
-        if (data && data.ok) {
-          renderView(data);
+        if (!data.ok) return;
+
+        const { state, question, totalVotes, results } = data;
+        currentState = state || { status: 'WAITING', deadlineAt: 0, theme: 'dark' };
+        applyTheme(currentState);
+
+        const card = document.getElementById('appCard');
+        if (!state || state.status === 'WAITING' || !question) {
+          card.innerHTML = `
+            <div class="waiting-box">
+              <p class="waiting-title">次のアンケート・クイズを待機中です</p>
+              <p class="waiting-sub">配信者の操作で自動的に画面が切り替わります</p>
+            </div>
+          `;
+          return;
         }
+
+        const isQuiz = question.type === 'quiz';
+        const myChoice = getSavedChoice(question.id);
+        const tagText = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
+
+        if (state.status === 'VOTING') {
+          const choicesHtml = (question.options || []).map(opt => {
+            const isSelected = myChoice === opt;
+            return `
+              <button
+                type="button"
+                class="choice-btn ${isSelected ? 'selected' : ''}"
+                onclick="submitVote('${escapeAttr(question.id)}', '${escapeAttr(opt)}')"
+                ${isSubmitting ? 'disabled' : ''}
+              >
+                <span>${escapeHtml(opt)}</span>
+                ${isSelected ? '<span class="choice-badge">選択中</span>' : ''}
+              </button>
+            `;
+          }).join('');
+
+          const noticeHtml = myChoice
+            ? `<div class="notice-banner">「${escapeHtml(myChoice)}」で${isQuiz ? '回答' : '投票'}済みです（タップで変更できます）</div>`
+            : `<div class="notice-banner">選択肢をタップして${isQuiz ? '回答' : '投票'}してください</div>`;
+
+          card.innerHTML = `
+            <div class="top-bar">
+              <span class="tag">${tagText}</span>
+              <span id="timerDisplay" class="timer-txt"></span>
+            </div>
+            <h1 class="q-title">${escapeHtml(question.question)}</h1>
+            <div class="choices">${choicesHtml}</div>
+            ${noticeHtml}
+            <div class="footer-meta">
+              <span>${isQuiz ? '回答受付中' : '投票受付中'}</span>
+              <span>現在の総票数: ${Number(totalVotes || 0)}票</span>
+            </div>
+          `;
+          updateCountdown();
+          return;
+        }
+
+        // CLOSED / RESULT / ANSWER 画面
+        const isAnswerMode = state.status === 'ANSWER' && isQuiz && question.answer;
+        const rowsHtml = (results || []).map(r => {
+          const isCorrect = isAnswerMode && r.label === question.answer;
+          const isMyPick = myChoice === r.label;
+          const isWrongPick = isAnswerMode && isMyPick && !isCorrect;
+          const pct = Number(r.pct || 0);
+
+          let badges = '';
+          if (isCorrect) badges += ' ★正解';
+          if (isMyPick) badges += '（あなたの回答）';
+
+          return `
+            <div class="result-row ${isCorrect ? 'correct' : ''} ${isWrongPick ? 'wrong-pick' : ''}">
+              <div class="result-head">
+                <span class="result-label">${escapeHtml(r.label)}${badges}</span>
+                <span class="result-stat">${r.count}票 (${pct}%)</span>
+              </div>
+              <div class="track">
+                <div class="fill" style="width: ${pct}%;"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        let bottomNotice = '';
+        if (isAnswerMode && myChoice) {
+          if (myChoice === question.answer) {
+            bottomNotice = `<div class="notice-banner ok">正解おめでとうございます！</div>`;
+          } else {
+            bottomNotice = `<div class="notice-banner ng">残念！正解は「${escapeHtml(question.answer)}」でした</div>`;
+          }
+        } else if (state.status === 'CLOSED') {
+          bottomNotice = `<div class="notice-banner">${isQuiz ? '回答' : '投票'}の受付は終了しました</div>`;
+        }
+
+        const stateLabelMap = {
+          CLOSED: '受付終了',
+          RESULT: '集計結果',
+          ANSWER: '正解発表'
+        };
+
+        card.innerHTML = `
+          <div class="top-bar">
+            <span class="tag">${tagText}</span>
+            <span class="timer-txt"></span>
+          </div>
+          <h1 class="q-title">${escapeHtml(question.question)}</h1>
+          <div class="results">${rowsHtml}</div>
+          ${bottomNotice}
+          <div class="footer-meta">
+            <span>${stateLabelMap[state.status] || state.status}</span>
+            <span>合計 ${Number(totalVotes || 0)} 票</span>
+          </div>
+        `;
       } catch (e) {
         console.error(e);
       }
@@ -518,13 +627,16 @@
     }
 
     function escapeAttr(str) {
-      return escapeHtml(str);
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;');
     }
 
     applyTheme(currentState);
-    pollParticipant();
-    setInterval(pollParticipant, (typeof CONFIG !== 'undefined' && CONFIG.POLL_INTERVAL_MS) ? Number(CONFIG.POLL_INTERVAL_MS) : 2000);
-    setInterval(updateTimer, 200);
+    pollState();
+    setInterval(pollState, CONFIG.POLL_INTERVAL_MS);
+    setInterval(updateCountdown, 200);
   </script>
 </body>
 </html>
