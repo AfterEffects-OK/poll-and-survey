@@ -12,12 +12,17 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       background: transparent !important;
       background-color: transparent !important;
       font-family: var(--font-main);
+      box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
     }
 
     :root, [data-theme="dark"] {
@@ -140,13 +145,13 @@
       --shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
     }
 
-    /* 画面内の表示位置コントロール */
+    /* 画面内の表示位置コントロール（はみ出し防止のため余白・最大高さを制限） */
     .stage {
       position: relative;
       width: 100%;
       height: 100%;
       background: transparent;
-      padding: 40px;
+      padding: clamp(10px, 2vw, 32px);
       display: flex;
       pointer-events: none;
     }
@@ -160,17 +165,23 @@
     [data-pos="center"] .stage       { justify-content: center; align-items: center; }
 
     .overlay-card {
-      width: 540px;
-      max-width: 100%;
+      width: 100%;
+      max-width: 520px;
+      max-height: 100%;
+      overflow-y: auto;
       background: var(--card-bg);
       color: var(--text);
       border: 2px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 24px 26px;
+      padding: clamp(14px, 2vw, 22px);
       box-shadow: var(--shadow);
       opacity: 0;
-      transform: translateY(12px);
+      transform: translateY(10px);
       transition: opacity 0.25s ease, transform 0.25s ease;
+      scrollbar-width: none;
+    }
+    .overlay-card::-webkit-scrollbar {
+      display: none;
     }
 
     .overlay-card.visible {
@@ -182,43 +193,48 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .tag {
       display: inline-block;
       font-size: 12px;
       font-weight: 800;
-      padding: 4px 10px;
+      padding: 3px 10px;
       border-radius: 999px;
       background: var(--accent-soft);
       color: var(--accent);
+      white-space: nowrap;
     }
 
     .timer-txt {
       font-family: var(--font-num);
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 800;
       color: var(--timer);
+      white-space: nowrap;
     }
 
     .q-title {
-      margin: 0 0 16px;
-      font-size: 22px;
+      margin: 0 0 14px;
+      font-size: clamp(17px, 2vw, 21px);
       font-weight: 800;
       line-height: 1.35;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .rows {
       display: grid;
-      gap: 10px;
+      gap: 8px;
     }
 
     .row-item {
       background: var(--item-bg);
       border-radius: var(--item-radius);
-      padding: 10px 14px;
+      padding: 9px 12px;
+      min-width: 0;
     }
 
     .row-item.correct {
@@ -229,22 +245,30 @@
     .row-head {
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: flex-start;
       gap: 10px;
-      font-size: 16px;
+      font-size: clamp(14px, 1.5vw, 16px);
       font-weight: 800;
       margin-bottom: 6px;
     }
 
+    .row-label {
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
     .row-stat {
       font-family: var(--font-num);
-      font-size: 15px;
+      font-size: 14px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .track {
       width: 100%;
-      height: 12px;
+      height: 11px;
       background: var(--track-bg);
       border-radius: 999px;
       overflow: hidden;
@@ -259,11 +283,12 @@
     }
 
     .footer-meta {
-      margin-top: 12px;
-      font-size: 13px;
+      margin-top: 10px;
+      font-size: 12px;
       color: var(--muted);
       display: flex;
       justify-content: space-between;
+      gap: 8px;
     }
   </style>
 </head>
@@ -358,7 +383,7 @@
           return `
             <div class="row-item ${isCorrect ? 'correct' : ''}">
               <div class="row-head">
-                <span>${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
+                <span class="row-label">${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
                 <span class="row-stat">${statText}</span>
               </div>
               <div class="track">
