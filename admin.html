@@ -224,7 +224,7 @@
     <header>
       <div>
         <h1>配信投票・クイズ コントロールパネル</h1>
-        <div class="sub">操作画面から出題・受付状態・OBS表示（テーマ / 位置 / サイズ）を同期します</div>
+        <div class="sub">操作画面から出題・受付状態・OBS表示（theme / position / size）を同期します</div>
       </div>
       <div class="status-pill">
         <span id="statusDot" class="dot"></span>
@@ -237,6 +237,17 @@
       <!-- 出題設定 -->
       <section class="card">
         <h2>1. 出題設定</h2>
+
+        <div class="row-inline">
+          <div class="field">
+            <label for="questionSelect">登録済みの質問</label>
+            <select id="questionSelect" onchange="onSelectQuestion()"></select>
+          </div>
+          <div class="field">
+            <label for="qId">質問ID</label>
+            <input id="qId" type="text" placeholder="q1" />
+          </div>
+        </div>
 
         <div class="row-inline">
           <div class="field">
@@ -268,8 +279,10 @@
         </div>
 
         <div class="btn-group">
-          <button class="btn-primary" onclick="saveAndStartVoting()">出題して受付開始</button>
-          <button class="btn-outline" onclick="saveQuestionOnly()">質問内容だけ保存</button>
+          <button class="btn-primary" onclick="saveAndStartVoting()">質問を保存して受付開始</button>
+          <button class="btn-outline" onclick="saveQuestionOnly()">質問を保存</button>
+          <button class="btn-outline" onclick="prepareNewQuestion()">新規作成</button>
+          <button class="btn-danger" onclick="deleteSelectedQuestion()">質問削除</button>
         </div>
       </section>
 
@@ -286,12 +299,11 @@
         </div>
 
         <div class="field">
-          <label>リセット・票クリア</label>
+          <label>票リセット（resetSeq インクリメント）</label>
           <div class="btn-group">
-            <button class="btn-danger" onclick="resetSession(true)">全票クリア＆参加者リセット (resetSeq +1)</button>
-            <button class="btn-outline" onclick="resetSession(false)">票数のみクリア</button>
+            <button class="btn-danger" onclick="clearVotesForCurrent()">現在質問の票をリセット</button>
           </div>
-          <div class="hint">「全票クリア＆参加者リセット」を実行すると <code>resetSeq</code> が増え、回答者側の再投票ロック（localStorage）も解除されます。</div>
+          <div class="hint">実行すると該当質問の投票が消去され、<code>resetSeq</code> が増えるため回答者側の投票済みロック（localStorage）も解除されます。</div>
         </div>
 
         <div class="field">
@@ -364,6 +376,8 @@
     ];
     const ALLOWED_SIZES = ['normal', 'compact', 'large'];
 
+    let cachedQuestions = [];
+    let currentQuestionId = 'q1';
     let initializedFormFromServer = false;
 
     function writeLog(msg) {
@@ -380,9 +394,9 @@
       if (!gasUrl) {
         throw new Error('CONFIG.GAS_URL が設定されていません');
       }
-      if (!payload || payload.action === 'getState') {
+      if (!payload || payload.action === 'state') {
         const sep = gasUrl.includes('?') ? '&' : '?';
-        const res = await fetch(`${gasUrl}${sep}action=getState&_t=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(`${gasUrl}${sep}action=state&_t=${Date.now()}`, { cache: 'no-store' });
         return await res.json();
       }
       const res = await fetch(gasUrl, {
@@ -422,11 +436,49 @@
       }
     }
 
+    function fillFormWithQuestion(q) {
+      if (!q) return;
+      document.getElementById('qId').value = q.id || '';
+      document.getElementById('qType').value = q.type === 'quiz' ? 'quiz' : 'poll';
+      document.getElementById('qTitle').value = q.question || '';
+      document.getElementById('qOptions').value = Array.isArray(q.options) ? q.options.join('\n') : '';
+      toggleAnswerField();
+      refreshAnswerChoices(q.answer || '');
+    }
+
+    function prepareNewQuestion() {
+      const nextNum = cachedQuestions.length + 1;
+      document.getElementById('qId').value = `q${nextNum}`;
+      document.getElementById('qType').value = 'poll';
+      document.getElementById('qTitle').value = '';
+      document.getElementById('qOptions').value = '';
+      toggleAnswerField();
+      refreshAnswerChoices('');
+      document.getElementById('qTitle').focus();
+    }
+
+    async function onSelectQuestion() {
+      const selectedId = document.getElementById('questionSelect').value;
+      const q = cachedQuestions.find(item => item.id === selectedId);
+      if (q) {
+        fillFormWithQuestion(q);
+      }
+      if (selectedId) {
+        try {
+          await callGasApi({ action: 'set_state', questionId: selectedId });
+          writeLog(`出題対象を ${selectedId} に切り替えました`);
+          await pollAdmin();
+        } catch (e) {
+          writeLog('切替エラー: ' + e.message);
+        }
+      }
+    }
+
     function collectQuestionPayload() {
+      const id = document.getElementById('qId').value.trim() || ('q_' + Date.now().toString(36));
       const type = document.getElementById('qType').value === 'quiz' ? 'quiz' : 'poll';
       const questionText = document.getElementById('qTitle').value.trim();
       const options = getParsedOptions();
-      const durationSec = Math.max(0, Number(document.getElementById('durationSec').value || 0));
       const answer = type === 'quiz' ? document.getElementById('qAnswer').value : '';
 
       if (!questionText) {
@@ -438,11 +490,11 @@
         return null;
       }
       return {
+        id,
         type,
         question: questionText,
         options,
-        durationSec,
-        answer: options.includes(answer) ? answer : options[0]
+        answer: type === 'quiz' ? (options.includes(answer) ? answer : options[0]) : ''
       };
     }
 
@@ -462,13 +514,11 @@
       const question = collectQuestionPayload();
       if (!question) return;
       try {
-        const res = await callGasApi({
-          action: 'setQuestion',
-          question,
-          state: collectAppearancePayload()
-        });
+        const res = await callGasApi({ action: 'upsert_question', question });
         if (!res.ok) throw new Error(res.error || '保存失敗');
-        writeLog('質問内容を保存しました');
+        await callGasApi({ action: 'set_state', questionId: question.id });
+        initializedFormFromServer = false;
+        writeLog(`質問「${question.id}」を保存しました`);
         await pollAdmin();
       } catch (e) {
         writeLog('エラー: ' + e.message);
@@ -478,35 +528,60 @@
     async function saveAndStartVoting() {
       const question = collectQuestionPayload();
       if (!question) return;
-      const deadlineAt = question.durationSec > 0 ? Date.now() + question.durationSec * 1000 : 0;
+      const durationSec = Math.max(0, Number(document.getElementById('durationSec').value || 0));
+      const appearance = collectAppearancePayload();
+
       try {
-        const res = await callGasApi({
-          action: 'startVoting',
-          question,
-          state: Object.assign(collectAppearancePayload(), {
-            status: 'VOTING',
-            deadlineAt
-          })
+        const upRes = await callGasApi({ action: 'upsert_question', question });
+        if (!upRes.ok) throw new Error(upRes.error || '保存失敗');
+
+        const statePayload = Object.assign({}, appearance, {
+          action: 'set_state',
+          questionId: question.id,
+          status: 'VOTING',
+          durationSec
         });
-        if (!res.ok) throw new Error(res.error || '受付開始失敗');
-        writeLog(`出題して受付を開始しました（${question.type}）`);
+        const stRes = await callGasApi(statePayload);
+        if (!stRes.ok) throw new Error(stRes.error || '受付開始失敗');
+
+        initializedFormFromServer = false;
+        writeLog(`質問「${question.id}」を保存して受付を開始しました`);
         await pollAdmin();
       } catch (e) {
         writeLog('エラー: ' + e.message);
       }
     }
 
+    async function deleteSelectedQuestion() {
+      const targetId = document.getElementById('qId').value.trim() || document.getElementById('questionSelect').value;
+      if (!targetId) return;
+      if (!confirm(`質問「${targetId}」を削除しますか？`)) return;
+
+      try {
+        const res = await callGasApi({ action: 'delete_question', id: targetId });
+        if (!res.ok) throw new Error(res.error || '削除失敗');
+        initializedFormFromServer = false;
+        writeLog(`質問「${targetId}」を削除しました`);
+        await pollAdmin();
+      } catch (e) {
+        writeLog('削除エラー: ' + e.message);
+      }
+    }
+
     async function setStatus(nextStatus) {
       const durationSec = Math.max(0, Number(document.getElementById('durationSec').value || 0));
-      const patch = Object.assign(collectAppearancePayload(), { status: nextStatus });
-      if (nextStatus === 'VOTING') {
-        patch.deadlineAt = durationSec > 0 ? Date.now() + durationSec * 1000 : 0;
+      const targetId = document.getElementById('qId').value.trim() || currentQuestionId;
+      const payload = Object.assign({}, collectAppearancePayload(), {
+        action: 'set_state',
+        questionId: targetId,
+        status: nextStatus
+      });
+      if (nextStatus === 'VOTING' && durationSec > 0) {
+        payload.durationSec = durationSec;
       }
+
       try {
-        const res = await callGasApi({
-          action: 'updateState',
-          state: patch
-        });
+        const res = await callGasApi(payload);
         if (!res.ok) throw new Error(res.error || '状態更新失敗');
         writeLog(`状態を ${nextStatus} に変更しました`);
         await pollAdmin();
@@ -516,34 +591,26 @@
     }
 
     async function pushAppearance() {
-      const appearance = collectAppearancePayload();
+      const payload = Object.assign({}, collectAppearancePayload(), {
+        action: 'set_state'
+      });
       try {
-        const res = await callGasApi({
-          action: 'updateState',
-          state: appearance
-        });
+        const res = await callGasApi(payload);
         if (!res.ok) throw new Error(res.error || '表示設定更新失敗');
-        writeLog(`OBS表示を更新: theme=${appearance.theme}, pos=${appearance.position}, size=${appearance.size}`);
+        writeLog(`OBS表示を更新: theme=${payload.theme}, pos=${payload.position}, size=${payload.size}`);
       } catch (e) {
         writeLog('エラー: ' + e.message);
       }
     }
 
-    async function resetSession(incrementResetSeq) {
-      if (!confirm(incrementResetSeq
-        ? '全票をクリアし、参加者の投票済み状態（resetSeq）もリセットしますか？'
-        : '集計票のみクリアしますか？')) {
-        return;
-      }
+    async function clearVotesForCurrent() {
+      const targetId = document.getElementById('qId').value.trim() || currentQuestionId;
+      if (!confirm(`質問「${targetId}」の投票データをリセットし、resetSeq を進めますか？`)) return;
+
       try {
-        const res = await callGasApi({
-          action: 'resetVotes',
-          incrementResetSeq: Boolean(incrementResetSeq)
-        });
+        const res = await callGasApi({ action: 'clear_votes', questionId: targetId });
         if (!res.ok) throw new Error(res.error || 'リセット失敗');
-        writeLog(incrementResetSeq
-          ? `全票クリア＆resetSeq更新（resetSeq=${res.state && res.state.resetSeq}）`
-          : '票数をクリアしました');
+        writeLog(`質問「${targetId}」の票をリセットしました（resetSeq=${res.resetSeq}）`);
         await pollAdmin();
       } catch (e) {
         writeLog('エラー: ' + e.message);
@@ -551,13 +618,14 @@
     }
 
     function renderAdminView(data) {
-      const { state, question, totalVotes, results } = data;
+      const { state, question, questions, totalVotes, results } = data;
       const st = state || {};
       const status = st.status || 'WAITING';
+      currentQuestionId = st.questionId || (question && question.id) || 'q1';
 
       const dot = document.getElementById('statusDot');
       dot.className = 'dot ' + status.toLowerCase();
-      document.getElementById('currentStatusText').textContent = `状態: ${status}`;
+      document.getElementById('currentStatusText').textContent = `状態: ${status} (${currentQuestionId})`;
       document.getElementById('currentTotalText').textContent = ` / 合計 ${Number(totalVotes || 0)} 票`;
 
       if (ALLOWED_THEMES.includes(st.theme)) {
@@ -570,18 +638,22 @@
         document.getElementById('sizeSelect').value = st.size;
       }
 
+      if (Array.isArray(questions)) {
+        cachedQuestions = questions;
+        const sel = document.getElementById('questionSelect');
+        sel.innerHTML = '';
+        questions.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = `${item.id}: ${item.question} [${item.type}]`;
+          if (item.id === currentQuestionId) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+
       if (!initializedFormFromServer && question) {
         initializedFormFromServer = true;
-        document.getElementById('qType').value = question.type === 'quiz' ? 'quiz' : 'poll';
-        document.getElementById('qTitle').value = question.question || '';
-        if (Array.isArray(question.options)) {
-          document.getElementById('qOptions').value = question.options.join('\n');
-        }
-        if (typeof question.durationSec === 'number') {
-          document.getElementById('durationSec').value = question.durationSec;
-        }
-        toggleAnswerField();
-        refreshAnswerChoices(question.answer || '');
+        fillFormWithQuestion(question);
       }
 
       const box = document.getElementById('resultsBox');
@@ -604,7 +676,7 @@
 
     async function pollAdmin() {
       try {
-        const data = await callGasApi({ action: 'getState' });
+        const data = await callGasApi({ action: 'state' });
         if (data && data.ok) {
           renderAdminView(data);
         }
