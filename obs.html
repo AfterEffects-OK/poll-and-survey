@@ -301,6 +301,16 @@
       transition: width 0.4s ease;
     }
 
+    .closed-notice {
+      padding: 14px 16px;
+      border-radius: var(--item-radius);
+      background: var(--item-bg);
+      color: var(--muted);
+      font-size: clamp(16px, 1.8vw, 20px);
+      font-weight: 800;
+      text-align: center;
+    }
+
     /* 受付中のみ表示されるQRコードボックス */
     .qr-box {
       display: none;
@@ -428,7 +438,7 @@
     }
 
     html[data-size="large"] .timer-txt {
-      font-size: 28px;
+      font-size: 24px;
     }
 
     html[data-size="large"] .q-title {
@@ -483,8 +493,8 @@
           <canvas id="qrCanvas" width="240" height="240"></canvas>
         </div>
         <div class="qr-info">
-          <div id="qrHeading" class="qr-heading">スマホでQRコードを
-読み取って投票</div>
+          <div id="qrHeading" class="qr-heading">QRコードを読み取って
+投票</div>
           <div id="qrStatusLabel" class="qr-status"></div>
         </div>
       </div>
@@ -813,6 +823,7 @@
         const card = document.getElementById('overlayCard');
         const isCompact = currentState.size === 'compact';
         const isVoting = currentState.status === 'VOTING';
+        const isClosed = currentState.status === 'CLOSED';
         const isQuiz = Boolean(question && question.type === 'quiz');
         currentIsQuiz = isQuiz;
 
@@ -823,7 +834,7 @@
           return;
         }
 
-        const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER' || currentState.status === 'CLOSED';
+        const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER';
         const highlightAnswer = currentState.status === 'ANSWER' && isQuiz && question.answer;
 
         updateQrHeading(isQuiz);
@@ -840,23 +851,27 @@
         document.getElementById('totalVotesLabel').textContent = showCounts ? `合計 ${totalVotes} 票` : '';
 
         const rows = document.getElementById('rowsContainer');
-        rows.innerHTML = (results || []).map(r => {
-          const isCorrect = highlightAnswer && r.label === question.answer;
-          const pctVal = showCounts ? Number(r.pct || 0) : 0;
-          const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
+        if (isClosed) {
+          rows.innerHTML = `<div class="closed-notice">${isQuiz ? '回答受付は終了しました' : '投票受付は終了しました'}</div>`;
+        } else {
+          rows.innerHTML = (results || []).map(r => {
+            const isCorrect = highlightAnswer && r.label === question.answer;
+            const pctVal = showCounts ? Number(r.pct || 0) : 0;
+            const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
 
-          return `
-            <div class="row-item ${isCorrect ? 'correct' : ''}">
-              <div class="row-head">
-                <span class="row-label">${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
-                <span class="row-stat">${statText}</span>
+            return `
+              <div class="row-item ${isCorrect ? 'correct' : ''}">
+                <div class="row-head">
+                  <span class="row-label">${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
+                  <span class="row-stat">${statText}</span>
+                </div>
+                <div class="track">
+                  <div class="fill" style="width: ${pctVal}%;"></div>
+                </div>
               </div>
-              <div class="track">
-                <div class="fill" style="width: ${pctVal}%;"></div>
-              </div>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        }
 
         renderQrIfNeeded(isVoting);
         card.classList.add('visible');
