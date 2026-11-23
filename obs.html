@@ -526,12 +526,12 @@
       const isCompact = currentState && currentState.size === 'compact';
       if (isCompact) {
         headingEl.textContent = isQuiz
-          ? 'QRコードを読み取って回答'
-          : 'QRコードを読み取って投票';
-      } else {
-        headingEl.textContent = isQuiz
           ? 'QRコードを読み取って\n回答'
           : 'QRコードを読み取って\n投票';
+      } else {
+        headingEl.textContent = isQuiz
+          ? 'QRコードを読み取って回答'
+          : 'QRコードを読み取って投票';
       }
     }
 
