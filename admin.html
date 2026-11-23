@@ -50,6 +50,8 @@
     button.warn:hover { background: #b45309; }
     button.success { background: #059669; }
     button.success:hover { background: #047857; }
+    button.info { background: #0284c7; }
+    button.info:hover { background: #0369a1; }
     button.danger { background: #dc2626; }
     button.danger:hover { background: #b91c1c; }
     .timer-readout { font-size: 16px; font-weight: 800; color: #fbbf24; margin-left: 6px; }
@@ -77,6 +79,7 @@
       display: block;
       margin: 0 0 12px;
       font-size: 16px;
+      font-weight: 700;
       color: #93c5fd;
     }
     .accordion-icon {
@@ -168,7 +171,7 @@
         <button class="warn" onclick="setStatus('WAITING')">非表示（待機）</button>
         <button class="success" onclick="setStatus('VOTING')">投票受付中（無制限）</button>
         <button onclick="setStatus('CLOSED')">受付終了</button>
-        <button onclick="setStatus('RESULT')">結果グラフ表示</button>
+        <button class="info" onclick="setStatus('RESULT')">アンケート結果表示</button>
         <button class="success" onclick="setStatus('ANSWER')">クイズ正解表示</button>
       </div>
 
