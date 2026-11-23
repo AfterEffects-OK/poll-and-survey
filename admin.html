@@ -604,6 +604,102 @@
     .acc-card.open .acc-arrow {
       transform: rotate(180deg);
     }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 420px;
+      background: #141c2b;
+      color: #f8fafc;
+      border: 2px solid #ef4444;
+      border-radius: 16px;
+      padding: 22px 20px;
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
+      transform: translateY(8px) scale(0.97);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-backdrop.open .modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-title {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fca5a5;
+    }
+
+    .modal-message {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .modal-sub {
+      margin: 0 0 18px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.08s ease;
+    }
+
+    .modal-btn:active {
+      transform: scale(0.98);
+    }
+
+    .modal-btn.cancel {
+      background: #334155;
+      color: #f8fafc;
+    }
+
+    .modal-btn.cancel:hover {
+      background: #475569;
+    }
+
+    .modal-btn.danger {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .modal-btn.danger:hover {
+      background: #dc2626;
+    }
   </style>
 </head>
 <body>
@@ -773,6 +869,18 @@
     </div>
   </div>
 
+  <div id="confirmModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle" class="modal-title">投票ログの削除確認</h3>
+      <p id="modalMessage" class="modal-message">現在選択中の質問の投票ログを削除しますか？</p>
+      <p class="modal-sub">※削除した投票データは元に戻せません。</p>
+      <div class="modal-actions">
+        <button type="button" id="modalCancelBtn" class="modal-btn cancel">キャンセル</button>
+        <button type="button" id="modalOkBtn" class="modal-btn danger">削除する</button>
+      </div>
+    </div>
+  </div>
+
   <script src="config.js"></script>
   <script>
     let lastQuestionId = '';
@@ -836,6 +944,60 @@
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
+
+    function showConfirmPopup(message, options = {}) {
+      const {
+        title = '投票ログの削除確認',
+        okText = '削除する',
+        cancelText = 'キャンセル'
+      } = options;
+
+      return new Promise((resolve) => {
+        const modal = document.getElementById('confirmModal');
+        const titleEl = document.getElementById('modalTitle');
+        const msgEl = document.getElementById('modalMessage');
+        const okBtn = document.getElementById('modalOkBtn');
+        const cancelBtn = document.getElementById('modalCancelBtn');
+
+        if (!modal || !msgEl || !okBtn || !cancelBtn) {
+          resolve(window.confirm(message));
+          return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = okText;
+        cancelBtn.textContent = cancelText;
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        cancelBtn.focus();
+
+        const cleanup = (result) => {
+          modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          modal.removeEventListener('click', onBackdrop);
+          document.removeEventListener('keydown', onKeyDown);
+          resolve(result);
+        };
+
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        const onBackdrop = (e) => {
+          if (e.target === modal) cleanup(false);
+        };
+        const onKeyDown = (e) => {
+          if (e.key === 'Escape') cleanup(false);
+        };
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        modal.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKeyDown);
+      });
+    }
 
     function renderThemeChips() {
       const grid = document.getElementById('themeChipGrid');
@@ -1255,7 +1417,10 @@
         alert('削除する既存質問をドロップダウンから選択してください。');
         return;
       }
-      if (!confirm(`質問「${targetId}」を削除しますか？`)) return;
+      const confirmed = await showConfirmPopup(`質問「${targetId}」を削除しますか？`, {
+        title: '質問の削除確認'
+      });
+      if (!confirmed) return;
       const res = await postGas({ action: 'delete_question', id: targetId });
       setLog(res.message || res.error);
       if (res.ok) {
@@ -1351,7 +1516,10 @@
     }
 
     async function clearCurrentVotes() {
-      if (!confirm('現在選択中の質問の投票ログを削除しますか？')) return;
+      const confirmed = await showConfirmPopup('現在選択中の質問の投票ログを削除しますか？', {
+        title: '投票ログの削除確認'
+      });
+      if (!confirmed) return;
       const questionId = document.getElementById('questionSelect').value;
       const res = await postGas({ action: 'clear_votes', questionId });
       setLog(res.message || res.error);
