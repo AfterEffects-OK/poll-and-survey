@@ -87,6 +87,23 @@
       color: #ffffff;
     }
 
+    .account-open-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 7px 13px;
+      border-radius: 8px;
+      background: #065f46;
+      color: #d1fae5;
+      border: 1px solid #34d399;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .account-open-btn:hover {
+      background: #059669;
+      color: #ffffff;
+    }
+
     .help-open-btn {
       font-family: inherit;
       font-size: 13px;
@@ -351,6 +368,10 @@
     }
     button.btn:active:not(:disabled) {
       transform: scale(0.98);
+    }
+    button.btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
     button.btn-green { background: #059669; }
@@ -951,6 +972,132 @@
       background: #1d4ed8;
     }
 
+    /* アカウント登録・復元モーダル */
+    .account-modal-box {
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      background: #141c2b;
+      color: #f8fafc;
+      border: 2px solid #34d399;
+      border-radius: 16px;
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.72);
+      transform: translateY(8px) scale(0.97);
+      transition: transform 0.2s ease;
+      overflow: hidden;
+    }
+
+    .modal-backdrop.open .account-modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .account-modal-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 700px) {
+      .account-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .account-box {
+      background: #0b101b;
+      border: 1px solid #25344f;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .account-box h4 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #6ee7b7;
+    }
+
+    .account-help-txt {
+      margin: 0 0 12px;
+      font-size: 12.5px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .account-generated-card {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #062e24;
+      border: 1px solid #10b981;
+      display: none;
+    }
+
+    .account-generated-card.show {
+      display: block;
+    }
+
+    .account-id-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #6ee7b7;
+      margin: 4px 0 8px;
+    }
+
+    .account-list-wrap {
+      max-height: 230px;
+      overflow: auto;
+      border: 1px solid #25344f;
+      border-radius: 8px;
+      background: #090d16;
+      margin-top: 10px;
+    }
+
+    table.account-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    table.account-table th,
+    table.account-table td {
+      padding: 7px 9px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+      vertical-align: middle;
+      word-break: break-word;
+    }
+
+    table.account-table th {
+      position: sticky;
+      top: 0;
+      background: #131c2e;
+      color: #6ee7b7;
+      font-weight: 800;
+      z-index: 1;
+    }
+
+    .account-status-msg {
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #0b101b;
+      border-left: 4px solid #34d399;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
     /* 使い方ガイド用モーダル（タブ対応） */
     .help-modal-box {
       width: 100%;
@@ -1190,6 +1337,7 @@
         <span id="contextBadge" class="context-pill">room: default / admin: default</span>
       </div>
       <div class="header-actions">
+        <button type="button" class="account-open-btn" onclick="openAccountModal()">アカウント登録・復元</button>
         <button type="button" class="help-open-btn" onclick="openHelpModal()">使い方ガイド</button>
         <button type="button" class="copy-btn" onclick="copyPageUrl('obs.html')">OBS用URLをコピー</button>
         <button type="button" class="copy-btn" onclick="copyPageUrl('index.html')">回答者用URLをコピー</button>
@@ -1403,6 +1551,90 @@
     </div>
   </div>
 
+  <!-- アカウント登録・復元モーダル -->
+  <div id="accountModal" class="modal-backdrop" aria-hidden="true" onclick="handleAccountBackdropClick(event)">
+    <div class="account-modal-box" role="dialog" aria-modal="true" aria-labelledby="accountModalTitle">
+      <div class="help-modal-header">
+        <h3 id="accountModalTitle" class="help-modal-title" style="color:#6ee7b7;">adminアカウント登録・復元</h3>
+        <button type="button" class="help-close-x" aria-label="閉じる" onclick="closeAccountModal()">×</button>
+      </div>
+
+      <div class="account-modal-body">
+        <div id="accountStatusMsg" class="account-status-msg">
+          現在の admin ID: <strong><span id="modalCurrentAdminId">default</span></strong>（登録するとランダムな8桁英字IDを発行し、スプレッドシートへ保存して自動切替します）
+        </div>
+
+        <div class="account-grid">
+          <!-- 新規アカウント登録 -->
+          <form class="account-box" onsubmit="handleRegisterAdminSubmit(event)">
+            <h4>1. 新規アカウント登録（8桁英字ID自動生成）</h4>
+            <p class="account-help-txt">
+              登録と同時にランダムな8桁の英字（A-Z / a-z）で <span class="help-code">adminId</span> を作成し、スプレッドシートに記録して自動で呼び出します。
+            </p>
+
+            <div class="field">
+              <label class="lbl" for="regAccountName">アカウント名・配信者名（任意）</label>
+              <input id="regAccountName" type="text" placeholder="例: カギセン配信アカウント" autocomplete="off" />
+            </div>
+
+            <div class="field">
+              <label class="lbl" for="regAccountMemo">復元用メモ・メールなど（任意）</label>
+              <input id="regAccountMemo" type="text" placeholder="例: メイン配信用 / contact@example.com" autocomplete="off" />
+            </div>
+
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="submit" id="registerAdminBtn" class="btn btn-green">アカウント登録してID作成</button>
+            </div>
+
+            <div id="accountGeneratedCard" class="account-generated-card">
+              <div style="font-size:12px;font-weight:800;color:#a7f3d0;">発行・自動呼び出し完了（スプレッドシート記録済み）</div>
+              <div id="generatedAdminIdText" class="account-id-display"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="copy-btn" onclick="copyGeneratedAdminId()">IDをコピー</button>
+              </div>
+            </div>
+          </form>
+
+          <!-- 忘れた時の復元 -->
+          <div class="account-box">
+            <h4>2. admin IDを忘れた時の復元</h4>
+            <p class="account-help-txt">
+              スプレッドシートに記録された登録済みアカウントを検索・一覧選択して復元するか、控えていた8桁英字IDを直接入力して呼び出せます。
+            </p>
+
+            <div class="field">
+              <label class="lbl" for="restoreAdminQueryInput">名前・メモ・IDで検索（またはID直接入力）</label>
+              <div class="inline-select-row">
+                <input
+                  id="restoreAdminQueryInput"
+                  type="text"
+                  placeholder="例: カギセン / AbCdEfGh"
+                  autocomplete="off"
+                  oninput="renderAdminAccountsTable()"
+                />
+                <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminByDirectOrFirst()">復元</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+              <span class="lbl" style="margin:0;">登録済みアカウント一覧</span>
+              <button type="button" class="btn btn-gray btn-sm" onclick="fetchRegisteredAdmins(true)">シートから再読込</button>
+            </div>
+
+            <div id="accountListContainer" class="account-list-wrap">
+              <div class="log-empty-box">アカウント一覧を読み込み中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="help-modal-footer">
+        <span class="help-footer-hint">admin IDを切り替えると、そのadminに紐づく質問一覧が読み込まれます</span>
+        <button type="button" class="modal-btn primary" onclick="closeAccountModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 削除確認モーダル -->
   <div id="confirmModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -1452,6 +1684,7 @@
           <section class="help-section">
             <h4><span class="help-step-pill">手順</span> 配信開始から終了までの基本ステップ</h4>
             <ol class="help-list">
+              <li><strong>adminアカウントを登録・復元する</strong>：ヘッダーの「アカウント登録・復元」から8桁英字の <span class="help-code">adminId</span> を作成（または復元）します。</li>
               <li><strong>配信ルームを決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のIDを入力して <span class="help-code">配信切替</span> を押します。</li>
               <li><strong>URLを配置・配布する</strong>：「OBS用URLをコピー」でOBSブラウザソースに設定し、「回答者用URLをコピー」で視聴者に共有します。</li>
               <li><strong>質問を選ぶ</strong>：左「1. 出題・受付ステータス操作」で質問を選び、<span class="help-code">出題切替</span> を押します。</li>
@@ -1671,6 +1904,7 @@
     const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
     const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
+    const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
     let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
     let ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : DEFAULT_ADMIN;
@@ -1678,6 +1912,8 @@
     let lastQuestionId = '';
     let latestQuestions = [];
     let latestVoteLogs = [];
+    let registeredAdmins = [];
+    let lastGeneratedAdminId = '';
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
@@ -1740,6 +1976,336 @@
 
     const HELP_TAB_KEYS = ['flow', 'buttons', 'obs', 'logs', 'trouble'];
 
+    function normalizeAdminId(raw) {
+      const cleaned = String(raw || '')
+        .trim()
+        .replace(/[^a-zA-Z0-9_@-]/g, '');
+      return cleaned || DEFAULT_ADMIN;
+    }
+
+    function createRandom8LetterAdminId(existingList = []) {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+      const existingSet = new Set(
+        (Array.isArray(existingList) ? existingList : [])
+          .map(item => String(item.adminId || '').trim())
+          .filter(Boolean)
+      );
+
+      for (let attempt = 0; attempt < 30; attempt++) {
+        let code = '';
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+          const buf = new Uint32Array(8);
+          window.crypto.getRandomValues(buf);
+          for (let i = 0; i < 8; i++) {
+            code += letters[buf[i] % letters.length];
+          }
+        } else {
+          for (let i = 0; i < 8; i++) {
+            code += letters[Math.floor(Math.random() * letters.length)];
+          }
+        }
+        if (!existingSet.has(code)) {
+          return code;
+        }
+      }
+      return 'AbCdEfGh';
+    }
+
+    function loadCachedAdminAccounts() {
+      try {
+        const raw = localStorage.getItem(ADMIN_ACCOUNTS_CACHE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCachedAdminAccounts(list) {
+      try {
+        localStorage.setItem(ADMIN_ACCOUNTS_CACHE_KEY, JSON.stringify(list.slice(0, 100)));
+      } catch (e) {}
+    }
+
+    function normalizeAdminAccount(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+      const adminId = String(raw.adminId || raw.id || '').trim();
+      if (!adminId) return null;
+      return {
+        adminId,
+        name: String(raw.name || raw.accountName || raw.label || ''),
+        memo: String(raw.memo || raw.email || raw.note || ''),
+        createdAt: String(raw.createdAt || raw.timestamp || '')
+      };
+    }
+
+    function mergeAdminAccounts(incoming) {
+      const map = new Map();
+      [...loadCachedAdminAccounts(), ...registeredAdmins, ...(Array.isArray(incoming) ? incoming : [])]
+        .map(normalizeAdminAccount)
+        .filter(Boolean)
+        .forEach(item => {
+          const prev = map.get(item.adminId);
+          map.set(item.adminId, {
+            adminId: item.adminId,
+            name: item.name || (prev ? prev.name : ''),
+            memo: item.memo || (prev ? prev.memo : ''),
+            createdAt: item.createdAt || (prev ? prev.createdAt : '')
+          });
+        });
+      const merged = [...map.values()];
+      registeredAdmins = merged;
+      saveCachedAdminAccounts(merged);
+      return merged;
+    }
+
+    function syncUrlParams() {
+      try {
+        const url = new URL(window.location.href);
+        if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
+          url.searchParams.set('room', ROOM_ID);
+        } else {
+          url.searchParams.delete('room');
+        }
+        if (ADMIN_ID && ADMIN_ID !== DEFAULT_ADMIN) {
+          url.searchParams.set('admin', ADMIN_ID);
+        } else {
+          url.searchParams.delete('admin');
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+
+    function updateModalAdminHeader() {
+      const el = document.getElementById('modalCurrentAdminId');
+      if (el) {
+        el.textContent = ADMIN_ID;
+      }
+    }
+
+    function setAccountStatusMessage(msg) {
+      const el = document.getElementById('accountStatusMsg');
+      if (el) {
+        el.innerHTML = msg;
+      }
+    }
+
+    async function applyAdminId(nextAdminRaw, options = {}) {
+      const { announcePrefix = '' } = options;
+      const nextAdmin = normalizeAdminId(nextAdminRaw);
+      ADMIN_ID = nextAdmin;
+      lastQuestionId = '';
+      latestVoteLogs = [];
+      isObsAppearanceDirty = false;
+      syncUrlParams();
+      renderContextBadge();
+      updateModalAdminHeader();
+      renderAdminAccountsTable();
+      setLog(`${announcePrefix}admin「${ADMIN_ID}」を呼び出しました。`);
+      await Promise.all([loadAll(), fetchVoteLogs(false)]);
+    }
+
+    async function fetchRegisteredAdmins(showFeedback = false) {
+      mergeAdminAccounts([]);
+      renderAdminAccountsTable();
+      try {
+        const res = await fetchGas({
+          action: 'list_admins',
+          roomId: ROOM_ID,
+          adminId: ADMIN_ID
+        });
+        if (res && res.ok) {
+          const rawList = Array.isArray(res.admins) ? res.admins : (Array.isArray(res.accounts) ? res.accounts : []);
+          mergeAdminAccounts(rawList);
+          renderAdminAccountsTable();
+          if (showFeedback) {
+            setAccountStatusMessage(`スプレッドシートから登録済みアカウント（${registeredAdmins.length}件）を読み込みました。現在: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
+          }
+          return;
+        }
+        if (showFeedback) {
+          setAccountStatusMessage(`ローカル保存分（${registeredAdmins.length}件）を表示中です。現在: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
+        }
+      } catch (e) {
+        console.error(e);
+        if (showFeedback) {
+          setAccountStatusMessage(`シート通信を確認できませんでした。ローカル保存分（${registeredAdmins.length}件）を表示中です。`);
+        }
+      }
+    }
+
+    async function handleRegisterAdminSubmit(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('regAccountName');
+      const memoInput = document.getElementById('regAccountMemo');
+      const submitBtn = document.getElementById('registerAdminBtn');
+
+      const name = String(nameInput?.value || '').trim();
+      const memo = String(memoInput?.value || '').trim();
+      const createdAt = new Date().toLocaleString('ja-JP');
+
+      mergeAdminAccounts([]);
+      const generatedId = createRandom8LetterAdminId(registeredAdmins);
+
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        let finalId = generatedId;
+        let savedToSheet = false;
+
+        try {
+          const res = await postGas({
+            action: 'register_admin',
+            roomId: ROOM_ID,
+            adminId: generatedId,
+            account: {
+              adminId: generatedId,
+              name,
+              memo,
+              createdAt
+            }
+          });
+          if (res && res.ok) {
+            savedToSheet = true;
+            if (res.adminId) {
+              finalId = normalizeAdminId(res.adminId);
+            }
+            if (Array.isArray(res.admins)) {
+              mergeAdminAccounts(res.admins);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+        const newRecord = normalizeAdminAccount({
+          adminId: finalId,
+          name,
+          memo,
+          createdAt
+        });
+        mergeAdminAccounts(newRecord ? [newRecord] : []);
+
+        lastGeneratedAdminId = finalId;
+        const genCard = document.getElementById('accountGeneratedCard');
+        const genText = document.getElementById('generatedAdminIdText');
+        if (genText) genText.textContent = finalId;
+        if (genCard) genCard.classList.add('show');
+
+        setAccountStatusMessage(
+          `8桁英字ID「<strong>${escapeHtml(finalId)}</strong>」を作成し、${savedToSheet ? 'スプレッドシートへ記録' : 'ローカル保存'}して自動呼び出ししました。`
+        );
+
+        await applyAdminId(finalId, { announcePrefix: '新規登録・' });
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    function copyGeneratedAdminId() {
+      if (!lastGeneratedAdminId) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastGeneratedAdminId)
+          .then(() => setAccountStatusMessage(`admin ID「<strong>${escapeHtml(lastGeneratedAdminId)}</strong>」をコピーしました。`))
+          .catch(() => {});
+      }
+    }
+
+    function getFilteredAdminAccounts() {
+      const q = String(document.getElementById('restoreAdminQueryInput')?.value || '').trim().toLowerCase();
+      const list = mergeAdminAccounts([]);
+      if (!q) return list;
+      return list.filter(acc => {
+        const hay = `${acc.adminId} ${acc.name} ${acc.memo} ${acc.createdAt}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderAdminAccountsTable() {
+      const container = document.getElementById('accountListContainer');
+      if (!container) return;
+
+      const list = getFilteredAdminAccounts();
+      if (!list.length) {
+        container.innerHTML = `<div class="log-empty-box">一致する登録アカウントがありません。IDを直接入力して「復元」を押すこともできます。</div>`;
+        return;
+      }
+
+      const rowsHtml = list.map(acc => {
+        const isCurrent = acc.adminId === ADMIN_ID;
+        return `
+          <tr>
+            <td>
+              <strong style="font-family:ui-monospace,monospace;color:#6ee7b7;">${escapeHtml(acc.adminId)}</strong>
+              ${isCurrent ? '<span class="context-pill" style="margin-left:6px;padding:1px 7px;">使用中</span>' : ''}
+            </td>
+            <td>${escapeHtml(acc.name || '-')}</td>
+            <td>${escapeHtml(acc.memo || '-')}</td>
+            <td>
+              <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminById('${escapeHtml(acc.adminId)}')">復元</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <table class="account-table">
+          <thead>
+            <tr>
+              <th>admin ID</th>
+              <th>名前</th>
+              <th>メモ</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `;
+    }
+
+    async function restoreAdminById(targetAdminId) {
+      const clean = normalizeAdminId(targetAdminId);
+      mergeAdminAccounts([{ adminId: clean }]);
+      setAccountStatusMessage(`admin ID「<strong>${escapeHtml(clean)}</strong>」を復元して呼び出しました。`);
+      await applyAdminId(clean, { announcePrefix: '復元・' });
+    }
+
+    async function restoreAdminByDirectOrFirst() {
+      const rawInput = String(document.getElementById('restoreAdminQueryInput')?.value || '').trim();
+      const filtered = getFilteredAdminAccounts();
+      if (/^[a-zA-Z0-9_@-]{3,}$/.test(rawInput)) {
+        await restoreAdminById(rawInput);
+        return;
+      }
+      if (filtered.length > 0) {
+        await restoreAdminById(filtered[0].adminId);
+        return;
+      }
+      setAccountStatusMessage('復元する admin ID を入力するか、一覧から選択してください。');
+    }
+
+    function openAccountModal() {
+      const modal = document.getElementById('accountModal');
+      if (!modal) return;
+      updateModalAdminHeader();
+      renderAdminAccountsTable();
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      fetchRegisteredAdmins(false);
+    }
+
+    function closeAccountModal() {
+      const modal = document.getElementById('accountModal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function handleAccountBackdropClick(event) {
+      if (event.target && event.target.id === 'accountModal') {
+        closeAccountModal();
+      }
+    }
+
     function switchHelpTab(tabKey) {
       const targetKey = HELP_TAB_KEYS.includes(tabKey) ? tabKey : 'flow';
       HELP_TAB_KEYS.forEach(key => {
@@ -1786,6 +2352,10 @@
         const helpModal = document.getElementById('helpModal');
         if (helpModal && helpModal.classList.contains('open')) {
           closeHelpModal();
+        }
+        const accountModal = document.getElementById('accountModal');
+        if (accountModal && accountModal.classList.contains('open')) {
+          closeAccountModal();
         }
       }
     });
@@ -1861,16 +2431,7 @@
       if (input) {
         input.value = ROOM_ID;
       }
-
-      try {
-        const url = new URL(window.location.href);
-        if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
-          url.searchParams.set('room', ROOM_ID);
-        } else {
-          url.searchParams.delete('room');
-        }
-        window.history.replaceState({}, '', url.toString());
-      } catch (e) {}
+      syncUrlParams();
     }
 
     async function switchRoom(nextRoomRaw) {
@@ -2407,14 +2968,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      mergeAdminAccounts([{ adminId: ADMIN_ID }]);
       syncRoomInputAndUrl();
       renderContextBadge();
+      updateModalAdminHeader();
       rememberRoom(ROOM_ID);
       renderStatusButtons('poll');
       renderThemeChips();
       renderPositionButtons();
       renderSizeButtons();
       renderVoteLogsTable();
+      renderAdminAccountsTable();
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
     });
