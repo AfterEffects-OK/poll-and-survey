@@ -4,8 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>投票・クイズ回答</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@600;700;800&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
     :root, [data-theme="dark"] {
+      --font-main: "Noto Sans JP", system-ui, sans-serif;
+      --font-num: "Noto Sans JP", sans-serif;
       --bg: #0f172a;
       --card: #1e293b;
       --card-border: #334155;
@@ -24,6 +29,8 @@
     }
 
     [data-theme="neon"] {
+      --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
+      --font-num: "Orbitron", sans-serif;
       --bg: #09090b;
       --card: #111118;
       --card-border: #ec4899;
@@ -42,6 +49,8 @@
     }
 
     [data-theme="pop"] {
+      --font-main: "M PLUS Rounded 1c", sans-serif;
+      --font-num: "Fredoka", "M PLUS Rounded 1c", sans-serif;
       --bg: #fef3c7;
       --card: #ffffff;
       --card-border: #1e293b;
@@ -60,6 +69,8 @@
     }
 
     [data-theme="cyber"] {
+      --font-main: "DotGothic16", monospace;
+      --font-num: "Share Tech Mono", monospace;
       --bg: #040d0a;
       --card: #071912;
       --card-border: #10b981;
@@ -78,6 +89,8 @@
     }
 
     [data-theme="sakura"] {
+      --font-main: "Zen Maru Gothic", sans-serif;
+      --font-num: "Zen Maru Gothic", sans-serif;
       --bg: #fff1f2;
       --card: #ffffff;
       --card-border: #fda4af;
@@ -96,6 +109,8 @@
     }
 
     [data-theme="broadcast"] {
+      --font-main: "Shippori Mincho", serif;
+      --font-num: "Oswald", sans-serif;
       --bg: #0b132b;
       --card: #132247;
       --card-border: #ef4444;
@@ -116,7 +131,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-family: var(--font-main);
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -158,11 +173,13 @@
       gap: 8px;
     }
     .timer-badge {
+      font-family: var(--font-num);
       font-size: 14px;
       font-weight: 800;
       color: var(--timer);
     }
     .theme-select {
+      font-family: "Noto Sans JP", sans-serif;
       font-size: 12px;
       padding: 4px 8px;
       border-radius: 8px;
@@ -176,8 +193,9 @@
     button.opt-btn {
       width: 100%;
       padding: 16px;
+      font-family: var(--font-main);
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text);
       background: var(--opt-bg);
       border: 2px solid transparent;
