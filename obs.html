@@ -1,375 +1,284 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="dark">
+<html lang="ja" data-theme="dark" data-pos="bottom-right">
 <head>
   <meta charset="UTF-8" />
-  <title>OBS Overlay</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OBS 配信投票オーバーレイ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@700;800&family=Orbitron:wght@700;800&family=Oswald:wght@600;700&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@600;700;800;900&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
-    :root, [data-theme="dark"] {
-      --font-main: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
-      --font-num: "Noto Sans JP", sans-serif;
-      --title-weight: 800;
-      --letter-spacing: 0.02em;
-      --panel-bg: rgba(15, 23, 42, 0.88);
-      --panel-border: rgba(56, 189, 248, 0.45);
-      --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-      --panel-radius: 20px;
-      --text: #ffffff;
-      --muted: #cbd5e1;
-      --sub-muted: #94a3b8;
-      --accent: #38bdf8;
-      --timer: #fbbf24;
-      --track-bg: rgba(255, 255, 255, 0.14);
-      --bar-grad: linear-gradient(90deg, #38bdf8, #818cf8);
-      --correct-bg: rgba(16, 185, 129, 0.25);
-      --correct-ring: #34d399;
-      --correct-grad: linear-gradient(90deg, #10b981, #34d399);
-      --divider: rgba(255, 255, 255, 0.15);
-    }
-
-    [data-theme="neon"] {
-      --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
-      --font-num: "Orbitron", "Dela Gothic One", sans-serif;
-      --title-weight: 400;
-      --letter-spacing: 0.04em;
-      --panel-bg: rgba(12, 12, 20, 0.92);
-      --panel-border: #ec4899;
-      --panel-shadow: 0 0 32px rgba(236, 72, 153, 0.45);
-      --panel-radius: 6px;
-      --text: #fdf4ff;
-      --muted: #e9d5ff;
-      --sub-muted: #c084fc;
-      --accent: #22d3ee;
-      --timer: #f472b6;
-      --track-bg: rgba(236, 72, 153, 0.18);
-      --bar-grad: linear-gradient(90deg, #22d3ee, #ec4899);
-      --correct-bg: rgba(74, 222, 128, 0.22);
-      --correct-ring: #4ade80;
-      --correct-grad: linear-gradient(90deg, #22c55e, #4ade80);
-      --divider: rgba(236, 72, 153, 0.35);
-    }
-
-    [data-theme="pop"] {
-      --font-main: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
-      --font-num: "Fredoka", "M PLUS Rounded 1c", sans-serif;
-      --title-weight: 800;
-      --letter-spacing: 0.02em;
-      --panel-bg: rgba(255, 255, 255, 0.96);
-      --panel-border: #1e293b;
-      --panel-shadow: 0 10px 0 #1e293b;
-      --panel-radius: 24px;
-      --text: #0f172a;
-      --muted: #334155;
-      --sub-muted: #64748b;
-      --accent: #2563eb;
-      --timer: #ea580c;
-      --track-bg: #e2e8f0;
-      --bar-grad: linear-gradient(90deg, #3b82f6, #f59e0b);
-      --correct-bg: rgba(34, 197, 94, 0.18);
-      --correct-ring: #16a34a;
-      --correct-grad: linear-gradient(90deg, #16a34a, #4ade80);
-      --divider: #cbd5e1;
-    }
-
-    [data-theme="cyber"] {
-      --font-main: "DotGothic16", monospace;
-      --font-num: "Share Tech Mono", "DotGothic16", monospace;
-      --title-weight: 400;
-      --letter-spacing: 0.06em;
-      --panel-bg: rgba(7, 25, 18, 0.92);
-      --panel-border: #10b981;
-      --panel-shadow: 0 0 28px rgba(16, 185, 129, 0.38);
-      --panel-radius: 4px;
-      --text: #ecfdf5;
-      --muted: #a7f3d0;
-      --sub-muted: #6ee7b7;
-      --accent: #34d399;
-      --timer: #2dd4bf;
-      --track-bg: rgba(16, 185, 129, 0.18);
-      --bar-grad: linear-gradient(90deg, #10b981, #a3e635);
-      --correct-bg: rgba(163, 230, 53, 0.22);
-      --correct-ring: #a3e635;
-      --correct-grad: linear-gradient(90deg, #84cc16, #bef264);
-      --divider: rgba(16, 185, 129, 0.35);
-    }
-
-    [data-theme="sakura"] {
-      --font-main: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
-      --font-num: "Zen Maru Gothic", sans-serif;
-      --title-weight: 900;
-      --letter-spacing: 0.03em;
-      --panel-bg: rgba(255, 250, 251, 0.96);
-      --panel-border: #fb7185;
-      --panel-shadow: 0 14px 36px rgba(244, 114, 182, 0.28);
-      --panel-radius: 26px;
-      --text: #3f1d28;
-      --muted: #881337;
-      --sub-muted: #be123c;
-      --accent: #e11d48;
-      --timer: #db2777;
-      --track-bg: #ffe4e6;
-      --bar-grad: linear-gradient(90deg, #fb7185, #f472b6);
-      --correct-bg: rgba(16, 185, 129, 0.16);
-      --correct-ring: #059669;
-      --correct-grad: linear-gradient(90deg, #059669, #34d399);
-      --divider: #fecdd3;
-    }
-
-    [data-theme="broadcast"] {
-      --font-main: "Shippori Mincho", "Hiragino Mincho ProN", serif;
-      --font-num: "Oswald", "Shippori Mincho", sans-serif;
-      --title-weight: 800;
-      --letter-spacing: 0.04em;
-      --panel-bg: rgba(19, 34, 71, 0.94);
-      --panel-border: #ef4444;
-      --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-      --panel-radius: 8px;
-      --text: #ffffff;
-      --muted: #e2e8f0;
-      --sub-muted: #94a3b8;
-      --accent: #f87171;
-      --timer: #fde047;
-      --track-bg: rgba(255, 255, 255, 0.16);
-      --bar-grad: linear-gradient(90deg, #ef4444, #f97316);
-      --correct-bg: rgba(56, 189, 248, 0.22);
-      --correct-ring: #38bdf8;
-      --correct-grad: linear-gradient(90deg, #0284c7, #38bdf8);
-      --divider: rgba(239, 68, 68, 0.45);
-    }
-
+    /* 背景は必ず完全透過 */
     html, body {
-      background-color: transparent !important;
       margin: 0;
       padding: 0;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+      background: transparent !important;
+      background-color: transparent !important;
       font-family: var(--font-main);
-      letter-spacing: var(--letter-spacing);
     }
-    .overlay-wrap {
-      position: fixed;
-      right: 48px;
-      bottom: 48px;
-      width: 620px;
-      background: var(--panel-bg);
-      backdrop-filter: blur(8px);
-      border: 2px solid var(--panel-border);
-      border-radius: var(--panel-radius);
-      padding: 24px 28px;
-      color: var(--text);
-      box-shadow: var(--panel-shadow);
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.35s ease, transform 0.35s ease;
+
+    :root, [data-theme="dark"] {
+      --font-main: "Noto Sans JP", system-ui, sans-serif;
+      --font-num: "Noto Sans JP", sans-serif;
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-border: #38bdf8;
+      --item-bg: rgba(30, 41, 59, 0.9);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.22);
+      --ok: #22c55e;
+      --correct-bg: rgba(34, 197, 94, 0.25);
+      --timer: #fbbf24;
+      --track-bg: rgba(255, 255, 255, 0.16);
+      --bar-grad: linear-gradient(90deg, #38bdf8, #818cf8);
+      --radius: 16px;
+      --item-radius: 10px;
+      --shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="neon"] {
+      --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
+      --font-num: "Orbitron", sans-serif;
+      --card-bg: rgba(15, 12, 28, 0.94);
+      --card-border: #ec4899;
+      --item-bg: rgba(28, 22, 48, 0.92);
+      --text: #fdf4ff;
+      --muted: #e879f9;
+      --accent: #22d3ee;
+      --accent-soft: rgba(34, 211, 238, 0.22);
+      --ok: #4ade80;
+      --correct-bg: rgba(74, 222, 128, 0.25);
+      --timer: #f472b6;
+      --track-bg: rgba(236, 72, 153, 0.22);
+      --bar-grad: linear-gradient(90deg, #22d3ee, #ec4899);
+      --radius: 8px;
+      --item-radius: 6px;
+      --shadow: 0 0 24px rgba(236, 72, 153, 0.45);
+    }
+
+    [data-theme="pop"] {
+      --font-main: "M PLUS Rounded 1c", sans-serif;
+      --font-num: "Fredoka", "M PLUS Rounded 1c", sans-serif;
+      --card-bg: rgba(255, 251, 235, 0.96);
+      --card-border: #1e293b;
+      --item-bg: rgba(255, 255, 255, 0.95);
+      --text: #0f172a;
+      --muted: #334155;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.16);
+      --ok: #16a34a;
+      --correct-bg: rgba(22, 163, 74, 0.2);
+      --timer: #ea580c;
+      --track-bg: #e2e8f0;
+      --bar-grad: linear-gradient(90deg, #3b82f6, #f59e0b);
+      --radius: 22px;
+      --item-radius: 14px;
+      --shadow: 0 8px 0 #1e293b;
+    }
+
+    [data-theme="cyber"] {
+      --font-main: "DotGothic16", monospace;
+      --font-num: "Share Tech Mono", monospace;
+      --card-bg: rgba(6, 24, 18, 0.94);
+      --card-border: #10b981;
+      --item-bg: rgba(11, 38, 29, 0.92);
+      --text: #ecfdf5;
+      --muted: #6ee7b7;
+      --accent: #34d399;
+      --accent-soft: rgba(52, 211, 153, 0.22);
+      --ok: #a3e635;
+      --correct-bg: rgba(163, 230, 53, 0.24);
+      --timer: #2dd4bf;
+      --track-bg: rgba(16, 185, 129, 0.22);
+      --bar-grad: linear-gradient(90deg, #10b981, #a3e635);
+      --radius: 6px;
+      --item-radius: 4px;
+      --shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+    }
+
+    [data-theme="sakura"] {
+      --font-main: "Zen Maru Gothic", sans-serif;
+      --font-num: "Zen Maru Gothic", sans-serif;
+      --card-bg: rgba(255, 248, 250, 0.96);
+      --card-border: #fb7185;
+      --item-bg: rgba(255, 228, 230, 0.85);
+      --text: #3f1d28;
+      --muted: #881337;
+      --accent: #e11d48;
+      --accent-soft: rgba(225, 29, 72, 0.16);
+      --ok: #059669;
+      --correct-bg: rgba(5, 150, 105, 0.2);
+      --timer: #db2777;
+      --track-bg: #fecdd3;
+      --bar-grad: linear-gradient(90deg, #fb7185, #f472b6);
+      --radius: 24px;
+      --item-radius: 16px;
+      --shadow: 0 12px 28px rgba(244, 114, 182, 0.28);
+    }
+
+    [data-theme="broadcast"] {
+      --font-main: "Shippori Mincho", serif;
+      --font-num: "Oswald", sans-serif;
+      --card-bg: rgba(11, 19, 43, 0.95);
+      --card-border: #ef4444;
+      --item-bg: rgba(24, 39, 82, 0.92);
+      --text: #ffffff;
+      --muted: #e2e8f0;
+      --accent: #f87171;
+      --accent-soft: rgba(239, 68, 68, 0.24);
+      --ok: #38bdf8;
+      --correct-bg: rgba(56, 189, 248, 0.25);
+      --timer: #fde047;
+      --track-bg: rgba(255, 255, 255, 0.18);
+      --bar-grad: linear-gradient(90deg, #ef4444, #f97316);
+      --radius: 8px;
+      --item-radius: 6px;
+      --shadow: 0 14px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    /* 画面内の表示位置コントロール */
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      padding: 40px;
+      display: flex;
       pointer-events: none;
     }
 
-    /* 表示位置バリアント（全7種） */
-    .overlay-wrap.pos-bottom-right {
-      right: 48px;
-      bottom: 48px;
-      left: auto;
-      top: auto;
-      transform: translateY(20px);
-    }
-    .overlay-wrap.pos-bottom-left {
-      left: 48px;
-      bottom: 48px;
-      right: auto;
-      top: auto;
-      transform: translateY(20px);
-    }
-    .overlay-wrap.pos-bottom-center {
-      left: 50%;
-      bottom: 48px;
-      right: auto;
-      top: auto;
-      transform: translate(-50%, 20px);
-    }
-    .overlay-wrap.pos-top-right {
-      right: 48px;
-      top: 48px;
-      left: auto;
-      bottom: auto;
-      transform: translateY(-20px);
-    }
-    .overlay-wrap.pos-top-left {
-      left: 48px;
-      top: 48px;
-      right: auto;
-      bottom: auto;
-      transform: translateY(-20px);
-    }
-    .overlay-wrap.pos-top-center {
-      left: 50%;
-      top: 48px;
-      right: auto;
-      bottom: auto;
-      transform: translate(-50%, -20px);
-    }
-    .overlay-wrap.pos-center {
-      left: 50%;
-      top: 50%;
-      right: auto;
-      bottom: auto;
-      transform: translate(-50%, calc(-50% + 20px));
+    [data-pos="bottom-right"] .stage { justify-content: flex-end; align-items: flex-end; }
+    [data-pos="bottom-left"] .stage  { justify-content: flex-start; align-items: flex-end; }
+    [data-pos="bottom-center"] .stage{ justify-content: center; align-items: flex-end; }
+    [data-pos="top-right"] .stage    { justify-content: flex-end; align-items: flex-start; }
+    [data-pos="top-left"] .stage     { justify-content: flex-start; align-items: flex-start; }
+    [data-pos="top-center"] .stage   { justify-content: center; align-items: flex-start; }
+    [data-pos="center"] .stage       { justify-content: center; align-items: center; }
+
+    .overlay-card {
+      width: 540px;
+      max-width: 100%;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 2px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
 
-    /* 表示状態（visible） */
-    .overlay-wrap.pos-bottom-right.visible,
-    .overlay-wrap.pos-bottom-left.visible,
-    .overlay-wrap.pos-top-right.visible,
-    .overlay-wrap.pos-top-left.visible {
+    .overlay-card.visible {
       opacity: 1;
       transform: translateY(0);
-    }
-    .overlay-wrap.pos-bottom-center.visible,
-    .overlay-wrap.pos-top-center.visible {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-    .overlay-wrap.pos-center.visible {
-      opacity: 1;
-      transform: translate(-50%, -50%);
     }
 
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       margin-bottom: 10px;
     }
-    .status-pill {
-      font-size: 13px;
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
       font-weight: 800;
-      letter-spacing: 0.05em;
-      padding: 4px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
-      background: #0284c7;
-      color: #fff;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
-    .status-pill.voting { background: #10b981; }
-    .status-pill.closed { background: #f59e0b; }
-    .status-pill.answer { background: #ec4899; }
-    .right-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+
+    .timer-txt {
       font-family: var(--font-num);
-    }
-    .timer-badge {
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 800;
       color: var(--timer);
     }
-    .total-label {
-      font-size: 15px;
-      color: var(--muted);
-      font-weight: 700;
-    }
+
     .q-title {
-      font-size: 24px;
-      font-weight: var(--title-weight);
+      margin: 0 0 16px;
+      font-size: 22px;
+      font-weight: 800;
       line-height: 1.35;
-      margin-bottom: 18px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
-    .row {
-      margin-bottom: 14px;
-      padding: 8px 10px;
-      border-radius: 12px;
-      transition: background 0.25s ease;
+
+    .rows {
+      display: grid;
+      gap: 10px;
     }
-    .row.correct {
+
+    .row-item {
+      background: var(--item-bg);
+      border-radius: var(--item-radius);
+      padding: 10px 14px;
+    }
+
+    .row-item.correct {
       background: var(--correct-bg);
-      box-shadow: inset 0 0 0 2px var(--correct-ring);
+      box-shadow: inset 0 0 0 2px var(--ok);
     }
-    .row-header {
+
+    .row-head {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      font-size: 18px;
-      font-weight: var(--title-weight);
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 800;
       margin-bottom: 6px;
     }
+
     .row-stat {
       font-family: var(--font-num);
-      font-weight: 700;
+      font-size: 15px;
+      white-space: nowrap;
     }
+
     .track {
       width: 100%;
-      height: 18px;
+      height: 12px;
       background: var(--track-bg);
       border-radius: 999px;
       overflow: hidden;
     }
+
     .fill {
       height: 100%;
       width: 0%;
       border-radius: 999px;
       background: var(--bar-grad);
-      transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: width 0.4s ease;
     }
-    .row.correct .fill {
-      background: var(--correct-grad);
-    }
-    .qr-box {
-      display: none;
-      align-items: center;
-      gap: 14px;
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px solid var(--divider);
-    }
-    .qr-box.active {
-      display: flex;
-    }
-    .qr-canvas {
-      background: #ffffff;
-      padding: 6px;
-      border-radius: 8px;
-      line-height: 0;
-      flex-shrink: 0;
-    }
-    .qr-text {
+
+    .footer-meta {
+      margin-top: 12px;
       font-size: 13px;
       color: var(--muted);
-      line-height: 1.45;
-    }
-    .qr-text strong {
-      color: var(--accent);
-      font-size: 15px;
-    }
-    .qr-url {
-      font-family: var(--font-num);
-      font-size: 12px;
-      color: var(--sub-muted);
-      word-break: break-all;
-      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
 <body>
-  <div id="overlay" class="overlay-wrap pos-bottom-right">
-    <div class="top-bar">
-      <span id="statusPill" class="status-pill">STANDBY</span>
-      <div class="right-meta">
-        <span id="timerBadge" class="timer-badge"></span>
-        <span id="totalLabel" class="total-label">0票</span>
+  <div class="stage">
+    <div id="overlayCard" class="overlay-card">
+      <div class="top-bar">
+        <span id="tagBadge" class="tag">POLL</span>
+        <span id="timerDisplay" class="timer-txt"></span>
       </div>
-    </div>
-    <div id="qTitle" class="q-title"></div>
-    <div id="bars"></div>
-    <div id="qrBox" class="qr-box">
-      <div id="qrCodeCanvas" class="qr-canvas"></div>
-      <div class="qr-text">
-        <strong>スマホで投票・回答</strong><br>
-        QRコードを読み取ってアクセス
-        <div id="qrUrlLabel" class="qr-url"></div>
+      <h2 id="qTitle" class="q-title"></h2>
+      <div id="rowsContainer" class="rows"></div>
+      <div class="footer-meta">
+        <span id="stateLabel"></span>
+        <span id="totalVotesLabel"></span>
       </div>
     </div>
   </div>
@@ -378,132 +287,89 @@
   <script>
     const ALLOWED_THEMES = ['dark', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     const ALLOWED_POSITIONS = [
-      'bottom-right',
-      'bottom-left',
-      'bottom-center',
-      'top-right',
-      'top-left',
-      'top-center',
-      'center'
+      'bottom-right', 'bottom-left', 'bottom-center',
+      'top-right', 'top-left', 'top-center', 'center'
     ];
 
-    const STATUS_TEXT = {
-      VOTING: '投票受付中',
-      CLOSED: '受付終了',
-      RESULT: '集計結果',
-      ANSWER: '正解発表'
-    };
-
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right' };
-    let expiredTriggered = false;
 
-    function applyObsAppearance(state) {
+    function applyAppearance(state) {
       const params = new URLSearchParams(window.location.search);
-      const fallbackTheme = ALLOWED_THEMES.includes(params.get('theme')) ? params.get('theme') : 'dark';
-      const fallbackPos = ALLOWED_POSITIONS.includes(params.get('pos')) ? params.get('pos') : 'bottom-right';
-
-      const theme = state && ALLOWED_THEMES.includes(state.theme) ? state.theme : fallbackTheme;
-      const position = state && ALLOWED_POSITIONS.includes(state.position) ? state.position : fallbackPos;
+      const theme = (state && ALLOWED_THEMES.includes(state.theme))
+        ? state.theme
+        : (ALLOWED_THEMES.includes(params.get('theme')) ? params.get('theme') : 'dark');
+      const pos = (state && ALLOWED_POSITIONS.includes(state.position))
+        ? state.position
+        : (ALLOWED_POSITIONS.includes(params.get('pos')) ? params.get('pos') : 'bottom-right');
 
       document.documentElement.setAttribute('data-theme', theme);
-
-      const overlay = document.getElementById('overlay');
-      if (overlay) {
-        ALLOWED_POSITIONS.forEach(p => overlay.classList.remove('pos-' + p));
-        overlay.classList.add('pos-' + position);
-      }
+      document.documentElement.setAttribute('data-pos', pos);
     }
 
-    (function initQrCode() {
-      const voterUrl = new URL('./index.html', window.location.href).href;
-      const labelEl = document.getElementById('qrUrlLabel');
-      if (labelEl) labelEl.textContent = voterUrl;
-
-      const target = document.getElementById('qrCodeCanvas');
-      if (target && typeof QRCode !== 'undefined') {
-        new QRCode(target, {
-          text: voterUrl,
-          width: 76,
-          height: 76,
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
-    })();
-
-    function renderCountdown() {
-      const el = document.getElementById('timerBadge');
-      const qrBox = document.getElementById('qrBox');
+    function updateTimer() {
+      const el = document.getElementById('timerDisplay');
       if (!el) return;
-
       if (currentState.status === 'VOTING' && currentState.deadlineAt) {
-        const remainSec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
-        el.textContent = `残り ${remainSec}秒`;
-        if (remainSec === 0 && !expiredTriggered) {
-          expiredTriggered = true;
-          if (qrBox) qrBox.classList.remove('active');
-          setTimeout(updateOverlay, 400);
-        }
+        const sec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
+        el.textContent = `残り ${sec}秒`;
       } else {
         el.textContent = '';
       }
     }
 
-    async function updateOverlay() {
+    async function pollOverlay() {
       try {
         const data = await fetchGas();
         if (!data.ok) return;
 
-        const overlay = document.getElementById('overlay');
-        const qrBox = document.getElementById('qrBox');
         const { state, question, totalVotes, results } = data;
-
         currentState = state;
-        applyObsAppearance(state);
+        applyAppearance(state);
 
-        if (state.status === 'VOTING' && state.deadlineAt && Date.now() < Number(state.deadlineAt)) {
-          expiredTriggered = false;
-        }
-
-        if (state.status === 'WAITING') {
-          overlay.classList.remove('visible');
-          if (qrBox) qrBox.classList.remove('active');
+        const card = document.getElementById('overlayCard');
+        if (!state || state.status === 'WAITING') {
+          card.classList.remove('visible');
+          updateTimer();
           return;
         }
 
-        overlay.classList.add('visible');
-        if (qrBox) {
-          qrBox.classList.toggle('active', state.status === 'VOTING');
-        }
+        const isQuiz = question.type === 'quiz';
+        const showCounts = state.status === 'RESULT' || state.status === 'ANSWER' || state.status === 'CLOSED';
+        const highlightAnswer = state.status === 'ANSWER' && isQuiz && question.answer;
 
-        const pill = document.getElementById('statusPill');
-        pill.textContent = STATUS_TEXT[state.status] || state.status;
-        pill.className = 'status-pill ' + state.status.toLowerCase();
-
-        document.getElementById('totalLabel').textContent = `合計 ${totalVotes} 票`;
+        document.getElementById('tagBadge').textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
         document.getElementById('qTitle').textContent = question.question;
 
-        const hideCounts = state.status === 'VOTING' && question.type === 'quiz';
-        const showAnswer = state.status === 'ANSWER' && question.type === 'quiz' && question.answer;
+        const statusMap = {
+          VOTING: isQuiz ? '回答受付中' : '投票受付中',
+          CLOSED: '受付終了',
+          RESULT: '集計結果',
+          ANSWER: '正解発表'
+        };
+        document.getElementById('stateLabel').textContent = statusMap[state.status] || state.status;
+        document.getElementById('totalVotesLabel').textContent = showCounts ? `合計 ${totalVotes} 票` : '';
 
-        const barsEl = document.getElementById('bars');
-        barsEl.innerHTML = results.map(r => {
-          const isCorrect = showAnswer && r.label === question.answer;
-          const widthPct = hideCounts ? 0 : r.pct;
-          const statText = hideCounts ? '???' : `${r.count}票 (${r.pct}%)`;
+        const rows = document.getElementById('rowsContainer');
+        rows.innerHTML = (results || []).map(r => {
+          const isCorrect = highlightAnswer && r.label === question.answer;
+          const pctVal = showCounts ? Number(r.pct || 0) : 0;
+          const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
+
           return `
-            <div class="row ${isCorrect ? 'correct' : ''}">
-              <div class="row-header">
+            <div class="row-item ${isCorrect ? 'correct' : ''}">
+              <div class="row-head">
                 <span>${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}</span>
                 <span class="row-stat">${statText}</span>
               </div>
               <div class="track">
-                <div class="fill" style="width: ${widthPct}%;"></div>
+                <div class="fill" style="width: ${pctVal}%;"></div>
               </div>
             </div>
           `;
         }).join('');
 
-        renderCountdown();
+        card.classList.add('visible');
+        updateTimer();
       } catch (e) {
         console.error(e);
       }
@@ -515,10 +381,10 @@
       }[m]));
     }
 
-    applyObsAppearance(currentState);
-    updateOverlay();
-    setInterval(updateOverlay, CONFIG.POLL_INTERVAL_MS);
-    setInterval(renderCountdown, 200);
+    applyAppearance(currentState);
+    pollOverlay();
+    setInterval(pollOverlay, CONFIG.POLL_INTERVAL_MS);
+    setInterval(updateTimer, 200);
   </script>
 </body>
 </html>
