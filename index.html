@@ -477,8 +477,10 @@
 
   <script src="config.js"></script>
   <script>
+    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
+    const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
-    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark' };
+    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
     let lastResultSignature = '';
     let isSubmitting = false;
 
@@ -492,12 +494,34 @@
       return id;
     }
 
+    function getChoiceStorageKey(questionId) {
+      return `stream_poll_choice::${ROOM_ID}::${questionId}`;
+    }
+
     function getSavedChoice(questionId) {
-      return localStorage.getItem('stream_poll_choice_' + questionId) || '';
+      return localStorage.getItem(getChoiceStorageKey(questionId)) || '';
     }
 
     function setSavedChoice(questionId, option) {
-      localStorage.setItem('stream_poll_choice_' + questionId, option);
+      const key = getChoiceStorageKey(questionId);
+      if (option) {
+        localStorage.setItem(key, option);
+      } else {
+        localStorage.removeItem(key);
+      }
+    }
+
+    function syncResetSeq(state) {
+      if (!state) return;
+      const seqKey = `stream_poll_reset_seq::${ROOM_ID}`;
+      const prevSeq = Number(localStorage.getItem(seqKey) || '0') || 0;
+      const nextSeq = Number(state.resetSeq || 0) || 0;
+      if (nextSeq > prevSeq) {
+        if (state.resetQuestionId) {
+          setSavedChoice(state.resetQuestionId, '');
+        }
+        localStorage.setItem(seqKey, String(nextSeq));
+      }
     }
 
     function applyTheme(state) {
@@ -528,6 +552,8 @@
       try {
         const res = await postGas({
           action: 'vote',
+          roomId: ROOM_ID,
+          adminId: ADMIN_ID,
           questionId,
           option,
           clientId: getClientId()
@@ -545,11 +571,12 @@
 
     async function pollState() {
       try {
-        const data = await fetchGas();
+        const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
 
         const { state, question, totalVotes, results } = data;
-        currentState = state || { status: 'WAITING', deadlineAt: 0, theme: 'dark' };
+        currentState = state || { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
+        syncResetSeq(currentState);
         applyTheme(currentState);
 
         const card = document.getElementById('appCard');
@@ -558,7 +585,7 @@
           card.innerHTML = `
             <div class="waiting-box">
               <p class="waiting-title">次のアンケート・クイズを待機中です</p>
-              <p class="waiting-sub">配信者の操作で自動的に画面が切り替わります</p>
+              <p class="waiting-sub">配信枠: ${escapeHtml(ROOM_ID)} ／ 配信者の操作で自動的に画面が切り替わります</p>
             </div>
           `;
           return;
@@ -598,7 +625,7 @@
             <div class="choices">${choicesHtml}</div>
             ${noticeHtml}
             <div class="footer-meta">
-              <span>${isQuiz ? '回答受付中' : '投票受付中'}</span>
+              <span>${isQuiz ? '回答受付中' : '投票受付中'} (${escapeHtml(ROOM_ID)})</span>
               <span>現在の総票数: ${Number(totalVotes || 0)}票</span>
             </div>
           `;
