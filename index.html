@@ -23,6 +23,10 @@
       --ok: #22c55e;
       --warn: #f59e0b;
       --timer: #fbbf24;
+      --track-bg: rgba(255, 255, 255, 0.14);
+      --bar-grad: linear-gradient(90deg, #38bdf8, #818cf8);
+      --correct-bg: rgba(34, 197, 94, 0.2);
+      --correct-ring: #22c55e;
       --radius: 16px;
       --btn-radius: 12px;
       --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -43,6 +47,10 @@
       --ok: #4ade80;
       --warn: #facc15;
       --timer: #f472b6;
+      --track-bg: rgba(236, 72, 153, 0.18);
+      --bar-grad: linear-gradient(90deg, #22d3ee, #ec4899);
+      --correct-bg: rgba(74, 222, 128, 0.2);
+      --correct-ring: #4ade80;
       --radius: 6px;
       --btn-radius: 4px;
       --shadow: 0 0 28px rgba(236, 72, 153, 0.35);
@@ -63,6 +71,10 @@
       --ok: #16a34a;
       --warn: #d97706;
       --timer: #ea580c;
+      --track-bg: #e2e8f0;
+      --bar-grad: linear-gradient(90deg, #3b82f6, #f59e0b);
+      --correct-bg: rgba(22, 163, 74, 0.16);
+      --correct-ring: #16a34a;
       --radius: 24px;
       --btn-radius: 16px;
       --shadow: 0 10px 0 #1e293b;
@@ -83,6 +95,10 @@
       --ok: #a3e635;
       --warn: #fbbf24;
       --timer: #2dd4bf;
+      --track-bg: rgba(16, 185, 129, 0.18);
+      --bar-grad: linear-gradient(90deg, #10b981, #a3e635);
+      --correct-bg: rgba(163, 230, 53, 0.2);
+      --correct-ring: #a3e635;
       --radius: 4px;
       --btn-radius: 2px;
       --shadow: 0 0 24px rgba(16, 185, 129, 0.3);
@@ -103,6 +119,10 @@
       --ok: #059669;
       --warn: #d97706;
       --timer: #db2777;
+      --track-bg: #ffe4e6;
+      --bar-grad: linear-gradient(90deg, #fb7185, #f472b6);
+      --correct-bg: rgba(5, 150, 105, 0.16);
+      --correct-ring: #059669;
       --radius: 26px;
       --btn-radius: 18px;
       --shadow: 0 14px 32px rgba(244, 114, 182, 0.22);
@@ -123,6 +143,10 @@
       --ok: #38bdf8;
       --warn: #facc15;
       --timer: #fde047;
+      --track-bg: rgba(255, 255, 255, 0.16);
+      --bar-grad: linear-gradient(90deg, #ef4444, #f97316);
+      --correct-bg: rgba(56, 189, 248, 0.2);
+      --correct-ring: #38bdf8;
       --radius: 8px;
       --btn-radius: 6px;
       --shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
@@ -199,6 +223,58 @@
       border-color: var(--accent);
     }
     button.opt-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* 集計結果グラフ表示 */
+    .result-box { display: grid; gap: 14px; }
+    .result-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .result-row {
+      padding: 10px 12px;
+      border-radius: var(--btn-radius);
+      background: var(--opt-bg);
+    }
+    .result-row.correct {
+      background: var(--correct-bg);
+      box-shadow: inset 0 0 0 2px var(--correct-ring);
+    }
+    .result-row.my-choice {
+      outline: 2px solid var(--accent);
+    }
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .result-stat {
+      font-family: var(--font-num);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .result-track {
+      width: 100%;
+      height: 12px;
+      background: var(--track-bg);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .result-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: var(--bar-grad);
+      transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
     .status-msg {
       margin-top: 16px;
       font-size: 14px;
@@ -285,12 +361,41 @@
       }
     }
 
+    function renderResultView(area, question, totalVotes, results, savedChoice, isAnswerState) {
+      area.className = 'result-box';
+      const showAnswer = isAnswerState && question.type === 'quiz' && question.answer;
+
+      const rowsHtml = (results || []).map(r => {
+        const isCorrect = showAnswer && r.label === question.answer;
+        const isMine = savedChoice && savedChoice === r.label;
+        return `
+          <div class="result-row ${isCorrect ? 'correct' : ''} ${isMine ? 'my-choice' : ''}">
+            <div class="result-head">
+              <span>${escapeHtml(r.label)}${isCorrect ? ' ★正解' : ''}${isMine ? '（あなたの投票）' : ''}</span>
+              <span class="result-stat">${r.count}票 (${r.pct}%)</span>
+            </div>
+            <div class="result-track">
+              <div class="result-fill" style="width: ${r.pct}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="result-meta">
+          <span>${showAnswer ? 'クイズ正解・集計結果' : '集計結果'}</span>
+          <span>合計 ${totalVotes} 票</span>
+        </div>
+        ${rowsHtml}
+      `;
+    }
+
     async function refresh() {
       try {
         const data = await fetchGas();
         if (!data.ok) return;
 
-        const { state, question } = data;
+        const { state, question, totalVotes, results } = data;
         currentState = state;
         syncVoterTheme(state);
 
@@ -299,6 +404,7 @@
         }
 
         const isVoting = state.status === 'VOTING' && (!state.deadlineAt || Date.now() < Number(state.deadlineAt));
+        const showResults = state.status === 'RESULT' || (state.status === 'ANSWER' && question.type === 'quiz');
         const savedChoice = getVotedChoice(question.id);
 
         document.getElementById('modeBadge').textContent =
@@ -306,6 +412,18 @@
         document.getElementById('questionText').textContent = question.question;
 
         const area = document.getElementById('optionsArea');
+        const msgEl = document.getElementById('statusMsg');
+
+        if (showResults) {
+          renderResultView(area, question, totalVotes, results, savedChoice, state.status === 'ANSWER');
+          msgEl.innerHTML = savedChoice
+            ? `<span class="ok">あなたの投票：「${escapeHtml(savedChoice)}」</span>`
+            : '結果が表示されています。';
+          renderCountdown();
+          return;
+        }
+
+        area.className = 'options';
         area.innerHTML = '';
 
         question.options.forEach(opt => {
@@ -317,7 +435,6 @@
           area.appendChild(btn);
         });
 
-        const msgEl = document.getElementById('statusMsg');
         if (!isVoting) {
           msgEl.innerHTML = '<span class="warn">現在、投票受付は停止中です。</span>';
         } else if (savedChoice) {
