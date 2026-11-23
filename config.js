@@ -1,5 +1,5 @@
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxoJjTZ2DWXTEI8DXD2LKu7cJQ0QsMhXhUa5zfkWq_6YUJOjFAjBu4tRzlBJodzzD1q/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxS3iC24BL4mNjUkLw0XJU2aQB2322mdtSTSI_WwpER2Zx1529-Yc8k8zCMUM0lSiLw/exec',
   POLL_INTERVAL_MS: 2500
 };
 
