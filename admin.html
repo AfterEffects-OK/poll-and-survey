@@ -627,7 +627,7 @@
 
     .modal-box {
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       background: #141c2b;
       color: #f8fafc;
       border: 2px solid #ef4444;
@@ -650,10 +650,37 @@
     }
 
     .modal-message {
-      margin: 0 0 6px;
+      margin: 0 0 10px;
       font-size: 15px;
       font-weight: 700;
       line-height: 1.5;
+    }
+
+    .modal-target-box {
+      display: none;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #0b101b;
+      border: 1px solid #334155;
+    }
+
+    .modal-target-box.show {
+      display: block;
+    }
+
+    .modal-target-id {
+      font-size: 12px;
+      font-weight: 800;
+      color: #7dd3fc;
+      margin-bottom: 3px;
+    }
+
+    .modal-target-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+      word-break: break-word;
     }
 
     .modal-sub {
@@ -873,6 +900,10 @@
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h3 id="modalTitle" class="modal-title">投票ログの削除確認</h3>
       <p id="modalMessage" class="modal-message">現在選択中の質問の投票ログを削除しますか？</p>
+      <div id="modalTargetBox" class="modal-target-box">
+        <div id="modalTargetId" class="modal-target-id"></div>
+        <div id="modalTargetText" class="modal-target-text"></div>
+      </div>
       <p class="modal-sub">※削除した投票データは元に戻せません。</p>
       <div class="modal-actions">
         <button type="button" id="modalCancelBtn" class="modal-btn cancel">キャンセル</button>
@@ -949,13 +980,17 @@
       const {
         title = '投票ログの削除確認',
         okText = '削除する',
-        cancelText = 'キャンセル'
+        cancelText = 'キャンセル',
+        detail = null
       } = options;
 
       return new Promise((resolve) => {
         const modal = document.getElementById('confirmModal');
         const titleEl = document.getElementById('modalTitle');
         const msgEl = document.getElementById('modalMessage');
+        const targetBox = document.getElementById('modalTargetBox');
+        const targetIdEl = document.getElementById('modalTargetId');
+        const targetTextEl = document.getElementById('modalTargetText');
         const okBtn = document.getElementById('modalOkBtn');
         const cancelBtn = document.getElementById('modalCancelBtn');
 
@@ -968,6 +1003,18 @@
         msgEl.textContent = message;
         okBtn.textContent = okText;
         cancelBtn.textContent = cancelText;
+
+        if (targetBox && targetIdEl && targetTextEl) {
+          if (detail && (detail.id || detail.text)) {
+            targetIdEl.textContent = detail.id ? `質問ID: ${detail.id}` : '対象質問';
+            targetTextEl.textContent = detail.text || '（質問文なし）';
+            targetBox.classList.add('show');
+          } else {
+            targetIdEl.textContent = '';
+            targetTextEl.textContent = '';
+            targetBox.classList.remove('show');
+          }
+        }
 
         modal.classList.add('open');
         modal.setAttribute('aria-hidden', 'false');
@@ -1417,8 +1464,13 @@
         alert('削除する既存質問をドロップダウンから選択してください。');
         return;
       }
-      const confirmed = await showConfirmPopup(`質問「${targetId}」を削除しますか？`, {
-        title: '質問の削除確認'
+      const targetObj = latestQuestions.find(q => q.id === targetId);
+      const confirmed = await showConfirmPopup('この質問を削除しますか？', {
+        title: '質問の削除確認',
+        detail: {
+          id: targetId,
+          text: targetObj ? targetObj.question : ''
+        }
       });
       if (!confirmed) return;
       const res = await postGas({ action: 'delete_question', id: targetId });
@@ -1516,11 +1568,16 @@
     }
 
     async function clearCurrentVotes() {
+      const questionId = document.getElementById('questionSelect').value;
+      const selectedObj = latestQuestions.find(q => q.id === questionId);
       const confirmed = await showConfirmPopup('現在選択中の質問の投票ログを削除しますか？', {
-        title: '投票ログの削除確認'
+        title: '投票ログの削除確認',
+        detail: {
+          id: questionId,
+          text: selectedObj ? selectedObj.question : ''
+        }
       });
       if (!confirmed) return;
-      const questionId = document.getElementById('questionSelect').value;
       const res = await postGas({ action: 'clear_votes', questionId });
       setLog(res.message || res.error);
       loadAll();
