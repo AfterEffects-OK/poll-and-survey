@@ -54,6 +54,17 @@
     button.info:hover { background: #0369a1; }
     button.danger { background: #dc2626; }
     button.danger:hover { background: #b91c1c; }
+    .mode-pill {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .mode-pill.poll { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+    .mode-pill.quiz { background: rgba(244, 114, 182, 0.2); color: #f9a8d4; }
     .timer-readout { font-size: 16px; font-weight: 800; color: #fbbf24; margin-left: 6px; }
     .bar-item { margin-top: 10px; }
     .bar-bg { background: #374151; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 4px; }
@@ -79,7 +90,6 @@
       display: block;
       margin: 0 0 12px;
       font-size: 16px;
-      font-weight: 700;
       color: #93c5fd;
     }
     .accordion-icon {
@@ -107,7 +117,7 @@
     <div class="card">
       <h2>1. 出題する質問の選択</h2>
       <div class="btn-row" style="margin-top: 0;">
-        <select id="questionSelect"></select>
+        <select id="questionSelect" onchange="onQuestionSelectChange()"></select>
         <button onclick="applyQuestion()">この質問に切り替える</button>
       </div>
       <div class="meta" id="currentInfo">現在の状態: -</div>
@@ -166,14 +176,11 @@
     </div>
 
     <div class="card">
-      <h2>3. OBS表示・投票ステータスの切り替え</h2>
-      <div class="btn-row">
-        <button class="warn" onclick="setStatus('WAITING')">非表示（待機）</button>
-        <button class="success" onclick="setStatus('VOTING')">投票受付中（無制限）</button>
-        <button onclick="setStatus('CLOSED')">受付終了</button>
-        <button class="info" onclick="setStatus('RESULT')">アンケート結果表示</button>
-        <button class="success" onclick="setStatus('ANSWER')">クイズ正解表示</button>
-      </div>
+      <h2>
+        3. OBS表示・投票ステータスの切り替え
+        <span id="statusModeBadge" class="mode-pill poll">アンケート</span>
+      </h2>
+      <div id="statusBtnRow" class="btn-row"></div>
 
       <div class="btn-row" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #374151;">
         <select id="timerSec" style="min-width: 120px;">
@@ -182,7 +189,7 @@
           <option value="45">45秒</option>
           <option value="60">60秒</option>
         </select>
-        <button class="success" onclick="startTimedVoting()">タイマー付きで投票開始</button>
+        <button id="timedVoteBtn" class="success" onclick="startTimedVoting()">タイマー付きで投票開始</button>
         <span id="adminTimerReadout" class="timer-readout"></span>
       </div>
 
@@ -230,9 +237,67 @@
     let lastQuestionId = '';
     let latestQuestions = [];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right' };
+    let activeQuestionType = 'poll';
     let isObsAppearanceDirty = false;
 
+    const BUTTON_CONFIGS = {
+      poll: [
+        { status: 'WAITING', label: '非表示（待機）', className: 'warn' },
+        { status: 'VOTING', label: '投票受付中（無制限）', className: 'success' },
+        { status: 'CLOSED', label: '投票受付終了', className: '' },
+        { status: 'RESULT', label: 'アンケート結果表示', className: 'info' }
+      ],
+      quiz: [
+        { status: 'WAITING', label: '非表示（待機）', className: 'warn' },
+        { status: 'VOTING', label: '回答受付中（無制限）', className: 'success' },
+        { status: 'CLOSED', label: '回答受付終了', className: '' },
+        { status: 'RESULT', label: '集計結果表示', className: 'info' },
+        { status: 'ANSWER', label: 'クイズ正解表示', className: 'success' }
+      ]
+    };
+
+    function renderStatusButtons(type) {
+      const normalizedType = type === 'quiz' ? 'quiz' : 'poll';
+      activeQuestionType = normalizedType;
+
+      const badge = document.getElementById('statusModeBadge');
+      if (badge) {
+        badge.textContent = normalizedType === 'quiz' ? 'QUIZ モード' : 'POLL モード';
+        badge.className = 'mode-pill ' + normalizedType;
+      }
+
+      const timedBtn = document.getElementById('timedVoteBtn');
+      if (timedBtn) {
+        timedBtn.textContent = normalizedType === 'quiz'
+          ? 'タイマー付きで回答開始'
+          : 'タイマー付きで投票開始';
+      }
+
+      const row = document.getElementById('statusBtnRow');
+      if (!row) return;
+
+      const defs = BUTTON_CONFIGS[normalizedType];
+      row.innerHTML = '';
+      defs.forEach(def => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = def.label;
+        if (def.className) btn.className = def.className;
+        btn.onclick = () => setStatus(def.status);
+        row.appendChild(btn);
+      });
+    }
+
+    function onQuestionSelectChange() {
+      const selId = document.getElementById('questionSelect').value;
+      const found = latestQuestions.find(q => q.id === selId);
+      if (found) {
+        renderStatusButtons(found.type);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      renderStatusButtons('poll');
       const tSel = document.getElementById('obsThemeSelect');
       const pSel = document.getElementById('obsPositionSelect');
       if (tSel) tSel.addEventListener('focus', () => { isObsAppearanceDirty = true; });
@@ -364,6 +429,7 @@
         syncObsAppearanceInputs(currentState);
 
         const sel = document.getElementById('questionSelect');
+        const prevSelected = sel.value;
         sel.innerHTML = '';
         latestQuestions.forEach(q => {
           const opt = document.createElement('option');
@@ -374,12 +440,17 @@
         if (data.state.questionId !== lastQuestionId) {
           sel.value = data.state.questionId;
           lastQuestionId = data.state.questionId;
+        } else if ([...sel.options].some(o => o.value === prevSelected)) {
+          sel.value = prevSelected;
         } else if ([...sel.options].some(o => o.value === data.state.questionId)) {
           sel.value = data.state.questionId;
         }
 
+        const selectedObj = latestQuestions.find(q => q.id === sel.value) || data.question;
+        renderStatusButtons(selectedObj ? selectedObj.type : 'poll');
+
         document.getElementById('currentInfo').textContent =
-          `出題中: ${data.question.id}（${data.question.question}） / ステータス: ${data.state.status} / 総票数: ${data.totalVotes}`;
+          `出題中: ${data.question.id}（${data.question.question}） / 種別: ${data.question.type} / ステータス: ${data.state.status} / 総票数: ${data.totalVotes}`;
 
         const prev = document.getElementById('previewArea');
         prev.innerHTML = (data.results || []).map(r => `
@@ -412,7 +483,7 @@
       const durationSec = Number(document.getElementById('timerSec').value);
       const res = await postGas({ action: 'set_state', status: 'VOTING', durationSec });
       document.getElementById('actionLog').textContent =
-        res.ok ? `${durationSec}秒タイマーで投票を開始しました。` : res.error;
+        res.ok ? `${durationSec}秒タイマーで受付を開始しました。` : res.error;
       loadAll();
     }
 
