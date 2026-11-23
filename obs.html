@@ -45,7 +45,7 @@
       --shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
     }
 
-    [data-theme="yellow"] {
+    html[data-theme="yellow"] {
       --font-main: "M PLUS Rounded 1c", "Noto Sans JP", sans-serif;
       --font-num: "Fredoka", "Noto Sans JP", sans-serif;
       --card-bg: rgba(24, 22, 15, 0.95);
@@ -65,7 +65,7 @@
       --shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 18px rgba(250, 204, 21, 0.25);
     }
 
-    [data-theme="neon"] {
+    html[data-theme="neon"] {
       --font-main: "Dela Gothic One", "Noto Sans JP", sans-serif;
       --font-num: "Orbitron", sans-serif;
       --card-bg: rgba(15, 12, 28, 0.94);
@@ -85,7 +85,7 @@
       --shadow: 0 0 24px rgba(236, 72, 153, 0.45);
     }
 
-    [data-theme="pop"] {
+    html[data-theme="pop"] {
       --font-main: "M PLUS Rounded 1c", sans-serif;
       --font-num: "Fredoka", "M PLUS Rounded 1c", sans-serif;
       --card-bg: rgba(255, 251, 235, 0.96);
@@ -105,7 +105,7 @@
       --shadow: 0 8px 0 #1e293b;
     }
 
-    [data-theme="cyber"] {
+    html[data-theme="cyber"] {
       --font-main: "DotGothic16", monospace;
       --font-num: "Share Tech Mono", monospace;
       --card-bg: rgba(6, 24, 18, 0.94);
@@ -125,7 +125,7 @@
       --shadow: 0 0 20px rgba(16, 185, 129, 0.35);
     }
 
-    [data-theme="sakura"] {
+    html[data-theme="sakura"] {
       --font-main: "Zen Maru Gothic", sans-serif;
       --font-num: "Zen Maru Gothic", sans-serif;
       --card-bg: rgba(255, 248, 250, 0.96);
@@ -145,7 +145,7 @@
       --shadow: 0 12px 28px rgba(244, 114, 182, 0.28);
     }
 
-    [data-theme="broadcast"] {
+    html[data-theme="broadcast"] {
       --font-main: "Shippori Mincho", serif;
       --font-num: "Oswald", sans-serif;
       --card-bg: rgba(11, 19, 43, 0.95);
@@ -185,7 +185,7 @@
 
     .overlay-card {
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       max-height: 100%;
       overflow-y: auto;
       background: var(--card-bg);
@@ -236,7 +236,7 @@
     }
 
     .q-title {
-      margin: 0 0 14px;
+      margin: 0 0 12px;
       font-size: clamp(17px, 2vw, 21px);
       font-weight: 800;
       line-height: 1.35;
@@ -252,7 +252,7 @@
     .row-item {
       background: var(--item-bg);
       border-radius: var(--item-radius);
-      padding: 9px 12px;
+      padding: 8px 12px;
       min-width: 0;
     }
 
@@ -268,7 +268,7 @@
       gap: 10px;
       font-size: clamp(14px, 1.5vw, 16px);
       font-weight: 800;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .row-label {
@@ -287,7 +287,7 @@
 
     .track {
       width: 100%;
-      height: 11px;
+      height: 10px;
       background: var(--track-bg);
       border-radius: 999px;
       overflow: hidden;
@@ -301,6 +301,64 @@
       transition: width 0.4s ease;
     }
 
+    /* 受付中のみ表示されるQRコードボックス */
+    .qr-box {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: var(--item-radius);
+      background: var(--item-bg);
+      border: 1.5px solid var(--accent);
+      align-items: center;
+      gap: 12px;
+    }
+
+    .qr-box.show {
+      display: flex;
+    }
+
+    .qr-frame {
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    #qrCanvas {
+      width: 84px;
+      height: 84px;
+      display: block;
+    }
+
+    .qr-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .qr-heading {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+
+    .qr-sub {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+
+    .qr-url {
+      font-size: 11px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      word-break: break-all;
+    }
+
     .footer-meta {
       margin-top: 10px;
       font-size: 12px;
@@ -310,47 +368,64 @@
       gap: 8px;
     }
 
-    /* 拡大表示（data-size="large"） */
-    [data-size="large"] .overlay-card {
-      max-width: 760px;
+    /* 拡大表示（html[data-size="large"]） */
+    html[data-size="large"] .overlay-card {
+      max-width: 780px;
       padding: clamp(20px, 3vw, 32px);
       border-width: 3px;
     }
 
-    [data-size="large"] .tag {
+    html[data-size="large"] .tag {
       font-size: 15px;
       padding: 5px 14px;
     }
 
-    [data-size="large"] .timer-txt {
+    html[data-size="large"] .timer-txt {
       font-size: 24px;
     }
 
-    [data-size="large"] .q-title {
+    html[data-size="large"] .q-title {
       font-size: clamp(24px, 3.2vw, 34px);
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
-    [data-size="large"] .row-item {
-      padding: 13px 16px;
+    html[data-size="large"] .row-item {
+      padding: 12px 16px;
     }
 
-    [data-size="large"] .row-head {
-      font-size: clamp(19px, 2.2vw, 24px);
-      margin-bottom: 8px;
+    html[data-size="large"] .row-head {
+      font-size: clamp(19px, 2.2vw, 25px);
+      margin-bottom: 7px;
     }
 
-    [data-size="large"] .row-stat {
+    html[data-size="large"] .row-stat {
       font-size: 19px;
     }
 
-    [data-size="large"] .track {
+    html[data-size="large"] .track {
       height: 16px;
     }
 
-    [data-size="large"] .footer-meta {
+    html[data-size="large"] #qrCanvas {
+      width: 116px;
+      height: 116px;
+    }
+
+    html[data-size="large"] .qr-heading {
+      font-size: 18px;
+    }
+
+    html[data-size="large"] .qr-sub {
       font-size: 15px;
-      margin-top: 14px;
+    }
+
+    html[data-size="large"] .qr-url {
+      font-size: 13px;
+    }
+
+    html[data-size="large"] .footer-meta {
+      font-size: 15px;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -363,6 +438,18 @@
       </div>
       <h2 id="qTitle" class="q-title"></h2>
       <div id="rowsContainer" class="rows"></div>
+
+      <div id="qrBox" class="qr-box">
+        <div class="qr-frame">
+          <canvas id="qrCanvas" width="240" height="240"></canvas>
+        </div>
+        <div class="qr-info">
+          <div class="qr-heading">スマホでQRを読み取って投票・回答</div>
+          <div class="qr-sub">受付中（VOTING）の間だけ表示しています</div>
+          <div id="qrUrlText" class="qr-url"></div>
+        </div>
+      </div>
+
       <div class="footer-meta">
         <span id="stateLabel"></span>
         <span id="totalVotesLabel"></span>
@@ -380,17 +467,274 @@
     const ALLOWED_SIZES = ['normal', 'large'];
 
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
+    let renderedQrUrl = '';
+
+    function getVoteTargetUrl() {
+      if (typeof CONFIG !== 'undefined' && CONFIG.VOTE_URL && String(CONFIG.VOTE_URL).trim()) {
+        return String(CONFIG.VOTE_URL).trim();
+      }
+      const pathname = window.location.pathname;
+      const basePath = pathname.endsWith('/')
+        ? pathname
+        : pathname.replace(/[^/]+$/, '');
+      return `${window.location.origin}${basePath}index.html`;
+    }
+
+    /* 外部通信なしで安定描画する軽量QRマトリクス生成（Byteモード・ECC Level L / M） */
+    function buildQrMatrix(text) {
+      const bytes = new TextEncoder().encode(text);
+      // 容量に応じてバージョン（1〜6）を選択（Byteモード L等級）
+      const capacities = [0, 17, 32, 53, 78, 106, 134];
+      let version = 1;
+      while (version <= 6 && bytes.length > capacities[version]) {
+        version++;
+      }
+      if (version > 6) return null;
+
+      const size = version * 4 + 17;
+      const grid = Array.from({ length: size }, () => Array(size).fill(null));
+      const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+
+      function placeFinder(r0, c0) {
+        for (let r = -1; r <= 7; r++) {
+          for (let c = -1; c <= 7; c++) {
+            const rr = r0 + r;
+            const cc = c0 + c;
+            if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+            const inBorder = r === -1 || r === 7 || c === -1 || c === 7;
+            const inOuter = r === 0 || r === 6 || c === 0 || c === 6;
+            const inCenter = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+            grid[rr][cc] = !inBorder && (inOuter || inCenter);
+            reserved[rr][cc] = true;
+          }
+        }
+      }
+
+      placeFinder(0, 0);
+      placeFinder(0, size - 7);
+      placeFinder(size - 7, 0);
+
+      // タイミングパターン
+      for (let i = 8; i < size - 8; i++) {
+        const val = i % 2 === 0;
+        if (!reserved[6][i]) { grid[6][i] = val; reserved[6][i] = true; }
+        if (!reserved[i][6]) { grid[i][6] = val; reserved[i][6] = true; }
+      }
+
+      // アライメントパターン（v2以上）
+      if (version >= 2) {
+        const centers = [6, size - 7];
+        centers.forEach(cr => {
+          centers.forEach(cc => {
+            if (reserved[cr][cc]) return;
+            for (let r = -2; r <= 2; r++) {
+              for (let c = -2; c <= 2; c++) {
+                const isDark = Math.abs(r) === 2 || Math.abs(c) === 2 || (r === 0 && c === 0);
+                grid[cr + r][cc + c] = isDark;
+                reserved[cr + r][cc + c] = true;
+              }
+            }
+          });
+        });
+      }
+
+      // ダークモジュール
+      grid[size - 8][8] = true;
+      reserved[size - 8][8] = true;
+
+      // フォーマット情報領域を予約
+      for (let i = 0; i < 9; i++) {
+        if (i < size) {
+          reserved[8][i] = true;
+          reserved[i][8] = true;
+        }
+      }
+      for (let i = 0; i < 8; i++) {
+        reserved[8][size - 1 - i] = true;
+        reserved[size - 1 - i][8] = true;
+      }
+
+      // ビットストリーム構築（Mode 0100 = Byte）
+      const totalDataBytes = capacities[version];
+      const bits = [];
+      function pushBits(val, len) {
+        for (let b = len - 1; b >= 0; b--) {
+          bits.push(((val >>> b) & 1) === 1);
+        }
+      }
+
+      pushBits(0b0100, 4);
+      const countBitsLen = version <= 9 ? 8 : 16;
+      pushBits(bytes.length, countBitsLen);
+      bytes.forEach(byte => pushBits(byte, 8));
+
+      const totalDataBits = totalDataBytes * 8;
+      const termLen = Math.min(4, Math.max(0, totalDataBits - bits.length));
+      pushBits(0, termLen);
+      while (bits.length % 8 !== 0) bits.push(false);
+
+      const padBytes = [0xec, 0x11];
+      let padIdx = 0;
+      while (bits.length < totalDataBits) {
+        pushBits(padBytes[padIdx % 2], 8);
+        padIdx++;
+      }
+
+      // GF(256) RSパリティ生成（v1〜v6のECC L用バイト数）
+      const ecCounts = [0, 7, 10, 15, 20, 26, 36];
+      const ecCount = ecCounts[version];
+
+      const gfExp = Array(512).fill(0);
+      const gfLog = Array(256).fill(0);
+      let x = 1;
+      for (let i = 0; i < 255; i++) {
+        gfExp[i] = x;
+        gfLog[x] = i;
+        x <<= 1;
+        if (x & 0x100) x ^= 0x11d;
+      }
+      for (let i = 255; i < 512; i++) gfExp[i] = gfExp[i - 255];
+
+      function gfMul(a, b) {
+        if (a === 0 || b === 0) return 0;
+        return gfExp[gfLog[a] + gfLog[b]];
+      }
+
+      let genPoly = [1];
+      for (let i = 0; i < ecCount; i++) {
+        const nextPoly = Array(genPoly.length + 1).fill(0);
+        for (let j = 0; j < genPoly.length; j++) {
+          nextPoly[j] ^= genPoly[j];
+          nextPoly[j + 1] ^= gfMul(genPoly[j], gfExp[i]);
+        }
+        genPoly = nextPoly;
+      }
+
+      const dataBytes = [];
+      for (let i = 0; i < totalDataBytes; i++) {
+        let val = 0;
+        for (let b = 0; b < 8; b++) {
+          if (bits[i * 8 + b]) val |= (1 << (7 - b));
+        }
+        dataBytes.push(val);
+      }
+
+      const ecc = Array(ecCount).fill(0);
+      for (let i = 0; i < dataBytes.length; i++) {
+        const factor = dataBytes[i] ^ ecc[0];
+        ecc.shift();
+        ecc.push(0);
+        for (let j = 0; j < ecCount; j++) {
+          ecc[j] ^= gfMul(genPoly[j + 1], factor);
+        }
+      }
+
+      const allBytes = dataBytes.concat(ecc);
+      const codeBits = [];
+      allBytes.forEach(byte => {
+        for (let b = 7; b >= 0; b--) {
+          codeBits.push(((byte >>> b) & 1) === 1);
+        }
+      });
+
+      // ジグザグ配置（マスク0: (r + c) % 2 === 0）
+      let bitCursor = 0;
+      let dirUp = true;
+      for (let col = size - 1; col >= 1; col -= 2) {
+        if (col === 6) col = 5;
+        for (let step = 0; step < size; step++) {
+          const r = dirUp ? (size - 1 - step) : step;
+          for (let d = 0; d < 2; d++) {
+            const c = col - d;
+            if (!reserved[r][c]) {
+              let dark = bitCursor < codeBits.length ? codeBits[bitCursor++] : false;
+              if ((r + c) % 2 === 0) dark = !dark;
+              grid[r][c] = dark;
+            }
+          }
+        }
+        dirUp = !dirUp;
+      }
+
+      // マスク0（ECC L = 01, mask = 000 -> 0b01000）フォーマットビット配置
+      const fmtBits = [1,0,1,0,1,0,0,0,0,0,1,0,0,1,0];
+      for (let i = 0; i < 15; i++) {
+        const dark = fmtBits[i] === 1;
+        if (i < 6) grid[8][i] = dark;
+        else if (i < 8) grid[8][i + 1] = dark;
+        else grid[14 - i][8] = dark;
+
+        if (i < 8) grid[size - 1 - i][8] = dark;
+        else grid[8][size - 15 + i] = dark;
+      }
+
+      return grid;
+    }
+
+    function renderQrIfNeeded(isVoting) {
+      const box = document.getElementById('qrBox');
+      const canvas = document.getElementById('qrCanvas');
+      const urlText = document.getElementById('qrUrlText');
+      if (!box || !canvas) return;
+
+      if (!isVoting) {
+        box.classList.remove('show');
+        return;
+      }
+
+      const targetUrl = getVoteTargetUrl();
+      if (urlText) urlText.textContent = targetUrl;
+      box.classList.add('show');
+
+      if (renderedQrUrl === targetUrl) return;
+      renderedQrUrl = targetUrl;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const matrix = buildQrMatrix(targetUrl);
+      if (!matrix) {
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('URLが長すぎます', canvas.width / 2, canvas.height / 2);
+        return;
+      }
+
+      const n = matrix.length;
+      const quiet = 2;
+      const cell = canvas.width / (n + quiet * 2);
+
+      ctx.fillStyle = '#0f172a';
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) {
+          if (matrix[r][c]) {
+            ctx.fillRect(
+              Math.floor((c + quiet) * cell),
+              Math.floor((r + quiet) * cell),
+              Math.ceil(cell),
+              Math.ceil(cell)
+            );
+          }
+        }
+      }
+    }
 
     function applyAppearance(state) {
       const params = new URLSearchParams(window.location.search);
-      const theme = (state && ALLOWED_THEMES.includes(state.theme))
-        ? state.theme
+      const rawTheme = (state && typeof state.theme === 'string') ? state.theme.trim() : '';
+      const rawPos = (state && typeof state.position === 'string') ? state.position.trim() : '';
+      const rawSize = (state && typeof state.size === 'string') ? state.size.trim() : '';
+
+      const theme = ALLOWED_THEMES.includes(rawTheme)
+        ? rawTheme
         : (ALLOWED_THEMES.includes(params.get('theme')) ? params.get('theme') : 'dark');
-      const pos = (state && ALLOWED_POSITIONS.includes(state.position))
-        ? state.position
+      const pos = ALLOWED_POSITIONS.includes(rawPos)
+        ? rawPos
         : (ALLOWED_POSITIONS.includes(params.get('pos')) ? params.get('pos') : 'bottom-right');
-      const size = (state && ALLOWED_SIZES.includes(state.size))
-        ? state.size
+      const size = ALLOWED_SIZES.includes(rawSize)
+        ? rawSize
         : (ALLOWED_SIZES.includes(params.get('size')) ? params.get('size') : 'normal');
 
       document.documentElement.setAttribute('data-theme', theme);
@@ -415,22 +759,24 @@
         if (!data.ok) return;
 
         const { state, question, totalVotes, results } = data;
-        currentState = state;
-        applyAppearance(state);
+        currentState = Object.assign({}, currentState, state || {});
+        applyAppearance(currentState);
 
         const card = document.getElementById('overlayCard');
-        if (!state || state.status === 'WAITING') {
+        if (!currentState || currentState.status === 'WAITING') {
           card.classList.remove('visible');
+          renderQrIfNeeded(false);
           updateTimer();
           return;
         }
 
-        const isQuiz = question.type === 'quiz';
-        const showCounts = state.status === 'RESULT' || state.status === 'ANSWER' || state.status === 'CLOSED';
-        const highlightAnswer = state.status === 'ANSWER' && isQuiz && question.answer;
+        const isVoting = currentState.status === 'VOTING';
+        const isQuiz = question && question.type === 'quiz';
+        const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER' || currentState.status === 'CLOSED';
+        const highlightAnswer = currentState.status === 'ANSWER' && isQuiz && question.answer;
 
         document.getElementById('tagBadge').textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
-        document.getElementById('qTitle').textContent = question.question;
+        document.getElementById('qTitle').textContent = question ? question.question : '';
 
         const statusMap = {
           VOTING: isQuiz ? '回答受付中' : '投票受付中',
@@ -438,7 +784,7 @@
           RESULT: '集計結果',
           ANSWER: '正解発表'
         };
-        document.getElementById('stateLabel').textContent = statusMap[state.status] || state.status;
+        document.getElementById('stateLabel').textContent = statusMap[currentState.status] || currentState.status;
         document.getElementById('totalVotesLabel').textContent = showCounts ? `合計 ${totalVotes} 票` : '';
 
         const rows = document.getElementById('rowsContainer');
@@ -460,6 +806,7 @@
           `;
         }).join('');
 
+        renderQrIfNeeded(isVoting);
         card.classList.add('visible');
         updateTimer();
       } catch (e) {
