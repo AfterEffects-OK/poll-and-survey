@@ -79,6 +79,7 @@
       color: #e2e8f0;
       border: 1px solid #475569;
       cursor: pointer;
+      white-space: nowrap;
     }
     .copy-btn:hover {
       border-color: #38bdf8;
@@ -105,7 +106,8 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      flex: 1 1 320px;
+      flex: 1 1 340px;
+      min-width: 0;
     }
 
     .room-switcher-label {
@@ -113,6 +115,7 @@
       font-weight: 800;
       color: #93c5fd;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .room-input-wrap {
@@ -123,7 +126,7 @@
       max-width: 400px;
       min-width: 0;
     }
-    
+
     .room-input-wrap input[type="text"] {
       flex: 1 1 auto;
       min-width: 0;
@@ -132,11 +135,12 @@
       padding: 7px 11px;
       border-radius: 8px;
     }
-    
+
     .room-input-wrap .btn {
       white-space: nowrap;
       flex-shrink: 0;
     }
+
     .room-history-list {
       display: flex;
       flex-wrap: wrap;
@@ -148,6 +152,7 @@
       font-size: 12px;
       font-weight: 700;
       color: #94a3b8;
+      white-space: nowrap;
     }
 
     button.room-chip {
@@ -160,6 +165,7 @@
       color: #cbd5e1;
       border: 1px solid #334155;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     button.room-chip:hover {
@@ -316,6 +322,7 @@
       color: #ffffff;
       background: #2563eb;
       text-align: center;
+      white-space: nowrap;
       transition: filter 0.12s ease, transform 0.06s ease;
     }
     button.btn.btn-sm {
@@ -520,6 +527,85 @@
       background: #0b101b;
       border-left: 4px solid #38bdf8;
       color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* 投票ログ・履歴管理 */
+    .log-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .log-toolbar select {
+      flex: 1 1 180px;
+      font-size: 13px;
+      padding: 7px 10px;
+    }
+
+    .log-toolbar input[type="text"] {
+      flex: 1 1 180px;
+      font-size: 13px;
+      padding: 7px 10px;
+    }
+
+    .log-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .log-summary-txt {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #93c5fd;
+    }
+
+    .log-table-wrap {
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid #25344f;
+      border-radius: 8px;
+      background: #0b101b;
+    }
+
+    table.vote-log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    table.vote-log-table th,
+    table.vote-log-table td {
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    table.vote-log-table th {
+      position: sticky;
+      top: 0;
+      background: #131c2e;
+      color: #7dd3fc;
+      font-weight: 800;
+      z-index: 1;
+    }
+
+    table.vote-log-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .log-empty-box {
+      padding: 16px 12px;
+      text-align: center;
+      color: #94a3b8;
       font-size: 13px;
       font-weight: 700;
     }
@@ -996,7 +1082,7 @@
         </section>
       </div>
 
-      <!-- 右カラム：現在の状態＋リアルタイム集計 -->
+      <!-- 右カラム：現在の状態＋リアルタイム集計＋投票ログ・履歴 -->
       <div class="column-stack monitor-column">
         <section class="card live-card">
           <div class="card-header">
@@ -1021,6 +1107,37 @@
             <button type="button" class="btn btn-red" style="padding:6px 12px;font-size:12.5px;" onclick="clearCurrentVotes()">票をリセット</button>
           </div>
           <div id="previewArea">読み込み中...</div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">投票ログ・履歴管理</h2>
+            <button type="button" class="btn btn-gray btn-sm" onclick="fetchVoteLogs(true)">更新</button>
+          </div>
+
+          <div class="log-toolbar">
+            <select id="logQuestionFilter" onchange="renderVoteLogsTable()">
+              <option value="__ALL__">すべての質問</option>
+            </select>
+            <input
+              id="logSearchInput"
+              type="text"
+              placeholder="回答者ID・選択肢・時刻で検索"
+              oninput="renderVoteLogsTable()"
+            />
+          </div>
+
+          <div class="log-actions-row">
+            <span id="logCountSummary" class="log-summary-txt">0 件表示</span>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <button type="button" class="copy-btn" onclick="exportLogsCsv()">CSV出力</button>
+              <button type="button" class="btn btn-red btn-sm" onclick="clearCurrentVotes()">選択質問の票をリセット</button>
+            </div>
+          </div>
+
+          <div id="voteLogContainer" class="log-table-wrap">
+            <div class="log-empty-box">投票ログを読み込み中...</div>
+          </div>
         </section>
       </div>
     </div>
@@ -1053,6 +1170,7 @@
 
     let lastQuestionId = '';
     let latestQuestions = [];
+    let latestVoteLogs = [];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
@@ -1181,12 +1299,13 @@
       const nextRoom = normalizeRoomId(nextRoomRaw);
       ROOM_ID = nextRoom;
       lastQuestionId = '';
+      latestVoteLogs = [];
       isObsAppearanceDirty = false;
       syncRoomInputAndUrl();
       renderContextBadge();
       rememberRoom(ROOM_ID);
       setLog(`配信「${ROOM_ID}」に切り替えました。`);
-      await loadAll();
+      await Promise.all([loadAll(), fetchVoteLogs(false)]);
     }
 
     function handleRoomSwitchSubmit(event) {
@@ -1200,6 +1319,152 @@
       if (badge) {
         badge.textContent = `room: ${ROOM_ID} / admin: ${ADMIN_ID}`;
       }
+    }
+
+    function refreshLogQuestionFilter() {
+      const sel = document.getElementById('logQuestionFilter');
+      if (!sel) return;
+      const prev = sel.value || '__ALL__';
+      sel.innerHTML = '<option value="__ALL__">すべての質問</option>';
+      latestQuestions.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = `${q.id}: ${q.question}`;
+        sel.appendChild(opt);
+      });
+      if ([...sel.options].some(o => o.value === prev)) {
+        sel.value = prev;
+      }
+    }
+
+    function normalizeLogEntry(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+      return {
+        timestamp: String(raw.timestamp || raw.createdAt || raw.time || ''),
+        questionId: String(raw.questionId || raw.qId || ''),
+        option: String(raw.option || raw.choice || raw.answer || raw.label || ''),
+        clientId: String(raw.clientId || raw.voterId || raw.userId || '')
+      };
+    }
+
+    function getFilteredVoteLogs() {
+      const qFilter = document.getElementById('logQuestionFilter')?.value || '__ALL__';
+      const query = String(document.getElementById('logSearchInput')?.value || '').trim().toLowerCase();
+
+      return latestVoteLogs.filter(entry => {
+        if (qFilter !== '__ALL__' && entry.questionId !== qFilter) return false;
+        if (!query) return true;
+        const hay = `${entry.timestamp} ${entry.questionId} ${entry.option} ${entry.clientId}`.toLowerCase();
+        return hay.includes(query);
+      });
+    }
+
+    function renderVoteLogsTable() {
+      const container = document.getElementById('voteLogContainer');
+      const summaryEl = document.getElementById('logCountSummary');
+      if (!container) return;
+
+      const filtered = getFilteredVoteLogs();
+      if (summaryEl) {
+        summaryEl.textContent = `${filtered.length} 件表示（全 ${latestVoteLogs.length} 件 / room: ${ROOM_ID}）`;
+      }
+
+      if (!filtered.length) {
+        container.innerHTML = `<div class="log-empty-box">表示できる投票ログがありません。</div>`;
+        return;
+      }
+
+      const rowsHtml = filtered.slice(0, 200).map((item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(item.timestamp || '-')}</td>
+          <td>${escapeHtml(item.questionId || '-')}</td>
+          <td><strong>${escapeHtml(item.option || '-')}</strong></td>
+          <td>${escapeHtml(item.clientId || '-')}</td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <table class="vote-log-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>日時</th>
+              <th>質問ID</th>
+              <th>選択肢</th>
+              <th>回答者ID</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      `;
+    }
+
+    async function fetchVoteLogs(showFeedback = false) {
+      const targetRoomAtStart = ROOM_ID;
+      try {
+        const res = await fetchGas({
+          action: 'get_logs',
+          roomId: targetRoomAtStart,
+          adminId: ADMIN_ID
+        });
+        if (targetRoomAtStart !== ROOM_ID) return;
+
+        if (res && res.ok && Array.isArray(res.logs)) {
+          latestVoteLogs = res.logs.map(normalizeLogEntry).filter(Boolean).reverse();
+          renderVoteLogsTable();
+          if (showFeedback) {
+            setLog(`[room: ${ROOM_ID}] 投票ログ（${latestVoteLogs.length}件）を更新しました。`);
+          }
+          return;
+        }
+
+        if (res && res.ok && Array.isArray(res.votes)) {
+          latestVoteLogs = res.votes.map(normalizeLogEntry).filter(Boolean).reverse();
+          renderVoteLogsTable();
+          if (showFeedback) {
+            setLog(`[room: ${ROOM_ID}] 投票ログ（${latestVoteLogs.length}件）を更新しました。`);
+          }
+          return;
+        }
+
+        renderVoteLogsTable();
+        if (showFeedback) {
+          setLog(res && res.error ? res.error : `[room: ${ROOM_ID}] GAS側に get_logs 応答がないため集計表示のみ更新しました。`);
+        }
+      } catch (e) {
+        console.error(e);
+        renderVoteLogsTable();
+      }
+    }
+
+    function exportLogsCsv() {
+      const filtered = getFilteredVoteLogs();
+      if (!filtered.length) {
+        setLog('出力対象の投票ログがありません。');
+        return;
+      }
+      const header = ['roomId', 'timestamp', 'questionId', 'option', 'clientId'];
+      const lines = [header.join(',')];
+      filtered.forEach(row => {
+        const vals = [ROOM_ID, row.timestamp, row.questionId, row.option, row.clientId].map(v => {
+          const s = String(v ?? '').replace(/"/g, '""');
+          return `"${s}"`;
+        });
+        lines.push(vals.join(','));
+      });
+
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vote_logs_${ROOM_ID}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setLog(`[room: ${ROOM_ID}] ${filtered.length}件の投票ログをCSV出力しました。`);
     }
 
     function showConfirmPopup(message, options = {}) {
@@ -1571,6 +1836,7 @@
       renderThemeChips();
       renderPositionButtons();
       renderSizeButtons();
+      renderVoteLogsTable();
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
     });
@@ -1728,6 +1994,11 @@
 
         currentState = data.state;
         latestQuestions = data.questions || [];
+        refreshLogQuestionFilter();
+        if (Array.isArray(data.logs)) {
+          latestVoteLogs = data.logs.map(normalizeLogEntry).filter(Boolean).reverse();
+          renderVoteLogsTable();
+        }
         syncObsAppearanceInputs(currentState);
         updateMonitorPanel(data);
 
@@ -1820,7 +2091,7 @@
       if (!confirmed) return;
       const res = await postGas({ action: 'clear_votes', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
       setLog(res.message || res.error);
-      loadAll();
+      await Promise.all([loadAll(), fetchVoteLogs(false)]);
     }
 
     function escapeHtml(str) {
@@ -1830,6 +2101,7 @@
     }
 
     loadAll();
+    fetchVoteLogs(false);
     setInterval(loadAll, CONFIG.POLL_INTERVAL_MS);
     setInterval(renderAdminCountdown, 200);
   </script>
