@@ -27,12 +27,13 @@
       border: none;
     }
     select { background: #374151; color: #fff; min-width: 260px; }
-    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
     button { cursor: pointer; font-weight: 600; background: #2563eb; color: #fff; }
     button:hover { background: #1d4ed8; }
     button.warn { background: #d97706; }
     button.success { background: #059669; }
     button.danger { background: #dc2626; }
+    .timer-readout { font-size: 16px; font-weight: 800; color: #fbbf24; margin-left: 6px; }
     .bar-item { margin-top: 10px; }
     .bar-bg { background: #374151; height: 10px; border-radius: 999px; overflow: hidden; margin-top: 4px; }
     .bar-fill { background: #38bdf8; height: 100%; width: 0%; transition: width 0.3s; }
@@ -52,12 +53,24 @@
       <h2>2. OBS表示・投票ステータスの切り替え</h2>
       <div class="btn-row">
         <button class="warn" onclick="setStatus('WAITING')">非表示（待機）</button>
-        <button class="success" onclick="setStatus('VOTING')">投票受付中</button>
+        <button class="success" onclick="setStatus('VOTING')">投票受付中（無制限）</button>
         <button onclick="setStatus('CLOSED')">受付終了</button>
         <button onclick="setStatus('RESULT')">結果グラフ表示</button>
         <button class="success" onclick="setStatus('ANSWER')">クイズ正解表示</button>
       </div>
-      <div class="btn-row" style="margin-top: 18px;">
+
+      <div class="btn-row" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #374151;">
+        <select id="timerSec" style="min-width: 120px;">
+          <option value="15">15秒</option>
+          <option value="30" selected>30秒</option>
+          <option value="45">45秒</option>
+          <option value="60">60秒</option>
+        </select>
+        <button class="success" onclick="startTimedVoting()">タイマー付きで投票開始</button>
+        <span id="adminTimerReadout" class="timer-readout"></span>
+      </div>
+
+      <div class="btn-row" style="margin-top: 16px;">
         <button class="danger" onclick="clearCurrentVotes()">現在の質問の票をリセット</button>
       </div>
       <div class="meta" id="actionLog"></div>
@@ -72,11 +85,25 @@
   <script src="config.js"></script>
   <script>
     let lastQuestionId = '';
+    let currentState = { status: 'WAITING', deadlineAt: 0 };
+
+    function renderAdminCountdown() {
+      const el = document.getElementById('adminTimerReadout');
+      if (!el) return;
+      if (currentState.status === 'VOTING' && currentState.deadlineAt) {
+        const remainSec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
+        el.textContent = `残り ${remainSec}秒`;
+      } else {
+        el.textContent = '';
+      }
+    }
 
     async function loadAll() {
       try {
         const data = await fetchGas();
         if (!data.ok) return;
+
+        currentState = data.state;
 
         const sel = document.getElementById('questionSelect');
         if (sel.options.length !== data.questions.length) {
@@ -103,6 +130,8 @@
             <div class="bar-bg"><div class="bar-fill" style="width:${r.pct}%"></div></div>
           </div>
         `).join('');
+
+        renderAdminCountdown();
       } catch (e) {
         console.error(e);
       }
@@ -118,6 +147,14 @@
     async function setStatus(status) {
       const res = await postGas({ action: 'set_state', status });
       document.getElementById('actionLog').textContent = res.ok ? `ステータスを ${status} に変更しました。` : res.error;
+      loadAll();
+    }
+
+    async function startTimedVoting() {
+      const durationSec = Number(document.getElementById('timerSec').value);
+      const res = await postGas({ action: 'set_state', status: 'VOTING', durationSec });
+      document.getElementById('actionLog').textContent =
+        res.ok ? `${durationSec}秒タイマーで投票を開始しました。` : res.error;
       loadAll();
     }
 
@@ -137,6 +174,7 @@
 
     loadAll();
     setInterval(loadAll, CONFIG.POLL_INTERVAL_MS);
+    setInterval(renderAdminCountdown, 200);
   </script>
 </body>
 </html>
