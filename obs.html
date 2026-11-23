@@ -59,6 +59,60 @@
       --divider: #cbd5e1;
     }
 
+    [data-theme="cyber"] {
+      --panel-bg: rgba(7, 25, 18, 0.92);
+      --panel-border: #10b981;
+      --panel-shadow: 0 0 28px rgba(16, 185, 129, 0.38);
+      --panel-radius: 4px;
+      --text: #ecfdf5;
+      --muted: #a7f3d0;
+      --sub-muted: #6ee7b7;
+      --accent: #34d399;
+      --timer: #2dd4bf;
+      --track-bg: rgba(16, 185, 129, 0.18);
+      --bar-grad: linear-gradient(90deg, #10b981, #a3e635);
+      --correct-bg: rgba(163, 230, 53, 0.22);
+      --correct-ring: #a3e635;
+      --correct-grad: linear-gradient(90deg, #84cc16, #bef264);
+      --divider: rgba(16, 185, 129, 0.35);
+    }
+
+    [data-theme="sakura"] {
+      --panel-bg: rgba(255, 250, 251, 0.96);
+      --panel-border: #fb7185;
+      --panel-shadow: 0 14px 36px rgba(244, 114, 182, 0.28);
+      --panel-radius: 26px;
+      --text: #3f1d28;
+      --muted: #881337;
+      --sub-muted: #be123c;
+      --accent: #e11d48;
+      --timer: #db2777;
+      --track-bg: #ffe4e6;
+      --bar-grad: linear-gradient(90deg, #fb7185, #f472b6);
+      --correct-bg: rgba(16, 185, 129, 0.16);
+      --correct-ring: #059669;
+      --correct-grad: linear-gradient(90deg, #059669, #34d399);
+      --divider: #fecdd3;
+    }
+
+    [data-theme="broadcast"] {
+      --panel-bg: rgba(19, 34, 71, 0.94);
+      --panel-border: #ef4444;
+      --panel-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+      --panel-radius: 8px;
+      --text: #ffffff;
+      --muted: #e2e8f0;
+      --sub-muted: #94a3b8;
+      --accent: #f87171;
+      --timer: #fde047;
+      --track-bg: rgba(255, 255, 255, 0.16);
+      --bar-grad: linear-gradient(90deg, #ef4444, #f97316);
+      --correct-bg: rgba(56, 189, 248, 0.22);
+      --correct-ring: #38bdf8;
+      --correct-grad: linear-gradient(90deg, #0284c7, #38bdf8);
+      --divider: rgba(239, 68, 68, 0.45);
+    }
+
     html, body {
       background-color: transparent !important;
       margin: 0;
@@ -86,7 +140,7 @@
       pointer-events: none;
     }
 
-    /* 表示位置バリアント */
+    /* 表示位置バリアント（全7種） */
     .overlay-wrap.pos-bottom-right {
       right: 48px;
       bottom: 48px;
@@ -100,6 +154,13 @@
       right: auto;
       top: auto;
       transform: translateY(20px);
+    }
+    .overlay-wrap.pos-bottom-center {
+      left: 50%;
+      bottom: 48px;
+      right: auto;
+      top: auto;
+      transform: translate(-50%, 20px);
     }
     .overlay-wrap.pos-top-right {
       right: 48px;
@@ -122,6 +183,13 @@
       bottom: auto;
       transform: translate(-50%, -20px);
     }
+    .overlay-wrap.pos-center {
+      left: 50%;
+      top: 50%;
+      right: auto;
+      bottom: auto;
+      transform: translate(-50%, calc(-50% + 20px));
+    }
 
     /* 表示状態（visible） */
     .overlay-wrap.pos-bottom-right.visible,
@@ -131,9 +199,14 @@
       opacity: 1;
       transform: translateY(0);
     }
+    .overlay-wrap.pos-bottom-center.visible,
     .overlay-wrap.pos-top-center.visible {
       opacity: 1;
       transform: translate(-50%, 0);
+    }
+    .overlay-wrap.pos-center.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%);
     }
 
     .top-bar {
@@ -174,7 +247,7 @@
       font-weight: 800;
       line-height: 1.35;
       margin-bottom: 18px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
     .row {
       margin-bottom: 14px;
@@ -268,8 +341,16 @@
 
   <script src="config.js"></script>
   <script>
-    const ALLOWED_THEMES = ['dark', 'neon', 'pop'];
-    const ALLOWED_POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left', 'top-center'];
+    const ALLOWED_THEMES = ['dark', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
+    const ALLOWED_POSITIONS = [
+      'bottom-right',
+      'bottom-left',
+      'bottom-center',
+      'top-right',
+      'top-left',
+      'top-center',
+      'center'
+    ];
 
     const STATUS_TEXT = {
       VOTING: '投票受付中',
