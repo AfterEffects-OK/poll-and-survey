@@ -295,10 +295,32 @@
 
     .fill {
       height: 100%;
-      width: 0%;
+      width: var(--target-pct, 0%);
       border-radius: 999px;
       background: var(--bar-grad);
-      transition: width 0.4s ease;
+      transition: width 0.35s ease;
+    }
+
+    @keyframes barBounce {
+      0% {
+        width: 0%;
+      }
+      58% {
+        width: calc(min(100%, var(--target-pct, 0%) * 1.18 + 3%));
+      }
+      78% {
+        width: calc(max(0%, var(--target-pct, 0%) * 0.92));
+      }
+      90% {
+        width: calc(min(100%, var(--target-pct, 0%) * 1.04));
+      }
+      100% {
+        width: var(--target-pct, 0%);
+      }
+    }
+
+    .fill.bounce {
+      animation: barBounce 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
     .closed-notice {
@@ -517,6 +539,7 @@
 
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let currentIsQuiz = false;
+    let lastResultSignature = '';
     let renderedQrUrl = '';
 
     function getVoteTargetUrl() {
@@ -828,6 +851,7 @@
         currentIsQuiz = isQuiz;
 
         if (!currentState || currentState.status === 'WAITING' || (isCompact && !isVoting)) {
+          lastResultSignature = '';
           card.classList.remove('visible');
           renderQrIfNeeded(false);
           updateTimer();
@@ -836,6 +860,10 @@
 
         const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER';
         const highlightAnswer = currentState.status === 'ANSWER' && isQuiz && question.answer;
+
+        if (!showCounts) {
+          lastResultSignature = '';
+        }
 
         updateQrHeading(isQuiz);
         document.getElementById('tagBadge').textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
@@ -854,10 +882,18 @@
         if (isClosed) {
           rows.innerHTML = `<div class="closed-notice">${isQuiz ? '回答受付は終了しました' : '投票受付は終了しました'}</div>`;
         } else {
-          rows.innerHTML = (results || []).map(r => {
+          const resultSig = `${(question && question.id) || ''}::${currentState.status}`;
+          const shouldBounce = showCounts && lastResultSignature !== resultSig;
+          if (showCounts) {
+            lastResultSignature = resultSig;
+          }
+
+          rows.innerHTML = (results || []).map((r, idx) => {
             const isCorrect = highlightAnswer && r.label === question.answer;
-            const pctVal = showCounts ? Number(r.pct || 0) : 0;
+            const pctVal = showCounts ? Math.max(0, Math.min(100, Number(r.pct || 0))) : 0;
             const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
+            const delayStyle = shouldBounce ? `animation-delay: ${Math.min(idx * 70, 350)}ms;` : '';
+            const bounceClass = shouldBounce ? 'bounce' : '';
 
             return `
               <div class="row-item ${isCorrect ? 'correct' : ''}">
@@ -866,7 +902,7 @@
                   <span class="row-stat">${statText}</span>
                 </div>
                 <div class="track">
-                  <div class="fill" style="width: ${pctVal}%;"></div>
+                  <div class="fill ${bounceClass}" style="--target-pct: ${pctVal}%; ${delayStyle}"></div>
                 </div>
               </div>
             `;
