@@ -342,13 +342,6 @@
       font-size: 14px;
       font-weight: 800;
       color: var(--accent);
-      margin-bottom: 3px;
-    }
-
-    .qr-sub {
-      font-size: 12px;
-      color: var(--text);
-      line-height: 1.35;
       margin-bottom: 4px;
     }
 
@@ -415,10 +408,6 @@
       font-size: 18px;
     }
 
-    html[data-size="large"] .qr-sub {
-      font-size: 15px;
-    }
-
     html[data-size="large"] .qr-url {
       font-size: 13px;
     }
@@ -445,7 +434,6 @@
         </div>
         <div class="qr-info">
           <div class="qr-heading">スマホでQRを読み取って投票・回答</div>
-          <div class="qr-sub">受付中（VOTING）の間だけ表示しています</div>
           <div id="qrUrlText" class="qr-url"></div>
         </div>
       </div>
@@ -480,10 +468,9 @@
       return `${window.location.origin}${basePath}index.html`;
     }
 
-    /* 外部通信なしで安定描画する軽量QRマトリクス生成（Byteモード・ECC Level L / M） */
+    /* 外部通信なしで安定描画する軽量QRマトリクス生成（Byteモード・ECC Level L） */
     function buildQrMatrix(text) {
       const bytes = new TextEncoder().encode(text);
-      // 容量に応じてバージョン（1〜6）を選択（Byteモード L等級）
       const capacities = [0, 17, 32, 53, 78, 106, 134];
       let version = 1;
       while (version <= 6 && bytes.length > capacities[version]) {
@@ -514,14 +501,12 @@
       placeFinder(0, size - 7);
       placeFinder(size - 7, 0);
 
-      // タイミングパターン
       for (let i = 8; i < size - 8; i++) {
         const val = i % 2 === 0;
         if (!reserved[6][i]) { grid[6][i] = val; reserved[6][i] = true; }
         if (!reserved[i][6]) { grid[i][6] = val; reserved[i][6] = true; }
       }
 
-      // アライメントパターン（v2以上）
       if (version >= 2) {
         const centers = [6, size - 7];
         centers.forEach(cr => {
@@ -538,11 +523,9 @@
         });
       }
 
-      // ダークモジュール
       grid[size - 8][8] = true;
       reserved[size - 8][8] = true;
 
-      // フォーマット情報領域を予約
       for (let i = 0; i < 9; i++) {
         if (i < size) {
           reserved[8][i] = true;
@@ -554,7 +537,6 @@
         reserved[size - 1 - i][8] = true;
       }
 
-      // ビットストリーム構築（Mode 0100 = Byte）
       const totalDataBytes = capacities[version];
       const bits = [];
       function pushBits(val, len) {
@@ -580,7 +562,6 @@
         padIdx++;
       }
 
-      // GF(256) RSパリティ生成（v1〜v6のECC L用バイト数）
       const ecCounts = [0, 7, 10, 15, 20, 26, 36];
       const ecCount = ecCounts[version];
 
@@ -637,7 +618,6 @@
         }
       });
 
-      // ジグザグ配置（マスク0: (r + c) % 2 === 0）
       let bitCursor = 0;
       let dirUp = true;
       for (let col = size - 1; col >= 1; col -= 2) {
@@ -656,7 +636,6 @@
         dirUp = !dirUp;
       }
 
-      // マスク0（ECC L = 01, mask = 000 -> 0b01000）フォーマットビット配置
       const fmtBits = [1,0,1,0,1,0,0,0,0,0,1,0,0,1,0];
       for (let i = 0; i < 15; i++) {
         const dark = fmtBits[i] === 1;
