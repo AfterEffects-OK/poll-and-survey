@@ -351,6 +351,29 @@
       border-color: #38bdf8;
     }
 
+    select:disabled, input[type="text"]:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: #0f172a;
+      color: #94a3b8;
+    }
+
+    .editor-lock-banner {
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: rgba(217, 119, 6, 0.16);
+      border: 1px solid #f59e0b;
+      color: #fde68a;
+      font-size: 12.5px;
+      font-weight: 700;
+      display: none;
+    }
+
+    .editor-lock-banner.show {
+      display: block;
+    }
+
     .inline-select-row {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -1462,13 +1485,15 @@
           </button>
 
           <div id="questionAccordionPanel" class="acc-body" onfocusin="markEditing(true)">
+            <div id="editorLockBanner" class="editor-lock-banner"></div>
+
             <div class="field">
               <label class="lbl" for="editTargetSelect">編集対象</label>
               <div class="inline-select-row">
                 <select id="editTargetSelect" onchange="onSelectEditTarget()">
-                  <option value="__NEW__">＋ 新しい質問を作成</option>
+                  <option id="newQuestionOption" value="__NEW__">＋ 新しい質問を作成</option>
                 </select>
-                <button type="button" class="btn btn-red" onclick="deleteSelectedQuestion()">削除</button>
+                <button type="button" id="deleteQuestionBtn" class="btn btn-red" onclick="deleteSelectedQuestion()">削除</button>
               </div>
             </div>
 
@@ -1495,7 +1520,7 @@
             <div class="field">
               <span class="lbl">選択肢（1つずつ別枠・2つ以上）</span>
               <div id="optionsList" class="opt-list"></div>
-              <button type="button" class="btn btn-gray" onclick="addOptionRow('', true)">＋ 選択肢を追加</button>
+              <button type="button" id="addOptionBtn" class="btn btn-gray" onclick="addOptionRow('', true)">＋ 選択肢を追加</button>
             </div>
 
             <div id="quizAnswerWrap" class="field" style="display: none;">
@@ -1504,8 +1529,8 @@
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
-              <button type="button" class="btn btn-green" onclick="saveQuestion()">質問を保存する</button>
-              <button type="button" class="btn btn-gray" onclick="resetEditorForm()">入力をクリア</button>
+              <button type="button" id="saveQuestionBtn" class="btn btn-green" onclick="saveQuestion()">質問を保存する</button>
+              <button type="button" id="clearEditorBtn" class="btn btn-gray" onclick="resetEditorForm()">入力をクリア</button>
             </div>
           </div>
         </section>
@@ -1800,7 +1825,7 @@
           <section class="help-section">
             <h4><span class="help-step-pill">質問編集</span> セクション3の各ボタン・入力欄の使い方</h4>
             <ul class="help-list">
-              <li><strong>編集対象</strong>：<span class="help-code">＋ 新しい質問を作成</span> を選ぶと新規作成モード、既存質問を選ぶと既存データの読み込み・上書きモードになります。</li>
+              <li><strong>編集対象</strong>：<span class="help-code">＋ 新しい質問を作成</span> を選ぶと新規作成モード、既存質問を選ぶと既存データの読み込み・上書きモードになります（<span class="help-code">admin</span> が <span class="help-code">default</span> の時は新規作成不可、質問ID <span class="help-code">default</span> は編集・削除・選択肢追加不可）。</li>
               <li><strong>質問ID</strong>：任意ID（例: <span class="help-code">q3</span>）を指定できます。空欄の場合は <span class="help-code">q_...</span> で自動採番されます。</li>
               <li><strong>種別</strong>：<span class="help-code">アンケート（poll）</span> は正解なし、<span class="help-code">クイズ（quiz）</span> は正解選択肢を指定できます。</li>
               <li><strong>＋ 選択肢を追加 / × ボタン</strong>：選択肢は常時2つ以上必要です（2つ以下になると × ボタンは無効化されます）。入力欄で <span class="help-code">Enter</span> キーを押すと新しい選択肢行を追加できます。</li>
@@ -1920,6 +1945,7 @@
   <script>
     const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
     const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
+    const DEFAULT_QUESTION_ID = 'default';
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
     const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
@@ -1995,6 +2021,86 @@
 
     function isDefaultAdmin() {
       return ADMIN_ID === DEFAULT_ADMIN;
+    }
+
+    function isDefaultQuestionId(qId) {
+      return String(qId || '').trim() === DEFAULT_QUESTION_ID;
+    }
+
+    function getActiveEditTargetId() {
+      const editSel = document.getElementById('editTargetSelect');
+      return editSel ? editSel.value : '__NEW__';
+    }
+
+    function updateQuestionEditorLockState() {
+      const editSel = document.getElementById('editTargetSelect');
+      const newOpt = document.getElementById('newQuestionOption');
+      const deleteBtn = document.getElementById('deleteQuestionBtn');
+      const qIdInput = document.getElementById('qIdInput');
+      const qTypeInput = document.getElementById('qTypeInput');
+      const qTextInput = document.getElementById('qTextInput');
+      const addOptBtn = document.getElementById('addOptionBtn');
+      const ansSel = document.getElementById('qAnswerSelect');
+      const saveBtn = document.getElementById('saveQuestionBtn');
+      const banner = document.getElementById('editorLockBanner');
+
+      const adminIsDefault = isDefaultAdmin();
+      const targetVal = editSel ? editSel.value : '__NEW__';
+      const isCreatingNew = targetVal === '__NEW__';
+      const isDefaultQuestionSelected = !isCreatingNew && isDefaultQuestionId(targetVal);
+
+      if (newOpt) {
+        newOpt.disabled = adminIsDefault;
+      }
+
+      // admin が default の場合、新規作成モード（__NEW__）のままなら最初の質問へ寄せる
+      if (adminIsDefault && isCreatingNew && editSel) {
+        const firstNonNew = [...editSel.options].find(o => o.value !== '__NEW__');
+        if (firstNonNew) {
+          editSel.value = firstNonNew.value;
+          const q = latestQuestions.find(item => item.id === firstNonNew.value);
+          if (q) {
+            if (qIdInput) qIdInput.value = q.id;
+            if (qTypeInput) qTypeInput.value = q.type || 'poll';
+            if (qTextInput) qTextInput.value = q.question || '';
+            onQuestionTypeInputChange();
+            setOptionRows(q.options || [], q.answer || '');
+          }
+        }
+      }
+
+      const currentTarget = editSel ? editSel.value : '__NEW__';
+      const nowDefaultQuestion = currentTarget !== '__NEW__' && isDefaultQuestionId(currentTarget);
+      const formLocked = (adminIsDefault && currentTarget === '__NEW__') || nowDefaultQuestion;
+
+      if (qIdInput) qIdInput.disabled = formLocked;
+      if (qTypeInput) qTypeInput.disabled = formLocked;
+      if (qTextInput) qTextInput.disabled = formLocked;
+      if (addOptBtn) addOptBtn.disabled = formLocked;
+      if (ansSel) ansSel.disabled = formLocked;
+      if (saveBtn) saveBtn.disabled = formLocked;
+      if (deleteBtn) deleteBtn.disabled = nowDefaultQuestion || currentTarget === '__NEW__';
+
+      const optRows = [...document.querySelectorAll('#optionsList .opt-item')];
+      optRows.forEach((row, idx) => {
+        const inp = row.querySelector('input[type="text"]');
+        const delBtn = row.querySelector('.btn-del-opt');
+        if (inp) inp.disabled = formLocked;
+        if (delBtn) delBtn.disabled = formLocked || optRows.length <= 2;
+      });
+
+      if (banner) {
+        if (nowDefaultQuestion) {
+          banner.textContent = '質問ID「default」は編集・削除・選択肢の追加ができません。';
+          banner.classList.add('show');
+        } else if (adminIsDefault) {
+          banner.textContent = 'admin ID が「default」のため、新しい質問の作成はできません（アカウント登録・復元から専用admin IDを作成してください）。';
+          banner.classList.add('show');
+        } else {
+          banner.textContent = '';
+          banner.classList.remove('show');
+        }
+      }
     }
 
     function enforceRoomRuleForAdmin() {
@@ -2152,6 +2258,7 @@
       renderRoomHistoryChips();
       updateModalAdminHeader();
       renderAdminAccountsTable();
+      updateQuestionEditorLockState();
       const roomSuffix = isDefaultAdmin() ? '（roomはdefault固定）' : '';
       setLog(`${announcePrefix}admin「${ADMIN_ID}」を呼び出しました。${roomSuffix}`);
       await Promise.all([loadAll(), fetchVoteLogs(false)]);
@@ -2985,9 +3092,21 @@
         if (delBtn) delBtn.disabled = rows.length <= 2;
       });
       syncAnswerSelectOptions();
+      updateQuestionEditorLockState();
     }
 
     function addOptionRow(initialValue = '', focusNew = false) {
+      if (isDefaultQuestionId(getActiveEditTargetId())) {
+        setLog('質問ID「default」の選択肢は追加できません。');
+        updateQuestionEditorLockState();
+        return;
+      }
+      if (isDefaultAdmin() && getActiveEditTargetId() === '__NEW__') {
+        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+        updateQuestionEditorLockState();
+        return;
+      }
+
       markEditing(true);
       const list = document.getElementById('optionsList');
       const row = document.createElement('div');
@@ -3017,6 +3136,7 @@
       delBtn.title = 'この選択肢を削除';
       delBtn.textContent = '×';
       delBtn.onclick = () => {
+        if (isDefaultQuestionId(getActiveEditTargetId())) return;
         markEditing(true);
         if (list.querySelectorAll('.opt-item').length <= 2) return;
         row.remove();
@@ -3042,6 +3162,7 @@
         : (Array.isArray(optionsArr) && optionsArr.length === 1 ? [optionsArr[0], ''] : ['', '']);
       items.forEach(opt => addOptionRow(opt, false));
       syncAnswerSelectOptions(selectedAnswer);
+      updateQuestionEditorLockState();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -3058,6 +3179,7 @@
       renderAdminAccountsTable();
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
+      updateQuestionEditorLockState();
     });
 
     function syncObsAppearanceInputs(state) {
@@ -3095,6 +3217,8 @@
       btn.setAttribute('aria-expanded', String(nextOpen));
       if (!nextOpen) {
         markEditing(false);
+      } else {
+        updateQuestionEditorLockState();
       }
     }
 
@@ -3116,23 +3240,37 @@
       const editSel = document.getElementById('editTargetSelect');
       if (!editSel) return;
       const prevVal = editSel.value;
-      editSel.innerHTML = '<option value="__NEW__">＋ 新しい質問を作成</option>';
+      const disableNew = isDefaultAdmin();
+      editSel.innerHTML = `<option id="newQuestionOption" value="__NEW__"${disableNew ? ' disabled' : ''}>＋ 新しい質問を作成</option>`;
       latestQuestions.forEach(q => {
         const opt = document.createElement('option');
         opt.value = q.id;
         opt.textContent = `編集: [${q.type}] ${q.id} - ${q.question}`;
         editSel.appendChild(opt);
       });
-      if ([...editSel.options].some(o => o.value === prevVal)) {
+      if (prevVal === '__NEW__' && !disableNew) {
+        editSel.value = '__NEW__';
+      } else if ([...editSel.options].some(o => o.value === prevVal && !o.disabled)) {
         editSel.value = prevVal;
+      } else if (latestQuestions.length > 0) {
+        editSel.value = latestQuestions[0].id;
+        onSelectEditTarget();
+      } else {
+        editSel.value = '__NEW__';
       }
+      updateQuestionEditorLockState();
     }
 
     function onSelectEditTarget() {
-      markEditing(true);
       const val = document.getElementById('editTargetSelect').value;
       if (val === '__NEW__') {
+        if (isDefaultAdmin()) {
+          setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+          refreshEditTargetSelect();
+          return;
+        }
         resetEditorForm();
+        markEditing(true);
         return;
       }
       const q = latestQuestions.find(item => item.id === val);
@@ -3142,9 +3280,16 @@
       document.getElementById('qTextInput').value = q.question || '';
       onQuestionTypeInputChange();
       setOptionRows(q.options || [], q.answer || '');
+      markEditing(!isDefaultQuestionId(q.id));
+      updateQuestionEditorLockState();
     }
 
     function resetEditorForm() {
+      if (isDefaultAdmin()) {
+        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+        updateQuestionEditorLockState();
+        return;
+      }
       document.getElementById('editTargetSelect').value = '__NEW__';
       document.getElementById('qIdInput').value = '';
       document.getElementById('qTypeInput').value = 'poll';
@@ -3152,10 +3297,24 @@
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
       markEditing(false);
+      updateQuestionEditorLockState();
     }
 
     async function saveQuestion() {
       enforceRoomRuleForAdmin();
+      const targetVal = getActiveEditTargetId();
+      if (isDefaultAdmin() && targetVal === '__NEW__') {
+        setLog('admin ID が「default」のため、新しい質問の作成はできません。');
+        updateQuestionEditorLockState();
+        return;
+      }
+      const rawId = document.getElementById('qIdInput').value.trim();
+      if (isDefaultQuestionId(targetVal) || isDefaultQuestionId(rawId)) {
+        setLog('質問ID「default」は編集・保存できません。');
+        updateQuestionEditorLockState();
+        return;
+      }
+
       const qType = document.getElementById('qTypeInput').value;
       const optionsArr = getOptionValues();
       const answerVal = qType === 'quiz' ? document.getElementById('qAnswerSelect').value.trim() : '';
@@ -3165,7 +3324,7 @@
         roomId: ROOM_ID,
         adminId: ADMIN_ID,
         question: {
-          id: document.getElementById('qIdInput').value.trim(),
+          id: rawId,
           type: qType,
           question: document.getElementById('qTextInput').value.trim(),
           options: optionsArr,
@@ -3181,6 +3340,7 @@
         if ([...editSel.options].some(o => o.value === res.id)) {
           editSel.value = res.id;
         }
+        updateQuestionEditorLockState();
       }
     }
 
@@ -3189,6 +3349,11 @@
       const targetId = document.getElementById('editTargetSelect').value;
       if (targetId === '__NEW__') {
         alert('削除する既存質問をドロップダウンから選択してください。');
+        return;
+      }
+      if (isDefaultQuestionId(targetId)) {
+        setLog('質問ID「default」は削除できません。');
+        updateQuestionEditorLockState();
         return;
       }
       const targetObj = latestQuestions.find(q => q.id === targetId);
@@ -3203,8 +3368,11 @@
       const res = await postGas({ action: 'delete_question', roomId: ROOM_ID, adminId: ADMIN_ID, id: targetId });
       setLog(res.message || res.error);
       if (res.ok) {
-        resetEditorForm();
+        if (!isDefaultAdmin()) {
+          resetEditorForm();
+        }
         await loadAll();
+        updateQuestionEditorLockState();
       }
     }
 
@@ -3231,14 +3399,20 @@
           refreshEditTargetSelect();
         } else if (editSel) {
           const prevVal = editSel.value;
-          const opts = ['<option value="__NEW__">＋ 新しい質問を作成</option>'];
+          const disableNew = isDefaultAdmin();
+          const opts = [`<option id="newQuestionOption" value="__NEW__"${disableNew ? ' disabled' : ''}>＋ 新しい質問を作成</option>`];
           latestQuestions.forEach(q => {
             opts.push(`<option value="${escapeHtml(q.id)}">編集: [${escapeHtml(q.type)}] ${escapeHtml(q.id)} - ${escapeHtml(q.question)}</option>`);
           });
           editSel.innerHTML = opts.join('');
-          if ([...editSel.options].some(o => o.value === prevVal)) {
+          if (prevVal === '__NEW__' && !disableNew) {
+            editSel.value = '__NEW__';
+          } else if ([...editSel.options].some(o => o.value === prevVal && !o.disabled)) {
             editSel.value = prevVal;
+          } else if (latestQuestions.length > 0) {
+            editSel.value = latestQuestions[0].id;
           }
+          updateQuestionEditorLockState();
         }
 
         const sel = document.getElementById('questionSelect');
