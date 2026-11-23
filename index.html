@@ -1,19 +1,64 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>投票・クイズ回答</title>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
       --bg: #0f172a;
       --card: #1e293b;
+      --card-border: #334155;
+      --opt-bg: #334155;
+      --opt-hover: #475569;
       --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
       --text: #f8fafc;
       --muted: #94a3b8;
       --ok: #22c55e;
       --warn: #f59e0b;
+      --timer: #fbbf24;
+      --radius: 16px;
+      --btn-radius: 12px;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
+
+    [data-theme="neon"] {
+      --bg: #09090b;
+      --card: #111118;
+      --card-border: #ec4899;
+      --opt-bg: #181825;
+      --opt-hover: #27273a;
+      --accent: #22d3ee;
+      --accent-soft: rgba(34, 211, 238, 0.18);
+      --text: #fdf4ff;
+      --muted: #c084fc;
+      --ok: #4ade80;
+      --warn: #facc15;
+      --timer: #f472b6;
+      --radius: 6px;
+      --btn-radius: 4px;
+      --shadow: 0 0 28px rgba(236, 72, 153, 0.35);
+    }
+
+    [data-theme="pop"] {
+      --bg: #fef3c7;
+      --card: #ffffff;
+      --card-border: #1e293b;
+      --opt-bg: #f1f5f9;
+      --opt-hover: #e2e8f0;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.14);
+      --text: #0f172a;
+      --muted: #475569;
+      --ok: #16a34a;
+      --warn: #d97706;
+      --timer: #ea580c;
+      --radius: 24px;
+      --btn-radius: 16px;
+      --shadow: 0 10px 0 #1e293b;
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -25,14 +70,16 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      transition: background 0.25s ease, color 0.25s ease;
     }
     .box {
       width: 100%;
       max-width: 480px;
       background: var(--card);
-      border-radius: 16px;
+      border: 2px solid var(--card-border);
+      border-radius: var(--radius);
       padding: 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      box-shadow: var(--shadow);
     }
     .top-row {
       display: flex;
@@ -40,7 +87,7 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 12px;
-      min-height: 26px;
+      min-height: 28px;
     }
     .badge {
       display: inline-block;
@@ -48,13 +95,27 @@
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(56, 189, 248, 0.15);
+      background: var(--accent-soft);
       color: var(--accent);
+    }
+    .right-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .timer-badge {
       font-size: 14px;
       font-weight: 800;
-      color: #fbbf24;
+      color: var(--timer);
+    }
+    .theme-select {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: var(--opt-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      cursor: pointer;
     }
     h1 { font-size: 20px; margin: 0 0 20px; line-height: 1.4; }
     .options { display: grid; gap: 12px; }
@@ -64,19 +125,19 @@
       font-size: 16px;
       font-weight: 600;
       color: var(--text);
-      background: #334155;
+      background: var(--opt-bg);
       border: 2px solid transparent;
-      border-radius: 12px;
+      border-radius: var(--btn-radius);
       cursor: pointer;
       text-align: left;
       transition: 0.15s;
     }
     button.opt-btn:hover:not(:disabled) {
-      background: #475569;
+      background: var(--opt-hover);
       border-color: var(--accent);
     }
     button.opt-btn.selected {
-      background: rgba(56, 189, 248, 0.2);
+      background: var(--accent-soft);
       border-color: var(--accent);
     }
     button.opt-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -94,7 +155,14 @@
   <div class="box">
     <div class="top-row">
       <div id="modeBadge" class="badge">読み込み中...</div>
-      <div id="timerBadge" class="timer-badge"></div>
+      <div class="right-controls">
+        <div id="timerBadge" class="timer-badge"></div>
+        <select id="themeSelect" class="theme-select" aria-label="表示テーマ" onchange="applyTheme(this.value)">
+          <option value="dark">ダーク</option>
+          <option value="neon">ネオン</option>
+          <option value="pop">ポップ</option>
+        </select>
+      </div>
     </div>
     <h1 id="questionText">少々お待ちください</h1>
     <div id="optionsArea" class="options"></div>
@@ -103,6 +171,29 @@
 
   <script src="config.js"></script>
   <script>
+    const ALLOWED_THEMES = ['dark', 'neon', 'pop'];
+    const THEME_STORAGE_KEY = 'obs_poll_voter_theme';
+
+    function initTheme() {
+      const params = new URLSearchParams(window.location.search);
+      const queryTheme = params.get('theme');
+      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      const chosen = ALLOWED_THEMES.includes(queryTheme)
+        ? queryTheme
+        : (ALLOWED_THEMES.includes(savedTheme) ? savedTheme : 'dark');
+      applyTheme(chosen, false);
+      const sel = document.getElementById('themeSelect');
+      if (sel) sel.value = chosen;
+    }
+
+    function applyTheme(theme, save = true) {
+      const next = ALLOWED_THEMES.includes(theme) ? theme : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      if (save) {
+        localStorage.setItem(THEME_STORAGE_KEY, next);
+      }
+    }
+
     function getVoterId() {
       let id = localStorage.getItem('obs_poll_voter_id');
       if (!id) {
@@ -227,6 +318,7 @@
       }[m]));
     }
 
+    initTheme();
     refresh();
     setInterval(refresh, CONFIG.POLL_INTERVAL_MS);
     setInterval(renderCountdown, 200);
