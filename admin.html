@@ -951,11 +951,11 @@
       background: #1d4ed8;
     }
 
-    /* 使い方ガイド用モーダル */
+    /* 使い方ガイド用モーダル（タブ対応） */
     .help-modal-box {
       width: 100%;
-      max-width: 860px;
-      max-height: 88vh;
+      max-width: 920px;
+      max-height: 90vh;
       display: flex;
       flex-direction: column;
       background: #141c2b;
@@ -977,7 +977,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 16px 20px;
+      padding: 15px 20px;
       background: #0f172a;
       border-bottom: 1px solid #2b3a55;
       flex-shrink: 0;
@@ -1012,12 +1012,59 @@
       border-color: #38bdf8;
     }
 
+    .help-tablist {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 6px;
+      padding: 10px 20px;
+      background: #111827;
+      border-bottom: 1px solid #25344f;
+      flex-shrink: 0;
+    }
+
+    button.help-tab-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #0b101b;
+      color: #cbd5e1;
+      border: 1.5px solid #334155;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    }
+
+    button.help-tab-btn:hover {
+      border-color: #38bdf8;
+      color: #ffffff;
+      background: #172236;
+    }
+
+    button.help-tab-btn.is-active {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #60a5fa;
+    }
+
     .help-modal-body {
       padding: 18px 20px;
       overflow-y: auto;
       display: grid;
       gap: 14px;
       line-height: 1.65;
+    }
+
+    .help-tabpanel {
+      display: none;
+      gap: 14px;
+    }
+
+    .help-tabpanel.is-active {
+      display: grid;
     }
 
     .help-section {
@@ -1063,7 +1110,7 @@
       font-size: 13.5px;
       color: #e2e8f0;
       display: grid;
-      gap: 6px;
+      gap: 7px;
     }
 
     .help-code {
@@ -1077,33 +1124,61 @@
       border: 1px solid #334155;
     }
 
-    .help-status-table {
+    .help-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12.5px;
       margin-top: 6px;
     }
 
-    .help-status-table th,
-    .help-status-table td {
-      padding: 7px 10px;
+    .help-table th,
+    .help-table td {
+      padding: 8px 10px;
       text-align: left;
       border: 1px solid #24334d;
+      vertical-align: top;
     }
 
-    .help-status-table th {
+    .help-table th {
       background: #131c2e;
       color: #7dd3fc;
       font-weight: 800;
     }
 
+    .help-swatch {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .help-note-box {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(30, 58, 138, 0.28);
+      border-left: 3px solid #38bdf8;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+
     .help-modal-footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
       padding: 12px 20px;
       background: #0f172a;
       border-top: 1px solid #2b3a55;
       flex-shrink: 0;
+    }
+
+    .help-footer-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -1345,7 +1420,7 @@
     </div>
   </div>
 
-  <!-- 使い方詳細解説モーダル -->
+  <!-- 使い方詳細解説モーダル（タブ切り替え） -->
   <div id="helpModal" class="modal-backdrop" aria-hidden="true" onclick="handleHelpBackdropClick(event)">
     <div class="help-modal-box" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
       <div class="help-modal-header">
@@ -1353,92 +1428,239 @@
         <button type="button" class="help-close-x" aria-label="閉じる" onclick="closeHelpModal()">×</button>
       </div>
 
+      <div class="help-tablist" role="tablist" aria-label="ガイドセクション">
+        <button type="button" id="helpTabBtn-flow" class="help-tab-btn is-active" role="tab" aria-selected="true" aria-controls="helpPanel-flow" onclick="switchHelpTab('flow')">
+          1. 基本フロー・URL
+        </button>
+        <button type="button" id="helpTabBtn-buttons" class="help-tab-btn" role="tab" aria-selected="false" aria-controls="helpPanel-buttons" onclick="switchHelpTab('buttons')">
+          2. ボタン・進行操作
+        </button>
+        <button type="button" id="helpTabBtn-obs" class="help-tab-btn" role="tab" aria-selected="false" aria-controls="helpPanel-obs" onclick="switchHelpTab('obs')">
+          3. OBS表示・テーマ
+        </button>
+        <button type="button" id="helpTabBtn-logs" class="help-tab-btn" role="tab" aria-selected="false" aria-controls="helpPanel-logs" onclick="switchHelpTab('logs')">
+          4. 集計・ログ・リセット
+        </button>
+        <button type="button" id="helpTabBtn-trouble" class="help-tab-btn" role="tab" aria-selected="false" aria-controls="helpPanel-trouble" onclick="switchHelpTab('trouble')">
+          5. トラブル対処
+        </button>
+      </div>
+
       <div class="help-modal-body">
-        <section class="help-section">
-          <h4><span class="help-step-pill">準備 1</span> 配信ルーム（room）の作成とOBS・回答者URLの配布</h4>
-          <p>配信ごとに <strong>room ID</strong> を分けることで、過去の投票結果や状態が混ざるのを防げます。</p>
-          <ul class="help-list">
-            <li><strong>ID生成ボタン</strong>：8桁のランダムな数字IDを発行し、即座にそのルームへ切り替えます（直近6件まで履歴チップからワンクリック再切替可能）。</li>
-            <li><strong>OBS Studio の設定</strong>：「OBS用URLをコピー」を押し、OBSのソース追加 →「ブラウザ」のURLに貼り付けます（推奨サイズ：幅 <span class="help-code">1920</span> × 高さ <span class="help-code">1080</span>）。</li>
-            <li><strong>視聴者への共有</strong>：「回答者用URLをコピー」を押し、YouTubeのチャット欄や概要欄・QRコードなどで視聴者に共有します。</li>
-            <li><strong>URLパラメータ仕様</strong>：<span class="help-code">?room=配信ID&amp;admin=管理者ID</span> の形式で独立管理されます（<span class="help-code">admin</span> が同じなら質問リストを全配信で共有できます）。</li>
-          </ul>
-        </section>
+        <!-- タブ1：基本フロー・URL -->
+        <div id="helpPanel-flow" class="help-tabpanel is-active" role="tabpanel" aria-labelledby="helpTabBtn-flow">
+          <section class="help-section">
+            <h4><span class="help-step-pill">手順</span> 配信開始から終了までの基本ステップ</h4>
+            <ol class="help-list">
+              <li><strong>配信ルームを決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のIDを入力して <span class="help-code">配信切替</span> を押します。</li>
+              <li><strong>URLを配置・配布する</strong>：「OBS用URLをコピー」でOBSブラウザソースに設定し、「回答者用URLをコピー」で視聴者に共有します。</li>
+              <li><strong>質問を選ぶ</strong>：左「1. 出題・受付ステータス操作」で質問を選び、<span class="help-code">出題切替</span> を押します。</li>
+              <li><strong>投票・回答を受け付ける</strong>：<span class="help-code">投票受付中</span>（またはタイマー付き開始）で受付を開きます。</li>
+              <li><strong>締切・結果/正解発表</strong>：<span class="help-code">投票受付終了</span> 後、<span class="help-code">アンケート結果表示</span> や <span class="help-code">クイズ正解表示</span> に切り替えます。</li>
+            </ol>
+          </section>
 
-        <section class="help-section">
-          <h4><span class="help-step-pill">準備 2</span> 質問の作成・編集・削除（アンケート / クイズ）</h4>
-          <p>画面左下の「<strong>3. 質問の作成・編集・削除</strong>」をクリックして展開します。</p>
-          <ul class="help-list">
-            <li><strong>アンケート（poll）</strong>：通常の多数決・意見募集用です。正解設定は不要です。</li>
-            <li><strong>クイズ（quiz）</strong>：正解の選択肢を指定でき、進行ボタンに「クイズ正解表示」が追加されます。</li>
-            <li><strong>選択肢の追加・削除</strong>：選択肢は2つ以上登録できます。入力欄で <span class="help-code">Enter</span> キーを押すと次の選択肢枠を素早く追加できます。</li>
-            <li><strong>既存質問の修正</strong>：「編集対象」ドロップダウンから既存の質問を選ぶと内容が読み込まれ、上書き保存または削除が可能です。</li>
-          </ul>
-        </section>
+          <section class="help-section">
+            <h4><span class="help-step-pill">ルーム切替</span> 配信（room）IDバーのボタン・表示解説</h4>
+            <table class="help-table">
+              <thead>
+                <tr>
+                  <th>要素・ボタン</th>
+                  <th>機能と表示の見方</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>ID生成</strong></td>
+                  <td>重複しにくい <strong>8桁の数字</strong>（<span class="help-code">10000000</span>〜<span class="help-code">99999999</span>）をランダム生成し、即座にそのルームへ切り替えます。</td>
+                </tr>
+                <tr>
+                  <td><strong>配信切替</strong></td>
+                  <td>入力欄の文字列（英数字・<span class="help-code">_</span>・<span class="help-code">@</span>・<span class="help-code">-</span>）を正規化してルームを切り替えます。</td>
+                </tr>
+                <tr>
+                  <td><strong>default</strong></td>
+                  <td>テストや固定枠用の既定ルーム <span class="help-code">default</span> にワンクリックで戻ります。</td>
+                </tr>
+                <tr>
+                  <td><strong>履歴チップ</strong></td>
+                  <td>過去に切り替えたルームを直近6件まで表示します。青く光っているチップが現在のルームです。</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-        <section class="help-section">
-          <h4><span class="help-step-pill">進行 3</span> 配信中の出題切替・ステータス操作・タイマー</h4>
-          <p>「<strong>1. 出題・受付ステータス操作</strong>」で、出題する質問を選んで「出題切替」を押したあと、以下のボタンで進行します。</p>
-          <table class="help-status-table">
-            <thead>
-              <tr>
-                <th>ステータスボタン</th>
-                <th>OBS画面の表示</th>
-                <th>回答者画面（スマホ/PC）の挙動</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>非表示（待機）</strong></td>
-                <td>オーバーレイを非表示</td>
-                <td>待機メッセージを表示（投票不可）</td>
-              </tr>
-              <tr>
-                <td><strong>投票/回答受付中</strong></td>
-                <td>質問文と選択肢を表示</td>
-                <td>選択肢ボタンが有効になり投票可能</td>
-              </tr>
-              <tr>
-                <td><strong>投票/回答受付終了</strong></td>
-                <td>「受付終了」表示に切替</td>
-                <td>新規の投票を締め切り</td>
-              </tr>
-              <tr>
-                <td><strong>結果表示</strong></td>
-                <td>得票数とパーセントバーを表示</td>
-                <td>集計結果を同期表示</td>
-              </tr>
-              <tr>
-                <td><strong>クイズ正解表示</strong></td>
-                <td>正解の選択肢を強調演出</td>
-                <td>正解発表と結果を表示（quiz時のみ）</td>
-              </tr>
-            </tbody>
-          </table>
-          <p style="margin-top:8px;">※<strong>制限時間タイマー</strong>（15秒〜60秒）を使うと、カウントダウン終了と同時に自動で「受付終了」へ切り替わります。</p>
-        </section>
+          <section class="help-section">
+            <h4><span class="help-step-pill">URL仕様</span> ヘッダーのURLコピーボタンとパラメータ</h4>
+            <ul class="help-list">
+              <li><strong>OBS用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">obs.html</span> のURLをクリップボードへコピーします。</li>
+              <li><strong>回答者用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">index.html</span> のURLをコピーします。</li>
+              <li><strong>room と admin の違い</strong>：<span class="help-code">room</span> は配信ごとの状態・票・ログを分離し、<span class="help-code">admin</span> は質問リストを共有管理します。</li>
+            </ul>
+          </section>
+        </div>
 
-        <section class="help-section">
-          <h4><span class="help-step-pill">装飾 4</span> OBS表示の見た目カスタマイズ</h4>
-          <p>「<strong>2. OBS表示設定</strong>」から配信画面のレイアウトに合わせて即時変更できます。</p>
-          <ul class="help-list">
-            <li><strong>テーマ（7種類）</strong>：ダークモダン / サンシャインイエロー / ネオンアーケード / ライトポップ / サイバーグリーン / サクラパステル / TVニュース風（回答者画面の色調も連動します）。</li>
-            <li><strong>OBS表示位置（3×3配置）</strong>：左上・上部中央・右上・中央・左下・下部中央・右下の7箇所からワンクリックで移動できます。</li>
-            <li><strong>OBS表示サイズ</strong>：「コンパクト」「通常サイズ」「拡大表示」の3段階で文字・カード倍率を調整できます。</li>
-          </ul>
-        </section>
+        <!-- タブ2：ボタン・進行操作 -->
+        <div id="helpPanel-buttons" class="help-tabpanel" role="tabpanel" aria-labelledby="helpTabBtn-buttons">
+          <section class="help-section">
+            <h4><span class="help-step-pill">進行</span> 出題切替・ステータスボタン・タイマー</h4>
+            <ul class="help-list">
+              <li><strong>出題切替</strong>：ドロップダウンで選んだ質問IDを現在の出題対象として反映します（選んだ質問がクイズかアンケートかに応じてステータスボタン群も自動切替）。</li>
+              <li><strong>タイマー付きで投票/回答開始</strong>：横の秒数（<span class="help-code">15秒</span> / <span class="help-code">30秒</span> / <span class="help-code">45秒</span> / <span class="help-code">60秒</span>）を指定して受付を開始します。カウントダウンが0になると自動で <span class="help-code">CLOSED</span>（受付終了）になります。</li>
+              <li><strong>現在選択中のボタン枠</strong>：現在の配信ステータスと一致するボタンには白い枠線と水色の光彩が付きます。</li>
+            </ul>
+            <table class="help-table">
+              <thead>
+                <tr>
+                  <th>ステータス</th>
+                  <th>OBS（配信画面）の表示</th>
+                  <th>回答者画面（スマホ/PC）の表示</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>非表示（待機）</strong></td>
+                  <td>オーバーレイを非表示にします。</td>
+                  <td>待機中メッセージを表示し、投票操作はロックされます。</td>
+                </tr>
+                <tr>
+                  <td><strong>投票/回答受付中</strong></td>
+                  <td>質問文と選択肢を表示します（タイマー設定時は残り秒数も連動）。</td>
+                  <td>選択肢ボタンが押せる状態になります。</td>
+                </tr>
+                <tr>
+                  <td><strong>投票/回答受付終了</strong></td>
+                  <td>受付終了状態を表示します。</td>
+                  <td>新規投票を締め切り、結果待ち表示になります。</td>
+                </tr>
+                <tr>
+                  <td><strong>結果表示</strong></td>
+                  <td>各選択肢の得票数と割合バーを表示します。</td>
+                  <td>集計結果と割合を表示します。</td>
+                </tr>
+                <tr>
+                  <td><strong>クイズ正解表示</strong></td>
+                  <td><span class="help-code">quiz</span> 種別時に表示され、正解の選択肢を強調表示します。</td>
+                  <td>正解発表と集計結果を表示します。</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
 
-        <section class="help-section">
-          <h4><span class="help-step-pill">管理 5</span> 集計仕様・票リセット・投票ログCSV出力</h4>
-          <ul class="help-list">
-            <li><strong>重複投票の扱い</strong>：同じ回答者ID（ブラウザ単位）が同じ質問に複数回投票した場合、<strong>最後の1票のみ</strong>が有効票として集計されます。</li>
-            <li><strong>票をリセット</strong>：現在選択中の質問の投票データをスプレッドシートから削除し、リセット世代番号を更新して視聴者側の「投票済みロック」も自動解除します。</li>
-            <li><strong>投票ログ・履歴管理</strong>：画面右下のログ一覧では質問別フィルタやキーワード検索ができ、「CSV出力」で現在のルームの投票履歴をダウンロードできます。</li>
-          </ul>
-        </section>
+          <section class="help-section">
+            <h4><span class="help-step-pill">質問編集</span> セクション3の各ボタン・入力欄の使い方</h4>
+            <ul class="help-list">
+              <li><strong>編集対象</strong>：<span class="help-code">＋ 新しい質問を作成</span> を選ぶと新規作成モード、既存質問を選ぶと既存データの読み込み・上書きモードになります。</li>
+              <li><strong>質問ID</strong>：任意ID（例: <span class="help-code">q3</span>）を指定できます。空欄の場合は <span class="help-code">q_...</span> で自動採番されます。</li>
+              <li><strong>種別</strong>：<span class="help-code">アンケート（poll）</span> は正解なし、<span class="help-code">クイズ（quiz）</span> は正解選択肢を指定できます。</li>
+              <li><strong>＋ 選択肢を追加 / × ボタン</strong>：選択肢は常時2つ以上必要です（2つ以下になると × ボタンは無効化されます）。入力欄で <span class="help-code">Enter</span> キーを押すと新しい選択肢行を追加できます。</li>
+              <li><strong>質問を保存する / 入力をクリア / 削除</strong>：保存は同一 <span class="help-code">admin</span> の全配信に反映されます。削除時は確認モーダルが表示されます。</li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- タブ3：OBS表示・テーマ -->
+        <div id="helpPanel-obs" class="help-tabpanel" role="tabpanel" aria-labelledby="helpTabBtn-obs">
+          <section class="help-section">
+            <h4><span class="help-step-pill">テーマ</span> 7種類のカラーテーマ一覧</h4>
+            <p>テーマを変更すると、OBSオーバーレイだけでなく回答者画面の配色も同期して切り替わります。</p>
+            <table class="help-table">
+              <thead>
+                <tr>
+                  <th>テーマ名</th>
+                  <th>キー名</th>
+                  <th>特徴・おすすめシーン</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="help-swatch" style="background:#38bdf8;"></span><strong>ダークモダン</strong></td>
+                  <td><span class="help-code">dark</span></td>
+                  <td>暗い背景にシアンアクセント。汎用性が高く視認性抜群。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#facc15;"></span><strong>サンシャインイエロー</strong></td>
+                  <td><span class="help-code">yellow</span></td>
+                  <td>明るく元気なイエロー基調。雑談・企画配信に最適。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#ec4899;"></span><strong>ネオンアーケード</strong></td>
+                  <td><span class="help-code">neon</span></td>
+                  <td>ネオン調の鮮やかなコントラスト。ゲーム配信におすすめ。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#2563eb;"></span><strong>ライトポップ</strong></td>
+                  <td><span class="help-code">pop</span></td>
+                  <td>明るいポップな配色。昼配信や解説・講座向け。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#10b981;"></span><strong>サイバーグリーン</strong></td>
+                  <td><span class="help-code">cyber</span></td>
+                  <td>グリーン基調の近未来風。テック・クイズ企画にマッチ。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#fb7185;"></span><strong>サクラパステル</strong></td>
+                  <td><span class="help-code">sakura</span></td>
+                  <td>柔らかいピンク系。春企画や落ち着いた雰囲気の配信に。</td>
+                </tr>
+                <tr>
+                  <td><span class="help-swatch" style="background:#ef4444;"></span><strong>TVニュース風</strong></td>
+                  <td><span class="help-code">broadcast</span></td>
+                  <td>報道・速報テロップ風の強コントラストデザイン。</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="help-section">
+            <h4><span class="help-step-pill">配置・サイズ</span> 3×3表示位置と3段階サイズ</h4>
+            <ul class="help-list">
+              <li><strong>OBS表示位置（3×3グリッド）</strong>：<span class="help-code">↖ 左上</span> / <span class="help-code">↑ 上部中央</span> / <span class="help-code">↗ 右上</span> / <span class="help-code">◎ 中央</span> / <span class="help-code">↙ 左下</span> / <span class="help-code">↓ 下部中央</span> / <span class="help-code">↘ 右下</span> の7箇所へ配置できます。</li>
+              <li><strong>OBS表示サイズ</strong>：<span class="help-code">コンパクト</span> / <span class="help-code">通常サイズ</span> / <span class="help-code">拡大表示</span> から選べます。画面の余白や文字の読みやすさに合わせて調整してください。</li>
+            </ul>
+            <div class="help-note-box" style="margin-top:10px;">
+              <strong>OBSブラウザソースの推奨設定：</strong>幅 <span class="help-code">1920</span> × 高さ <span class="help-code">1080</span> で作成すると、3×3のどの位置を選んでも配信キャンバス基準で狙った場所に配置しやすくなります。
+            </div>
+          </section>
+        </div>
+
+        <!-- タブ4：集計・ログ・リセット -->
+        <div id="helpPanel-logs" class="help-tabpanel" role="tabpanel" aria-labelledby="helpTabBtn-logs">
+          <section class="help-section">
+            <h4><span class="help-step-pill">集計ルール</span> リアルタイム集計と重複投票の扱い</h4>
+            <ul class="help-list">
+              <li><strong>同一回答者の再投票</strong>：同じ回答者ID（<span class="help-code">voterId</span> / <span class="help-code">clientId</span>）が同一質問に複数回投票した場合、集計では<strong>最新の1票</strong>が反映されます。</li>
+              <li><strong>現在の配信状態カード</strong>：現在のステータスバッジ、残りタイマー、総票数、現在出題中の質問ID・種別・テーマ・位置・サイズを表示します。</li>
+            </ul>
+          </section>
+
+          <section class="help-section">
+            <h4><span class="help-step-pill">ログ・CSV</span> 投票ログ・履歴管理パネルの使い方</h4>
+            <ul class="help-list">
+              <li><strong>質問フィルタ＆検索欄</strong>：質問ごとの絞り込みや、回答者ID・選択肢・日時でのキーワード検索が可能です（表示は最大200件まで描画）。</li>
+              <li><strong>更新ボタン</strong>：最新の投票ログをGASから即時取得します。</li>
+              <li><strong>CSV出力</strong>：現在フィルタ・検索で絞り込まれているログを、文字化け防止のBOM付きCSV（<span class="help-code">vote_logs_ルームID.csv</span>）としてダウンロードします。</li>
+              <li><strong>票をリセット / 選択質問の票をリセット</strong>：現在選択中の質問の投票データを削除し、リセット世代番号（<span class="help-code">resetSeq</span>）を進めて回答者ブラウザの投票済み状態もリセットします。</li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- タブ5：トラブル対処 -->
+        <div id="helpPanel-trouble" class="help-tabpanel" role="tabpanel" aria-labelledby="helpTabBtn-trouble">
+          <section class="help-section">
+            <h4><span class="help-step-pill">Q&amp;A</span> よくある症状と確認ポイント</h4>
+            <ul class="help-list">
+              <li><strong>OBSや回答者画面に変化が出ない</strong>：管理パネル・OBS・回答者それぞれのURLで <span class="help-code">room</span> と <span class="help-code">admin</span> が一致しているか確認してください。また、GAS側のコードを更新した場合は「新しいデプロイ」または既存デプロイのバージョン更新が必要です。</li>
+              <li><strong>投票しようとすると「受付中ではない」と出る</strong>：ステータスが <span class="help-code">投票/回答受付中</span> になっているか、タイマーが切れて <span class="help-code">CLOSED</span> になっていないか確認してください。</li>
+              <li><strong>質問を保存したのに選択肢が反映されない</strong>：選択肢は<strong>2つ以上</strong>入力されているか確認してください。空白のみの行は除外されます。</li>
+              <li><strong>投票ログが表示されない</strong>：現在切り替えている <span class="help-code">room</span> に投票データがあるか確認し、ログカードの <span class="help-code">更新</span> ボタンを押してください。</li>
+            </ul>
+          </section>
+        </div>
       </div>
 
       <div class="help-modal-footer">
+        <span class="help-footer-hint">ESCキー または 背景クリックでも閉じられます</span>
         <button type="button" class="modal-btn primary" onclick="closeHelpModal()">閉じる</button>
       </div>
     </div>
@@ -1516,9 +1738,32 @@
       ]
     };
 
+    const HELP_TAB_KEYS = ['flow', 'buttons', 'obs', 'logs', 'trouble'];
+
+    function switchHelpTab(tabKey) {
+      const targetKey = HELP_TAB_KEYS.includes(tabKey) ? tabKey : 'flow';
+      HELP_TAB_KEYS.forEach(key => {
+        const btn = document.getElementById('helpTabBtn-' + key);
+        const panel = document.getElementById('helpPanel-' + key);
+        const active = key === targetKey;
+        if (btn) {
+          btn.classList.toggle('is-active', active);
+          btn.setAttribute('aria-selected', String(active));
+        }
+        if (panel) {
+          panel.classList.toggle('is-active', active);
+        }
+      });
+      const body = document.querySelector('#helpModal .help-modal-body');
+      if (body) {
+        body.scrollTop = 0;
+      }
+    }
+
     function openHelpModal() {
       const modal = document.getElementById('helpModal');
       if (!modal) return;
+      switchHelpTab('flow');
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
     }
