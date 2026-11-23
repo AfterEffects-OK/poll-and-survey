@@ -320,6 +320,7 @@
     }
 
     .fill.bounce {
+      width: 0%;
       animation: barBounce 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
@@ -892,7 +893,8 @@
             const isCorrect = highlightAnswer && r.label === question.answer;
             const pctVal = showCounts ? Math.max(0, Math.min(100, Number(r.pct || 0))) : 0;
             const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
-            const delayStyle = shouldBounce ? `animation-delay: ${Math.min(idx * 70, 350)}ms;` : '';
+            const delayMs = 1000 + Math.min(idx * 70, 350);
+            const delayStyle = shouldBounce ? `animation-delay: ${delayMs}ms;` : '';
             const bounceClass = shouldBounce ? 'bounce' : '';
 
             return `
