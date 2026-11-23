@@ -87,6 +87,23 @@
       color: #ffffff;
     }
 
+    .help-open-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 7px 13px;
+      border-radius: 8px;
+      background: #1e3a8a;
+      color: #e0f2fe;
+      border: 1px solid #38bdf8;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .help-open-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
     /* 配信（room）切替バー */
     .room-switcher-bar {
       display: flex;
@@ -801,10 +818,11 @@
       transform: rotate(180deg);
     }
 
+    /* 共通モーダル */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(2, 6, 23, 0.75);
+      background: rgba(2, 6, 23, 0.78);
       backdrop-filter: blur(4px);
       display: flex;
       justify-content: center;
@@ -923,6 +941,170 @@
     .modal-btn.danger:hover {
       background: #dc2626;
     }
+
+    .modal-btn.primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .modal-btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    /* 使い方ガイド用モーダル */
+    .help-modal-box {
+      width: 100%;
+      max-width: 860px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      background: #141c2b;
+      color: #f8fafc;
+      border: 2px solid #38bdf8;
+      border-radius: 16px;
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.72);
+      transform: translateY(8px) scale(0.97);
+      transition: transform 0.2s ease;
+      overflow: hidden;
+    }
+
+    .modal-backdrop.open .help-modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .help-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #0f172a;
+      border-bottom: 1px solid #2b3a55;
+      flex-shrink: 0;
+    }
+
+    .help-modal-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: #7dd3fc;
+    }
+
+    .help-close-x {
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 800;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .help-close-x:hover {
+      background: #334155;
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+
+    .help-modal-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      display: grid;
+      gap: 14px;
+      line-height: 1.65;
+    }
+
+    .help-section {
+      background: #0b101b;
+      border: 1px solid #25344f;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .help-section h4 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #93c5fd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .help-step-pill {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #1d4ed8;
+      color: #ffffff;
+    }
+
+    .help-section p {
+      margin: 0 0 8px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+    }
+
+    .help-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    .help-list {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .help-code {
+      display: inline-block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: #1e293b;
+      color: #7dd3fc;
+      border: 1px solid #334155;
+    }
+
+    .help-status-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-top: 6px;
+    }
+
+    .help-status-table th,
+    .help-status-table td {
+      padding: 7px 10px;
+      text-align: left;
+      border: 1px solid #24334d;
+    }
+
+    .help-status-table th {
+      background: #131c2e;
+      color: #7dd3fc;
+      font-weight: 800;
+    }
+
+    .help-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 12px 20px;
+      background: #0f172a;
+      border-top: 1px solid #2b3a55;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -933,6 +1115,7 @@
         <span id="contextBadge" class="context-pill">room: default / admin: default</span>
       </div>
       <div class="header-actions">
+        <button type="button" class="help-open-btn" onclick="openHelpModal()">使い方ガイド</button>
         <button type="button" class="copy-btn" onclick="copyPageUrl('obs.html')">OBS用URLをコピー</button>
         <button type="button" class="copy-btn" onclick="copyPageUrl('index.html')">回答者用URLをコピー</button>
       </div>
@@ -1145,6 +1328,7 @@
     </div>
   </div>
 
+  <!-- 削除確認モーダル -->
   <div id="confirmModal" class="modal-backdrop" aria-hidden="true">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <h3 id="modalTitle" class="modal-title">投票ログの削除確認</h3>
@@ -1157,6 +1341,105 @@
       <div class="modal-actions">
         <button type="button" id="modalCancelBtn" class="modal-btn cancel">キャンセル</button>
         <button type="button" id="modalOkBtn" class="modal-btn danger">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 使い方詳細解説モーダル -->
+  <div id="helpModal" class="modal-backdrop" aria-hidden="true" onclick="handleHelpBackdropClick(event)">
+    <div class="help-modal-box" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+      <div class="help-modal-header">
+        <h3 id="helpModalTitle" class="help-modal-title">配信投票・クイズシステム 使い方詳細ガイド</h3>
+        <button type="button" class="help-close-x" aria-label="閉じる" onclick="closeHelpModal()">×</button>
+      </div>
+
+      <div class="help-modal-body">
+        <section class="help-section">
+          <h4><span class="help-step-pill">準備 1</span> 配信ルーム（room）の作成とOBS・回答者URLの配布</h4>
+          <p>配信ごとに <strong>room ID</strong> を分けることで、過去の投票結果や状態が混ざるのを防げます。</p>
+          <ul class="help-list">
+            <li><strong>ID生成ボタン</strong>：8桁のランダムな数字IDを発行し、即座にそのルームへ切り替えます（直近6件まで履歴チップからワンクリック再切替可能）。</li>
+            <li><strong>OBS Studio の設定</strong>：「OBS用URLをコピー」を押し、OBSのソース追加 →「ブラウザ」のURLに貼り付けます（推奨サイズ：幅 <span class="help-code">1920</span> × 高さ <span class="help-code">1080</span>）。</li>
+            <li><strong>視聴者への共有</strong>：「回答者用URLをコピー」を押し、YouTubeのチャット欄や概要欄・QRコードなどで視聴者に共有します。</li>
+            <li><strong>URLパラメータ仕様</strong>：<span class="help-code">?room=配信ID&amp;admin=管理者ID</span> の形式で独立管理されます（<span class="help-code">admin</span> が同じなら質問リストを全配信で共有できます）。</li>
+          </ul>
+        </section>
+
+        <section class="help-section">
+          <h4><span class="help-step-pill">準備 2</span> 質問の作成・編集・削除（アンケート / クイズ）</h4>
+          <p>画面左下の「<strong>3. 質問の作成・編集・削除</strong>」をクリックして展開します。</p>
+          <ul class="help-list">
+            <li><strong>アンケート（poll）</strong>：通常の多数決・意見募集用です。正解設定は不要です。</li>
+            <li><strong>クイズ（quiz）</strong>：正解の選択肢を指定でき、進行ボタンに「クイズ正解表示」が追加されます。</li>
+            <li><strong>選択肢の追加・削除</strong>：選択肢は2つ以上登録できます。入力欄で <span class="help-code">Enter</span> キーを押すと次の選択肢枠を素早く追加できます。</li>
+            <li><strong>既存質問の修正</strong>：「編集対象」ドロップダウンから既存の質問を選ぶと内容が読み込まれ、上書き保存または削除が可能です。</li>
+          </ul>
+        </section>
+
+        <section class="help-section">
+          <h4><span class="help-step-pill">進行 3</span> 配信中の出題切替・ステータス操作・タイマー</h4>
+          <p>「<strong>1. 出題・受付ステータス操作</strong>」で、出題する質問を選んで「出題切替」を押したあと、以下のボタンで進行します。</p>
+          <table class="help-status-table">
+            <thead>
+              <tr>
+                <th>ステータスボタン</th>
+                <th>OBS画面の表示</th>
+                <th>回答者画面（スマホ/PC）の挙動</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>非表示（待機）</strong></td>
+                <td>オーバーレイを非表示</td>
+                <td>待機メッセージを表示（投票不可）</td>
+              </tr>
+              <tr>
+                <td><strong>投票/回答受付中</strong></td>
+                <td>質問文と選択肢を表示</td>
+                <td>選択肢ボタンが有効になり投票可能</td>
+              </tr>
+              <tr>
+                <td><strong>投票/回答受付終了</strong></td>
+                <td>「受付終了」表示に切替</td>
+                <td>新規の投票を締め切り</td>
+              </tr>
+              <tr>
+                <td><strong>結果表示</strong></td>
+                <td>得票数とパーセントバーを表示</td>
+                <td>集計結果を同期表示</td>
+              </tr>
+              <tr>
+                <td><strong>クイズ正解表示</strong></td>
+                <td>正解の選択肢を強調演出</td>
+                <td>正解発表と結果を表示（quiz時のみ）</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="margin-top:8px;">※<strong>制限時間タイマー</strong>（15秒〜60秒）を使うと、カウントダウン終了と同時に自動で「受付終了」へ切り替わります。</p>
+        </section>
+
+        <section class="help-section">
+          <h4><span class="help-step-pill">装飾 4</span> OBS表示の見た目カスタマイズ</h4>
+          <p>「<strong>2. OBS表示設定</strong>」から配信画面のレイアウトに合わせて即時変更できます。</p>
+          <ul class="help-list">
+            <li><strong>テーマ（7種類）</strong>：ダークモダン / サンシャインイエロー / ネオンアーケード / ライトポップ / サイバーグリーン / サクラパステル / TVニュース風（回答者画面の色調も連動します）。</li>
+            <li><strong>OBS表示位置（3×3配置）</strong>：左上・上部中央・右上・中央・左下・下部中央・右下の7箇所からワンクリックで移動できます。</li>
+            <li><strong>OBS表示サイズ</strong>：「コンパクト」「通常サイズ」「拡大表示」の3段階で文字・カード倍率を調整できます。</li>
+          </ul>
+        </section>
+
+        <section class="help-section">
+          <h4><span class="help-step-pill">管理 5</span> 集計仕様・票リセット・投票ログCSV出力</h4>
+          <ul class="help-list">
+            <li><strong>重複投票の扱い</strong>：同じ回答者ID（ブラウザ単位）が同じ質問に複数回投票した場合、<strong>最後の1票のみ</strong>が有効票として集計されます。</li>
+            <li><strong>票をリセット</strong>：現在選択中の質問の投票データをスプレッドシートから削除し、リセット世代番号を更新して視聴者側の「投票済みロック」も自動解除します。</li>
+            <li><strong>投票ログ・履歴管理</strong>：画面右下のログ一覧では質問別フィルタやキーワード検索ができ、「CSV出力」で現在のルームの投票履歴をダウンロードできます。</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="help-modal-footer">
+        <button type="button" class="modal-btn primary" onclick="closeHelpModal()">閉じる</button>
       </div>
     </div>
   </div>
@@ -1232,6 +1515,35 @@
         { status: 'ANSWER', label: 'クイズ正解表示', cls: 'btn-green' }
       ]
     };
+
+    function openHelpModal() {
+      const modal = document.getElementById('helpModal');
+      if (!modal) return;
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeHelpModal() {
+      const modal = document.getElementById('helpModal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function handleHelpBackdropClick(event) {
+      if (event.target && event.target.id === 'helpModal') {
+        closeHelpModal();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const helpModal = document.getElementById('helpModal');
+        if (helpModal && helpModal.classList.contains('open')) {
+          closeHelpModal();
+        }
+      }
+    });
 
     function normalizeRoomId(raw) {
       const cleaned = String(raw || '')
