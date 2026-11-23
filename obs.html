@@ -553,6 +553,8 @@
 
   <script src="config.js"></script>
   <script>
+    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
+    const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     const ALLOWED_POSITIONS = [
       'bottom-right', 'bottom-left', 'bottom-center',
@@ -567,13 +569,22 @@
 
     function getVoteTargetUrl() {
       if (typeof CONFIG !== 'undefined' && CONFIG.VOTE_URL && String(CONFIG.VOTE_URL).trim()) {
-        return String(CONFIG.VOTE_URL).trim();
+        const base = new URL(String(CONFIG.VOTE_URL).trim(), window.location.href);
+        if (ROOM_ID !== 'default') base.searchParams.set('room', ROOM_ID);
+        if (ADMIN_ID !== 'default') base.searchParams.set('admin', ADMIN_ID);
+        return base.href;
+      }
+      if (typeof buildPageUrlWithContext === 'function') {
+        return buildPageUrlWithContext('index.html');
       }
       const pathname = window.location.pathname;
       const basePath = pathname.endsWith('/')
         ? pathname
         : pathname.replace(/[^/]+$/, '');
-      return `${window.location.origin}${basePath}index.html`;
+      const url = new URL(`${window.location.origin}${basePath}index.html`);
+      if (ROOM_ID !== 'default') url.searchParams.set('room', ROOM_ID);
+      if (ADMIN_ID !== 'default') url.searchParams.set('admin', ADMIN_ID);
+      return url.href;
     }
 
     function updateQrHeading(isQuiz) {
@@ -859,7 +870,7 @@
 
     async function pollOverlay() {
       try {
-        const data = await fetchGas();
+        const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
 
         const { state, question, totalVotes, results } = data;
