@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" data-theme="dark" data-pos="bottom-right">
+<html lang="ja" data-theme="dark" data-pos="bottom-right" data-size="normal">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -196,7 +196,7 @@
       box-shadow: var(--shadow);
       opacity: 0;
       transform: translateY(10px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transition: opacity 0.25s ease, transform 0.25s ease, max-width 0.2s ease, padding 0.2s ease;
       scrollbar-width: none;
     }
     .overlay-card::-webkit-scrollbar {
@@ -309,6 +309,49 @@
       justify-content: space-between;
       gap: 8px;
     }
+
+    /* 拡大表示（data-size="large"） */
+    [data-size="large"] .overlay-card {
+      max-width: 760px;
+      padding: clamp(20px, 3vw, 32px);
+      border-width: 3px;
+    }
+
+    [data-size="large"] .tag {
+      font-size: 15px;
+      padding: 5px 14px;
+    }
+
+    [data-size="large"] .timer-txt {
+      font-size: 24px;
+    }
+
+    [data-size="large"] .q-title {
+      font-size: clamp(24px, 3.2vw, 34px);
+      margin-bottom: 18px;
+    }
+
+    [data-size="large"] .row-item {
+      padding: 13px 16px;
+    }
+
+    [data-size="large"] .row-head {
+      font-size: clamp(19px, 2.2vw, 24px);
+      margin-bottom: 8px;
+    }
+
+    [data-size="large"] .row-stat {
+      font-size: 19px;
+    }
+
+    [data-size="large"] .track {
+      height: 16px;
+    }
+
+    [data-size="large"] .footer-meta {
+      font-size: 15px;
+      margin-top: 14px;
+    }
   </style>
 </head>
 <body>
@@ -334,8 +377,9 @@
       'bottom-right', 'bottom-left', 'bottom-center',
       'top-right', 'top-left', 'top-center', 'center'
     ];
+    const ALLOWED_SIZES = ['normal', 'large'];
 
-    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right' };
+    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
 
     function applyAppearance(state) {
       const params = new URLSearchParams(window.location.search);
@@ -345,9 +389,13 @@
       const pos = (state && ALLOWED_POSITIONS.includes(state.position))
         ? state.position
         : (ALLOWED_POSITIONS.includes(params.get('pos')) ? params.get('pos') : 'bottom-right');
+      const size = (state && ALLOWED_SIZES.includes(state.size))
+        ? state.size
+        : (ALLOWED_SIZES.includes(params.get('size')) ? params.get('size') : 'normal');
 
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.setAttribute('data-pos', pos);
+      document.documentElement.setAttribute('data-size', size);
     }
 
     function updateTimer() {
