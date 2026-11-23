@@ -356,78 +356,37 @@
       gap: 8px;
     }
 
-    /* コンパクト表示（html[data-size="compact"]） */
+    /* コンパクト表示（html[data-size="compact"]）：QRコードとメッセージのみ表示 */
     html[data-size="compact"] .overlay-card {
-      max-width: 390px;
+      width: auto;
+      max-width: 360px;
       padding: 10px 12px;
-      border-width: 1.5px;
     }
 
-    html[data-size="compact"] .top-bar {
-      margin-bottom: 5px;
+    html[data-size="compact"] .top-bar,
+    html[data-size="compact"] .q-title,
+    html[data-size="compact"] .rows,
+    html[data-size="compact"] .footer-meta {
+      display: none;
     }
 
-    html[data-size="compact"] .tag {
-      font-size: 10px;
-      padding: 2px 8px;
-    }
-
-    html[data-size="compact"] .timer-txt {
-      font-size: 14px;
-    }
-
-    html[data-size="compact"] .q-title {
-      font-size: clamp(14px, 1.5vw, 16px);
-      margin-bottom: 8px;
-      line-height: 1.3;
-    }
-
-    html[data-size="compact"] .rows {
-      gap: 5px;
-    }
-
-    html[data-size="compact"] .row-item {
-      padding: 5px 9px;
-    }
-
-    html[data-size="compact"] .row-head {
-      font-size: clamp(12px, 1.2vw, 13px);
-      gap: 6px;
-      margin-bottom: 3px;
-    }
-
-    html[data-size="compact"] .row-stat {
-      font-size: 12px;
-    }
-
-    html[data-size="compact"] .track {
-      height: 6px;
-    }
-
-    html[data-size="compact"] .qr-box {
-      margin-top: 8px;
-      padding: 7px 9px;
-      gap: 9px;
-    }
-
-    html[data-size="compact"] .qr-frame {
-      padding: 4px;
-      border-radius: 6px;
+    html[data-size="compact"] .qr-box.show {
+      display: flex;
+      margin-top: 0;
+      padding: 8px 10px;
+      gap: 12px;
+      background: transparent;
+      border: none;
     }
 
     html[data-size="compact"] #qrCanvas {
-      width: 62px;
-      height: 62px;
+      width: 72px;
+      height: 72px;
     }
 
     html[data-size="compact"] .qr-heading {
-      font-size: 14px;
-      line-height: 1.25;
-    }
-
-    html[data-size="compact"] .footer-meta {
-      margin-top: 6px;
-      font-size: 10px;
+      font-size: 17px;
+      line-height: 1.35;
     }
 
     /* 拡大表示（html[data-size="large"]） */
@@ -812,15 +771,17 @@
         applyAppearance(currentState);
 
         const card = document.getElementById('overlayCard');
-        if (!currentState || currentState.status === 'WAITING') {
+        const isCompact = currentState.size === 'compact';
+        const isVoting = currentState.status === 'VOTING';
+        const isQuiz = question && question.type === 'quiz';
+
+        if (!currentState || currentState.status === 'WAITING' || (isCompact && !isVoting)) {
           card.classList.remove('visible');
           renderQrIfNeeded(false);
           updateTimer();
           return;
         }
 
-        const isVoting = currentState.status === 'VOTING';
-        const isQuiz = question && question.type === 'quiz';
         const showCounts = currentState.status === 'RESULT' || currentState.status === 'ANSWER' || currentState.status === 'CLOSED';
         const highlightAnswer = currentState.status === 'ANSWER' && isQuiz && question.answer;
 
