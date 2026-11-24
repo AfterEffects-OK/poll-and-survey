@@ -1542,12 +1542,12 @@
             <div class="inline-select-row field">
               <div>
                 <label class="lbl" for="qIdInput">質問ID（空欄で自動採番）</label>
-                <input id="qIdInput" type="text" placeholder="例: q3" />
+                <input id="qIdInput" type="text" placeholder="例: q3" oninput="markEditing(true)" />
               </div>
 
               <div>
                 <label class="lbl" for="qTypeInput">種別</label>
-                <select id="qTypeInput" onchange="onQuestionTypeInputChange()">
+                <select id="qTypeInput" onchange="markEditing(true); onQuestionTypeInputChange()">
                   <option value="poll">アンケート（poll）</option>
                   <option value="quiz">クイズ（quiz）</option>
                 </select>
@@ -1556,7 +1556,7 @@
 
             <div class="field">
               <label class="lbl" for="qTextInput">質問文</label>
-              <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" />
+              <input id="qTextInput" type="text" placeholder="例: 次の配信でやってほしい企画は？" oninput="markEditing(true)" />
             </div>
 
             <div class="field">
@@ -1567,7 +1567,7 @@
 
             <div id="quizAnswerWrap" class="field" style="display: none;">
               <label class="lbl" for="qAnswerSelect">クイズの正解（quizの場合のみ）</label>
-              <select id="qAnswerSelect"></select>
+              <select id="qAnswerSelect" onchange="markEditing(true)"></select>
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
@@ -1600,7 +1600,7 @@
         <section class="card">
           <div class="card-header">
             <h2 class="card-title">リアルタイム集計結果</h2>
-            <button type="button" class="btn btn-red" style="padding:6px 12px;font-size:12.5px;" onclick="clearCurrentVotes()">票をリセット</button>
+            <button type="button" class="btn btn-red" style="padding:6px 12px;font-size:12.5px;" onclick="clearCurrentVotes('live')">票をリセット</button>
           </div>
           <div id="previewArea">読み込み中...</div>
         </section>
@@ -1627,7 +1627,7 @@
             <span id="logCountSummary" class="log-summary-txt">0 件表示</span>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">
               <button type="button" class="copy-btn" onclick="exportLogsCsv()">CSV出力</button>
-              <button type="button" class="btn btn-red btn-sm" onclick="clearCurrentVotes()">選択質問の票をリセット</button>
+              <button type="button" class="btn btn-red btn-sm" onclick="clearCurrentVotes('selected')">選択質問の票をリセット</button>
             </div>
           </div>
 
@@ -1991,12 +1991,43 @@
   <script>
     const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
     const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
+    const POLL_INTERVAL_MS = (typeof CONFIG !== 'undefined' && Number(CONFIG.POLL_INTERVAL_MS) > 0)
+      ? Number(CONFIG.POLL_INTERVAL_MS)
+      : 3000;
+    const GAS_ENDPOINT = (typeof CONFIG !== 'undefined' && (CONFIG.GAS_URL || CONFIG.API_URL || CONFIG.ENDPOINT))
+      ? (CONFIG.GAS_URL || CONFIG.API_URL || CONFIG.ENDPOINT)
+      : '';
+
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
     const ROOM_NAMES_CACHE_KEY = 'stream_poll_room_names_v1';
     const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
-    let ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : DEFAULT_ADMIN;
-    let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
+    function resolveInitialAdminId() {
+      try {
+        const qAdmin = new URLSearchParams(window.location.search).get('admin');
+        if (qAdmin) return normalizeAdminId(qAdmin);
+      } catch (e) {}
+      if (typeof getAdminId === 'function') return normalizeAdminId(getAdminId());
+      return DEFAULT_ADMIN;
+    }
+
+    function resolveInitialRoomId(adminVal) {
+      if (adminVal === DEFAULT_ADMIN) return DEFAULT_ROOM;
+      try {
+        const qRoom = new URLSearchParams(window.location.search).get('room');
+        if (qRoom) {
+          return String(qRoom).trim().replace(/[^a-zA-Z0-9_@-]/g, '') || DEFAULT_ROOM;
+        }
+      } catch (e) {}
+      if (typeof getRoomId === 'function') {
+        const r = String(getRoomId()).trim().replace(/[^a-zA-Z0-9_@-]/g, '');
+        if (r) return r;
+      }
+      return DEFAULT_ROOM;
+    }
+
+    let ADMIN_ID = resolveInitialAdminId();
+    let ROOM_ID = resolveInitialRoomId(ADMIN_ID);
     let currentRoomName = '';
     let isRoomNameDirty = false;
     let roomNameMap = {};
@@ -2006,7 +2037,7 @@
     let latestVoteLogs = [];
     let registeredAdmins = [];
     let lastGeneratedAdminId = '';
-    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
+    let currentState = { status: 'WAITING', questionId: '', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
 
@@ -2067,6 +2098,45 @@
     };
 
     const HELP_TAB_KEYS = ['flow', 'buttons', 'obs', 'logs', 'trouble'];
+
+    async function callGasGet(params = {}) {
+      if (typeof window.fetchGas === 'function') {
+        return await window.fetchGas(params);
+      }
+      if (!GAS_ENDPOINT) {
+        return { ok: false, error: 'GASエンドポイント（config.js）が設定されていません。' };
+      }
+      const url = new URL(GAS_ENDPOINT);
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && String(v) !== '') {
+          url.searchParams.set(k, String(v));
+        }
+      });
+      url.searchParams.set('_ts', String(Date.now()));
+      const resp = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
+      if (!resp.ok) {
+        return { ok: false, error: `HTTP ${resp.status}` };
+      }
+      return await resp.json();
+    }
+
+    async function callGasPost(payload = {}) {
+      if (typeof window.postGas === 'function') {
+        return await window.postGas(payload);
+      }
+      if (!GAS_ENDPOINT) {
+        return { ok: false, error: 'GASエンドポイント（config.js）が設定されていません。' };
+      }
+      const resp = await fetch(GAS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        return { ok: false, error: `HTTP ${resp.status}` };
+      }
+      return await resp.json();
+    }
 
     function loadCachedRoomNames() {
       try {
@@ -2138,7 +2208,7 @@
 
       if (btn) btn.disabled = true;
       try {
-        const res = await postGas({
+        const res = await callGasPost({
           action: 'set_room_name',
           roomId: ROOM_ID,
           adminId: ADMIN_ID,
@@ -2422,6 +2492,7 @@
       latestVoteLogs = [];
       isObsAppearanceDirty = false;
       isRoomNameDirty = false;
+      isEditingQuestionForm = false;
       currentRoomName = roomNameMap[ROOM_ID] || '';
       syncRoomInputAndUrl();
       renderRoomNameInput(true);
@@ -2439,7 +2510,7 @@
       mergeAdminAccounts([]);
       renderAdminAccountsTable();
       try {
-        const res = await fetchGas({
+        const res = await callGasGet({
           action: 'list_admins',
           roomId: ROOM_ID,
           adminId: ADMIN_ID
@@ -2483,7 +2554,7 @@
         let savedToSheet = false;
 
         try {
-          const res = await postGas({
+          const res = await callGasPost({
             action: 'register_admin',
             roomId: ROOM_ID,
             adminId: generatedId,
@@ -2759,12 +2830,8 @@
       const locked = isDefaultAdmin();
       const list = rooms.includes(ROOM_ID) ? rooms : [ROOM_ID, ...rooms].filter(Boolean);
 
-      select.innerHTML = '';
+      select.innerHTML = '<option value="">履歴から選択</option>';
       if (!list.length) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '履歴なし';
-        select.appendChild(opt);
         select.disabled = true;
         return;
       }
@@ -2913,7 +2980,7 @@
       enforceRoomRuleForAdmin();
       const targetRoomAtStart = ROOM_ID;
       try {
-        const res = await fetchGas({
+        const res = await callGasGet({
           action: 'get_logs',
           roomId: targetRoomAtStart,
           adminId: ADMIN_ID
@@ -3218,13 +3285,15 @@
       if (data.question) {
         if (metaEl) {
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
-          const sizeKey = currentState.size || selectedSize;
+          const sizeKey = (data.state && data.state.size) || currentState.size || selectedSize;
           const sizeText = SIZE_LABELS[sizeKey] || '通常';
+          const themeVal = (data.state && data.state.theme) || currentState.theme || selectedTheme;
+          const posVal = (data.state && data.state.position) || currentState.position || selectedPosition;
           const roomLabel = currentRoomName ? `${ROOM_ID} (${currentRoomName})` : ROOM_ID;
-          metaEl.textContent = `[room: ${roomLabel}] 出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
+          metaEl.textContent = `[room: ${roomLabel}] 出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${themeVal} ・ 位置: ${posVal} ・ サイズ: ${sizeText}`;
         }
         if (qLabel) {
-          qLabel.textContent = data.question.question;
+          qLabel.textContent = data.question.question || '';
         }
       }
     }
@@ -3394,10 +3463,10 @@
       const theme = selectedTheme || 'dark';
       const position = selectedPosition || 'bottom-right';
       const size = selectedSize || 'normal';
-      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, theme, position, size });
+      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, theme, position, size });
       isObsAppearanceDirty = false;
-      setLog(res.ok ? `[room: ${ROOM_ID}] OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : res.error);
-      loadAll();
+      setLog(res && res.ok ? `[room: ${ROOM_ID}] OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : (res && res.error) || 'OBS表示設定の更新に失敗しました。');
+      await loadAll();
     }
 
     function toggleAccordion(forceOpen) {
@@ -3416,7 +3485,7 @@
     function renderAdminCountdown() {
       const badgeEl = document.getElementById('adminTimerReadout');
       const liveEl = document.getElementById('liveTimerLabel');
-      if (currentState.status === 'VOTING' && currentState.deadlineAt) {
+      if (currentState && currentState.status === 'VOTING' && Number(currentState.deadlineAt) > 0) {
         const remainSec = Math.max(0, Math.ceil((Number(currentState.deadlineAt) - Date.now()) / 1000));
         const txt = `残り ${remainSec}秒`;
         if (badgeEl) badgeEl.textContent = txt;
@@ -3504,8 +3573,18 @@
       }
 
       const qType = document.getElementById('qTypeInput').value;
+      const qText = document.getElementById('qTextInput').value.trim();
       const optionsArr = getOptionValues();
       const answerVal = qType === 'quiz' ? document.getElementById('qAnswerSelect').value.trim() : '';
+
+      if (!qText) {
+        setLog('質問文を入力してください。');
+        return;
+      }
+      if (optionsArr.length < 2) {
+        setLog('選択肢は2つ以上入力してください。');
+        return;
+      }
 
       const payload = {
         action: 'upsert_question',
@@ -3514,18 +3593,18 @@
         question: {
           id: rawId,
           type: qType,
-          question: document.getElementById('qTextInput').value.trim(),
+          question: qText,
           options: optionsArr,
           answer: answerVal
         }
       };
-      const res = await postGas(payload);
-      setLog(res.message || res.error);
-      if (res.ok) {
+      const res = await callGasPost(payload);
+      setLog((res && (res.message || res.error)) || '質問の保存処理が完了しました。');
+      if (res && res.ok) {
         markEditing(false);
         await loadAll();
         const editSel = document.getElementById('editTargetSelect');
-        if ([...editSel.options].some(o => o.value === res.id)) {
+        if (editSel && res.id && [...editSel.options].some(o => o.value === res.id)) {
           editSel.value = res.id;
         }
         updateQuestionEditorLockState();
@@ -3536,7 +3615,11 @@
       enforceRoomRuleForAdmin();
       const targetId = document.getElementById('editTargetSelect').value;
       if (targetId === '__NEW__') {
-        alert('削除する既存質問をドロップダウンから選択してください。');
+        await showConfirmPopup('削除する既存質問をドロップダウンから選択してください。', {
+          title: '質問の選択が必要です',
+          okText: 'OK',
+          cancelText: '閉じる'
+        });
         return;
       }
       const targetObj = latestQuestions.find(q => q.id === targetId);
@@ -3553,9 +3636,9 @@
         }
       });
       if (!confirmed) return;
-      const res = await postGas({ action: 'delete_question', roomId: ROOM_ID, adminId: ADMIN_ID, id: targetId });
-      setLog(res.message || res.error);
-      if (res.ok) {
+      const res = await callGasPost({ action: 'delete_question', roomId: ROOM_ID, adminId: ADMIN_ID, id: targetId });
+      setLog((res && (res.message || res.error)) || '質問を削除しました。');
+      if (res && res.ok) {
         if (!isDefaultAdmin()) {
           resetEditorForm();
         }
@@ -3568,10 +3651,10 @@
       enforceRoomRuleForAdmin();
       const targetRoomAtStart = ROOM_ID;
       try {
-        const data = await fetchGas({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
-        if (!data.ok || targetRoomAtStart !== ROOM_ID) return;
+        const data = await callGasGet({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
+        if (!data || !data.ok || targetRoomAtStart !== ROOM_ID) return;
 
-        currentState = data.state;
+        currentState = data.state || currentState;
         if (Array.isArray(data.rooms) || typeof data.roomName === 'string') {
           syncRoomNamesFromServer(data.rooms, data.roomId || targetRoomAtStart, data.roomName);
         }
@@ -3612,6 +3695,7 @@
 
         const sel = document.getElementById('questionSelect');
         const prevSelected = sel.value;
+        const stateQId = (data.state && data.state.questionId) || '';
         sel.innerHTML = '';
         latestQuestions.forEach(q => {
           const opt = document.createElement('option');
@@ -3619,13 +3703,13 @@
           opt.textContent = `[${q.type}] ${q.id}: ${q.question}`;
           sel.appendChild(opt);
         });
-        if (data.state.questionId !== lastQuestionId) {
-          sel.value = data.state.questionId;
-          lastQuestionId = data.state.questionId;
+        if (stateQId && stateQId !== lastQuestionId && [...sel.options].some(o => o.value === stateQId)) {
+          sel.value = stateQId;
+          lastQuestionId = stateQId;
         } else if ([...sel.options].some(o => o.value === prevSelected)) {
           sel.value = prevSelected;
-        } else if ([...sel.options].some(o => o.value === data.state.questionId)) {
-          sel.value = data.state.questionId;
+        } else if (stateQId && [...sel.options].some(o => o.value === stateQId)) {
+          sel.value = stateQId;
         }
 
         const selectedObj = latestQuestions.find(q => q.id === sel.value) || data.question;
@@ -3653,31 +3737,43 @@
     async function applyQuestion() {
       enforceRoomRuleForAdmin();
       const questionId = document.getElementById('questionSelect').value;
-      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
-      setLog(res.ok ? `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。` : res.error);
-      loadAll();
+      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
+      setLog((res && res.ok) ? `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。` : ((res && res.error) || '出題切替に失敗しました。'));
+      await loadAll();
     }
 
     async function setStatus(status) {
       enforceRoomRuleForAdmin();
-      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status });
-      setLog(res.ok ? `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : res.error);
-      loadAll();
+      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status });
+      setLog((res && res.ok) ? `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : ((res && res.error) || 'ステータス変更に失敗しました。'));
+      await loadAll();
     }
 
     async function startTimedVoting() {
       enforceRoomRuleForAdmin();
       const durationSec = Number(document.getElementById('timerSec').value);
-      const res = await postGas({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status: 'VOTING', durationSec });
-      setLog(res.ok ? `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。` : res.error);
-      loadAll();
+      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status: 'VOTING', durationSec });
+      setLog((res && res.ok) ? `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。` : ((res && res.error) || 'タイマー開始に失敗しました。'));
+      await loadAll();
     }
 
-    async function clearCurrentVotes() {
+    async function clearCurrentVotes(mode = 'live') {
       enforceRoomRuleForAdmin();
-      const questionId = document.getElementById('questionSelect').value;
+      const logFilterVal = document.getElementById('logQuestionFilter')?.value || '__ALL__';
+      const liveQId = document.getElementById('questionSelect')?.value || (currentState && currentState.questionId) || '';
+      const questionId = (mode === 'selected' && logFilterVal !== '__ALL__') ? logFilterVal : liveQId;
+
+      if (!questionId) {
+        setLog('リセット対象の質問が特定できません。');
+        return;
+      }
+
       const selectedObj = latestQuestions.find(q => q.id === questionId);
-      const confirmed = await showConfirmPopup(`配信「${ROOM_ID}」の現在選択中の質問の投票ログを削除しますか？`, {
+      const scopeLabel = (mode === 'selected' && logFilterVal !== '__ALL__')
+        ? `ログフィルタで選択中の質問`
+        : `現在選択中の質問`;
+
+      const confirmed = await showConfirmPopup(`配信「${ROOM_ID}」の${scopeLabel}の投票ログを削除しますか？`, {
         title: '投票ログの削除確認',
         detail: {
           id: questionId,
@@ -3685,8 +3781,8 @@
         }
       });
       if (!confirmed) return;
-      const res = await postGas({ action: 'clear_votes', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
-      setLog(res.message || res.error);
+      const res = await callGasPost({ action: 'clear_votes', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
+      setLog((res && (res.message || res.error)) || '投票ログを削除しました。');
       await Promise.all([loadAll(), fetchVoteLogs(false)]);
     }
 
@@ -3698,7 +3794,7 @@
 
     loadAll();
     fetchVoteLogs(false);
-    setInterval(loadAll, CONFIG.POLL_INTERVAL_MS);
+    setInterval(loadAll, POLL_INTERVAL_MS);
     setInterval(renderAdminCountdown, 200);
   </script>
 </body>
