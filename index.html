@@ -228,6 +228,30 @@
       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
 
+    /* アンケート・クイズタグ直上の配信者別ヘッダ画像（枠幅いっぱい・控えめな高さ） */
+    .streamer-header-banner {
+      display: none;
+      width: 100%;
+      height: 68px;
+      margin-bottom: 12px;
+      border-radius: min(var(--item-radius), 14px);
+      overflow: hidden;
+      border: 1.5px solid var(--item-border);
+      background: var(--item-bg);
+    }
+
+    .streamer-header-banner.is-visible {
+      display: block;
+    }
+
+    .streamer-header-banner img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -481,8 +505,66 @@
     const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
+    let latestData = null;
     let lastResultSignature = '';
     let isSubmitting = false;
+
+    function resolveStreamerHeaderUrl(adminId) {
+      const id = String(adminId || '').trim();
+      if (!id) return '';
+
+      if (typeof CONFIG !== 'undefined' && CONFIG.STREAMER_HEADER_BANNERS && CONFIG.STREAMER_HEADER_BANNERS[id]) {
+        return CONFIG.STREAMER_HEADER_BANNERS[id];
+      }
+      if (typeof STREAMER_HEADER_BANNERS !== 'undefined' && STREAMER_HEADER_BANNERS[id]) {
+        return STREAMER_HEADER_BANNERS[id];
+      }
+
+      return `./headers/${encodeURIComponent(id)}.png`;
+    }
+
+    function buildStreamerHeaderHtml(adminId) {
+      const url = resolveStreamerHeaderUrl(adminId);
+      if (!url) return '';
+      return `
+        <div id="streamerHeaderBanner" class="streamer-header-banner" aria-hidden="true">
+          <img id="streamerHeaderImg" src="${escapeAttr(url)}" alt="" />
+        </div>
+      `;
+    }
+
+    function syncStreamerHeaderVisibility(adminId) {
+      const banner = document.getElementById('streamerHeaderBanner');
+      const img = document.getElementById('streamerHeaderImg');
+      if (!banner || !img) return;
+
+      const url = resolveStreamerHeaderUrl(adminId);
+      if (!url) {
+        banner.classList.remove('is-visible');
+        banner.setAttribute('aria-hidden', 'true');
+        return;
+      }
+
+      img.onload = () => {
+        banner.classList.add('is-visible');
+        banner.setAttribute('aria-hidden', 'false');
+      };
+
+      img.onerror = () => {
+        banner.classList.remove('is-visible');
+        banner.setAttribute('aria-hidden', 'true');
+      };
+
+      if (img.complete) {
+        if (img.naturalWidth > 0) {
+          banner.classList.add('is-visible');
+          banner.setAttribute('aria-hidden', 'false');
+        } else {
+          banner.classList.remove('is-visible');
+          banner.setAttribute('aria-hidden', 'true');
+        }
+      }
+    }
 
     function getClientId() {
       const key = 'stream_poll_client_id';
@@ -574,12 +656,16 @@
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
 
+        latestData = data;
+        const effectiveAdminId = (data && data.adminId) ? data.adminId : ADMIN_ID;
         const { state, question, totalVotes, results } = data;
         currentState = state || { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
         syncResetSeq(currentState);
         applyTheme(currentState);
 
         const card = document.getElementById('appCard');
+        const headerHtml = buildStreamerHeaderHtml(effectiveAdminId);
+
         if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
           card.innerHTML = `
@@ -617,6 +703,7 @@
             : `<div class="notice-banner">選択肢をタップして${isQuiz ? '回答' : '投票'}してください</div>`;
 
           card.innerHTML = `
+            ${headerHtml}
             <div class="top-bar">
               <span class="tag">${tagText}</span>
               <span id="timerDisplay" class="timer-txt"></span>
@@ -629,6 +716,7 @@
               <span>現在の総票数: ${Number(totalVotes || 0)}票</span>
             </div>
           `;
+          syncStreamerHeaderVisibility(effectiveAdminId);
           updateCountdown();
           return;
         }
@@ -636,6 +724,7 @@
         if (state.status === 'CLOSED') {
           lastResultSignature = '';
           card.innerHTML = `
+            ${headerHtml}
             <div class="top-bar">
               <span class="tag">${tagText}</span>
               <span class="timer-txt"></span>
@@ -650,6 +739,7 @@
               <span>${myChoice ? `あなたの選択: ${escapeHtml(myChoice)}` : '未回答'}</span>
             </div>
           `;
+          syncStreamerHeaderVisibility(effectiveAdminId);
           return;
         }
 
@@ -701,6 +791,7 @@
         };
 
         card.innerHTML = `
+          ${headerHtml}
           <div class="top-bar">
             <span class="tag">${tagText}</span>
             <span class="timer-txt"></span>
@@ -713,6 +804,7 @@
             <span>合計 ${Number(totalVotes || 0)} 票</span>
           </div>
         `;
+        syncStreamerHeaderVisibility(effectiveAdminId);
       } catch (e) {
         console.error(e);
       }
