@@ -4,7 +4,11 @@ const CONFIG = {
   DEFAULT_ROOM_ID: 'default',
   DEFAULT_ADMIN_ID: 'default',
   // 空文字の場合は現在のページ基準で index.html（room / admin パラメータ付き）を生成します
-  VOTE_URL: ''
+  VOTE_URL: '',
+  // 配信者（adminId）ごとのヘッダ画像パス（未指定のIDは ./headers/{adminId}.png を参照）
+  STREAMER_HEADER_BANNERS: {
+    // zWqUjfLm: './headers/zWqUjfLm.png'
+  }
 };
 
 function sanitizeConfigKey(raw, fallback) {
