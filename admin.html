@@ -1837,6 +1837,15 @@
               <li><strong>room と admin の違い</strong>：<span class="help-code">room</span> は配信ごとの状態・票・ログを分離し、<span class="help-code">admin</span> は質問リストを共有管理します（<span class="help-code">admin</span> が <span class="help-code">default</span> の時は <span class="help-code">room</span> も <span class="help-code">default</span> 固定）。</li>
             </ul>
           </section>
+
+          <section class="help-section">
+            <h4><span class="help-step-pill">アカウント</span> adminアカウント登録・復元モーダルの使い方</h4>
+            <ul class="help-list">
+              <li><strong>新規アカウント登録</strong>：8桁のランダム英字 <span class="help-code">adminId</span> を自動生成して登録し、即座にその <span class="help-code">admin</span> に切り替えます。</li>
+              <li><strong>IDを忘れた時の復元</strong>：名前・メモ・IDでの絞り込み検索や一覧の「復元」ボタンから、以前の <span class="help-code">adminId</span> を呼び戻せます。</li>
+              <li><strong>default アカウントの制限</strong>：<span class="help-code">admin</span> が <span class="help-code">default</span> の場合、<span class="help-code">room</span> は <span class="help-code">default</span> 固定となり、<span class="help-code">default</span> 所属の質問は編集・削除・新規作成がロックされます。</li>
+            </ul>
+          </section>
         </div>
 
         <!-- タブ2：ボタン・進行操作 -->
@@ -1961,6 +1970,14 @@
               <strong>OBSブラウザソースの推奨設定：</strong>幅 <span class="help-code">1920</span> × 高さ <span class="help-code">1080</span> で作成すると、3×3のどの位置を選んでも配信キャンバス基準で狙った場所に配置しやすくなります。
             </div>
           </section>
+
+          <section class="help-section">
+            <h4><span class="help-step-pill">ヘッダ画像</span> 回答者画面（index.html）ヘッダ画像の設定</h4>
+            <ul class="help-list">
+              <li><strong>ヘッダ反映</strong>：「2. OBS表示設定」下部の「回答者画面（index.html）ヘッダ画像URL」に入力した画像URL（横長バナー推奨・高さ <span class="help-code">68px</span> 枠にフィット）を保存し、回答者画面（<span class="help-code">index.html</span>）の質問カード上部に表示します。</li>
+              <li><strong>解除</strong>：設定中のヘッダ画像を解除して非表示に戻します。</li>
+            </ul>
+          </section>
         </div>
 
         <!-- タブ4：集計・ログ・リセット -->
@@ -1980,6 +1997,14 @@
               <li><strong>更新ボタン</strong>：最新の投票ログをGASから即時取得します。</li>
               <li><strong>CSV出力</strong>：現在フィルタ・検索で絞り込まれているログを、文字化け防止のBOM付きCSV（<span class="help-code">vote_logs_ルームID.csv</span>）としてダウンロードします。</li>
               <li><strong>票をリセット / 選択質問の票をリセット</strong>：現在選択中の質問の投票データを削除し、リセット世代番号（<span class="help-code">resetSeq</span>）を進めて回答者ブラウザの投票済み状態もリセットします。</li>
+            </ul>
+          </section>
+
+          <section class="help-section">
+            <h4><span class="help-step-pill">リセット詳細</span> リアルタイム集計とログ画面のリセット操作の違い</h4>
+            <ul class="help-list">
+              <li><strong>リアルタイム集計の「票をリセット」</strong>：現在出題・選択中の質問を対象に、現在の配信ルーム（<span class="help-code">room</span>）の投票データを削除し、回答者側の投票済み状態もリセットします。</li>
+              <li><strong>ログ画面の「選択質問の票をリセット」</strong>：投票ログの質問フィルタで特定の質問を選んでいる場合はその質問を、全質問表示の場合は現在選択中の質問を対象にリセット確認モーダルを開きます。</li>
             </ul>
           </section>
         </div>
