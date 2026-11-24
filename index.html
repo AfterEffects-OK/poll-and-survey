@@ -504,12 +504,29 @@
     const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
     const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
-    let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
+    let currentState = {
+      status: 'WAITING',
+      deadlineAt: 0,
+      theme: 'dark',
+      resetSeq: 0,
+      resetQuestionId: '',
+      headerImage: ''
+    };
     let latestData = null;
     let lastResultSignature = '';
     let isSubmitting = false;
 
-    function resolveStreamerHeaderUrl(adminId) {
+    function getStateHeaderImage(state) {
+      if (!state) return '';
+      return String(state.headerImage || state.header_image || '').trim();
+    }
+
+    function resolveStreamerHeaderUrl(adminId, state = currentState) {
+      const stateUrl = getStateHeaderImage(state);
+      if (stateUrl) {
+        return stateUrl;
+      }
+
       const id = String(adminId || '').trim();
       if (!id) return '';
 
@@ -523,8 +540,8 @@
       return `./headers/${encodeURIComponent(id)}.png`;
     }
 
-    function buildStreamerHeaderHtml(adminId) {
-      const url = resolveStreamerHeaderUrl(adminId);
+    function buildStreamerHeaderHtml(adminId, state = currentState) {
+      const url = resolveStreamerHeaderUrl(adminId, state);
       if (!url) return '';
       return `
         <div id="streamerHeaderBanner" class="streamer-header-banner" aria-hidden="true">
@@ -533,12 +550,12 @@
       `;
     }
 
-    function syncStreamerHeaderVisibility(adminId) {
+    function syncStreamerHeaderVisibility(adminId, state = currentState) {
       const banner = document.getElementById('streamerHeaderBanner');
       const img = document.getElementById('streamerHeaderImg');
       if (!banner || !img) return;
 
-      const url = resolveStreamerHeaderUrl(adminId);
+      const url = resolveStreamerHeaderUrl(adminId, state);
       if (!url) {
         banner.classList.remove('is-visible');
         banner.setAttribute('aria-hidden', 'true');
@@ -554,6 +571,11 @@
         banner.classList.remove('is-visible');
         banner.setAttribute('aria-hidden', 'true');
       };
+
+      const escapedUrl = escapeAttr(url);
+      if (img.getAttribute('src') !== escapedUrl) {
+        img.setAttribute('src', escapedUrl);
+      }
 
       if (img.complete) {
         if (img.naturalWidth > 0) {
@@ -659,12 +681,19 @@
         latestData = data;
         const effectiveAdminId = (data && data.adminId) ? data.adminId : ADMIN_ID;
         const { state, question, totalVotes, results } = data;
-        currentState = state || { status: 'WAITING', deadlineAt: 0, theme: 'dark', resetSeq: 0, resetQuestionId: '' };
+        currentState = state || {
+          status: 'WAITING',
+          deadlineAt: 0,
+          theme: 'dark',
+          resetSeq: 0,
+          resetQuestionId: '',
+          headerImage: ''
+        };
         syncResetSeq(currentState);
         applyTheme(currentState);
 
         const card = document.getElementById('appCard');
-        const headerHtml = buildStreamerHeaderHtml(effectiveAdminId);
+        const headerHtml = buildStreamerHeaderHtml(effectiveAdminId, currentState);
 
         if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
@@ -716,7 +745,7 @@
               <span>現在の総票数: ${Number(totalVotes || 0)}票</span>
             </div>
           `;
-          syncStreamerHeaderVisibility(effectiveAdminId);
+          syncStreamerHeaderVisibility(effectiveAdminId, currentState);
           updateCountdown();
           return;
         }
@@ -739,7 +768,7 @@
               <span>${myChoice ? `あなたの選択: ${escapeHtml(myChoice)}` : '未回答'}</span>
             </div>
           `;
-          syncStreamerHeaderVisibility(effectiveAdminId);
+          syncStreamerHeaderVisibility(effectiveAdminId, currentState);
           return;
         }
 
@@ -804,7 +833,7 @@
             <span>合計 ${Number(totalVotes || 0)} 票</span>
           </div>
         `;
-        syncStreamerHeaderVisibility(effectiveAdminId);
+        syncStreamerHeaderVisibility(effectiveAdminId, currentState);
       } catch (e) {
         console.error(e);
       }
