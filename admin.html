@@ -712,10 +712,10 @@
 
     .live-status-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 12px;
     }
 
@@ -727,6 +727,8 @@
       font-weight: 800;
       background: #334155;
       color: #ffffff;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .state-pill.voting { background: #047857; border: 1.5px solid #34d399; }
     .state-pill.waiting { background: #b45309; border: 1.5px solid #fbbf24; }
@@ -738,6 +740,8 @@
       font-size: 15px;
       font-weight: 800;
       color: #fde047;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .live-question-box {
