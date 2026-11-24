@@ -2815,8 +2815,7 @@
       enforceRoomRuleForAdmin();
       const badge = document.getElementById('contextBadge');
       if (badge) {
-        const namePart = currentRoomName ? ` / 配信名: ${currentRoomName}` : '';
-        badge.textContent = `admin: ${ADMIN_ID} / room: ${ROOM_ID}${namePart}`;
+        badge.textContent = `admin: ${ADMIN_ID} / room: ${ROOM_ID}`;
       }
     }
 
