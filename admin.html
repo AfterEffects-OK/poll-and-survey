@@ -121,7 +121,7 @@
       color: #ffffff;
     }
 
-    /* 配信（room）切替バー */
+    /* 配信（room）切替・配信名バー */
     .room-switcher-bar {
       display: flex;
       flex-wrap: wrap;
@@ -136,7 +136,6 @@
     }
 
     .room-switcher-bar.is-locked {
-      opacity: 0.85;
       border-color: #334155;
     }
 
@@ -144,8 +143,16 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
-      flex: 1 1 340px;
+      gap: 8px 12px;
+      flex: 1 1 560px;
+      min-width: 0;
+    }
+
+    .room-control-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -166,7 +173,17 @@
       min-width: 0;
     }
 
-    .room-input-wrap input[type="text"] {
+    .room-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 240px;
+      max-width: 360px;
+      min-width: 0;
+    }
+
+    .room-input-wrap input[type="text"],
+    .room-name-wrap input[type="text"] {
       flex: 1 1 auto;
       min-width: 0;
       font-size: 14px;
@@ -182,7 +199,8 @@
       color: #94a3b8;
     }
 
-    .room-input-wrap .btn {
+    .room-input-wrap .btn,
+    .room-name-wrap .btn {
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -1377,7 +1395,7 @@
     <header class="header-bar">
       <div class="header-left">
         <h1 class="header-title">配信投票・クイズ 管理パネル</h1>
-        <span id="contextBadge" class="context-pill">room: default / admin: default</span>
+        <span id="contextBadge" class="context-pill">admin: default / room: default</span>
       </div>
       <div class="header-actions">
         <button type="button" class="account-open-btn" onclick="openAccountModal()">アカウント登録・復元</button>
@@ -1387,21 +1405,39 @@
       </div>
     </header>
 
-    <!-- 配信（room）即時切替バー -->
-    <section id="roomSwitcherBar" class="room-switcher-bar" aria-label="配信ルーム切替">
+    <!-- 配信（room）即時切替・配信名記録バー -->
+    <section id="roomSwitcherBar" class="room-switcher-bar" aria-label="配信ルーム切替と配信名管理">
       <form class="room-switcher-form" onsubmit="handleRoomSwitchSubmit(event)">
-        <label class="room-switcher-label" for="roomSwitchInput">配信（room）ID</label>
-        <div class="room-input-wrap">
-          <input
-            id="roomSwitchInput"
-            type="text"
-            placeholder="例: 12345678"
-            autocomplete="off"
-          />
-          <button type="button" id="generateRoomBtn" class="btn btn-indigo btn-sm" onclick="generateRandomRoomId()">ID生成</button>
-          <button type="submit" id="switchRoomBtn" class="btn btn-sky btn-sm">配信切替</button>
-          <button type="button" id="defaultRoomBtn" class="btn btn-gray btn-sm" onclick="switchRoom('default')">default</button>
+        <div class="room-control-group" style="flex:1 1 320px;">
+          <label class="room-switcher-label" for="roomSwitchInput">配信（room）ID</label>
+          <div class="room-input-wrap">
+            <input
+              id="roomSwitchInput"
+              type="text"
+              placeholder="例: 12345678"
+              autocomplete="off"
+            />
+            <button type="button" id="generateRoomBtn" class="btn btn-indigo btn-sm" onclick="generateRandomRoomId()">ID生成</button>
+            <button type="submit" id="switchRoomBtn" class="btn btn-sky btn-sm">配信切替</button>
+            <button type="button" id="defaultRoomBtn" class="btn btn-gray btn-sm" onclick="switchRoom('default')">default</button>
+          </div>
         </div>
+
+        <div class="room-control-group" style="flex:1 1 260px;">
+          <label class="room-switcher-label" for="roomNameInput">配信名</label>
+          <div class="room-name-wrap">
+            <input
+              id="roomNameInput"
+              type="text"
+              placeholder="例: 講義配信・雑談枠"
+              autocomplete="off"
+              oninput="onRoomNameInputChange()"
+              onkeydown="handleRoomNameKeyDown(event)"
+            />
+            <button type="button" id="saveRoomNameBtn" class="btn btn-green btn-sm" onclick="saveRoomName()">配信名保存</button>
+          </div>
+        </div>
+
         <span id="roomLockNote" class="room-lock-note" style="display:none;">admin が default のため room は default 固定</span>
       </form>
       <div id="roomHistoryList" class="room-history-list"></div>
@@ -1694,7 +1730,7 @@
     </div>
   </div>
 
-  <!-- 使い方詳細解説モーダル（タブ切り替え） -->
+  <!-- 使い方詳細解説モーダル（タブ対応） -->
   <div id="helpModal" class="modal-backdrop" aria-hidden="true" onclick="handleHelpBackdropClick(event)">
     <div class="help-modal-box" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
       <div class="help-modal-header">
@@ -1727,7 +1763,7 @@
             <h4><span class="help-step-pill">手順</span> 配信開始から終了までの基本ステップ</h4>
             <ol class="help-list">
               <li><strong>adminアカウントを登録・復元する</strong>：ヘッダーの「アカウント登録・復元」から8桁英字の <span class="help-code">adminId</span> を作成（または復元）します。</li>
-              <li><strong>配信ルームを決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のIDを入力して <span class="help-code">配信切替</span> を押します（※ <span class="help-code">admin</span> が <span class="help-code">default</span> の場合は <span class="help-code">default</span> 固定）。</li>
+              <li><strong>配信ルーム・配信名を決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のID・配信名を入力して <span class="help-code">配信切替</span> / <span class="help-code">配信名保存</span> を押します（※ <span class="help-code">admin</span> が <span class="help-code">default</span> の場合は <span class="help-code">room</span> は <span class="help-code">default</span> 固定）。</li>
               <li><strong>URLを配置・配布する</strong>：「OBS用URLをコピー」でOBSブラウザソースに設定し、「回答者用URLをコピー」で視聴者に共有します。</li>
               <li><strong>質問を選ぶ</strong>：左「1. 出題・受付ステータス操作」で質問を選び、<span class="help-code">出題切替</span> を押します。</li>
               <li><strong>投票・回答を受け付ける</strong>：<span class="help-code">投票受付中</span>（またはタイマー付き開始）で受付を開きます。</li>
@@ -1736,7 +1772,7 @@
           </section>
 
           <section class="help-section">
-            <h4><span class="help-step-pill">ルーム切替</span> 配信（room）IDバーのボタン・表示解説</h4>
+            <h4><span class="help-step-pill">ルーム切替</span> 配信（room）ID・配信名バーのボタン・表示解説</h4>
             <table class="help-table">
               <thead>
                 <tr>
@@ -1754,12 +1790,16 @@
                   <td>入力欄の文字列（英数字・<span class="help-code">_</span>・<span class="help-code">@</span>・<span class="help-code">-</span>）を正規化してルームを切り替えます。</td>
                 </tr>
                 <tr>
+                  <td><strong>配信名保存</strong></td>
+                  <td>現在選択中の <span class="help-code">room_id</span> に配信名（<span class="help-code">room_name</span>）を紐づけてスプレッドシートの <span class="help-code">rooms</span> シートへ保存します。</td>
+                </tr>
+                <tr>
                   <td><strong>default</strong></td>
                   <td>テストや固定枠用の既定ルーム <span class="help-code">default</span> にワンクリックで戻ります。</td>
                 </tr>
                 <tr>
                   <td><strong>履歴チップ</strong></td>
-                  <td>過去に切り替えたルームを直近6件まで表示します。青く光っているチップが現在のルームです。</td>
+                  <td>過去に切り替えたルームを直近6件まで表示します（配信名が紐づいている場合は併記）。青く光っているチップが現在のルームです。</td>
                 </tr>
               </tbody>
             </table>
@@ -1769,7 +1809,7 @@
             <h4><span class="help-step-pill">URL仕様</span> ヘッダーのURLコピーボタンとパラメータ</h4>
             <ul class="help-list">
               <li><strong>OBS用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">obs.html</span> のURLをクリップボードへコピーします。</li>
-              <li><strong>回答者用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">index.html</span> のURLをコピーします。</li>
+              <li><strong>回答者用URLをコピー</strong>：現在の <span class="help-code">room</span> / <span class="help-code">admin</span> が付与された <span class="help-code">index.html</span> のURLをクリップボードへコピーします。</li>
               <li><strong>room と admin の違い</strong>：<span class="help-code">room</span> は配信ごとの状態・票・ログを分離し、<span class="help-code">admin</span> は質問リストを共有管理します（<span class="help-code">admin</span> が <span class="help-code">default</span> の時は <span class="help-code">room</span> も <span class="help-code">default</span> 固定）。</li>
             </ul>
           </section>
@@ -1946,10 +1986,14 @@
     const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
     const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
     const ROOM_HISTORY_KEY = 'stream_poll_recent_rooms';
+    const ROOM_NAMES_CACHE_KEY = 'stream_poll_room_names_v1';
     const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
 
     let ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : DEFAULT_ADMIN;
     let ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : DEFAULT_ROOM;
+    let currentRoomName = '';
+    let isRoomNameDirty = false;
+    let roomNameMap = {};
 
     let lastQuestionId = '';
     let latestQuestions = [];
@@ -2017,6 +2061,110 @@
     };
 
     const HELP_TAB_KEYS = ['flow', 'buttons', 'obs', 'logs', 'trouble'];
+
+    function loadCachedRoomNames() {
+      try {
+        const raw = localStorage.getItem(ROOM_NAMES_CACHE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveCachedRoomNames() {
+      try {
+        localStorage.setItem(ROOM_NAMES_CACHE_KEY, JSON.stringify(roomNameMap));
+      } catch (e) {}
+    }
+
+    function syncRoomNamesFromServer(roomsList, fallbackRoomId, fallbackRoomName) {
+      roomNameMap = { ...loadCachedRoomNames(), ...roomNameMap };
+      if (Array.isArray(roomsList)) {
+        roomsList.forEach(item => {
+          if (!item || !item.roomId) return;
+          const rId = String(item.roomId).trim();
+          const rName = String(item.roomName || item.room_name || '').trim();
+          if (rId && rName) {
+            roomNameMap[rId] = rName;
+          }
+        });
+      }
+      const fId = String(fallbackRoomId || ROOM_ID || '').trim();
+      const fName = String(fallbackRoomName || '').trim();
+      if (fId && fName) {
+        roomNameMap[fId] = fName;
+      }
+      saveCachedRoomNames();
+      if (ROOM_ID in roomNameMap) {
+        currentRoomName = roomNameMap[ROOM_ID] || '';
+      }
+      renderRoomNameInput(false);
+      renderContextBadge();
+      renderRoomHistoryChips();
+    }
+
+    function renderRoomNameInput(forceOverwrite = false) {
+      const input = document.getElementById('roomNameInput');
+      if (!input) return;
+      if (!forceOverwrite && isRoomNameDirty) return;
+      const resolvedName = currentRoomName || roomNameMap[ROOM_ID] || '';
+      currentRoomName = resolvedName;
+      input.value = resolvedName;
+    }
+
+    function onRoomNameInputChange() {
+      isRoomNameDirty = true;
+    }
+
+    function handleRoomNameKeyDown(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        saveRoomName();
+      }
+    }
+
+    async function saveRoomName() {
+      enforceRoomRuleForAdmin();
+      const input = document.getElementById('roomNameInput');
+      const btn = document.getElementById('saveRoomNameBtn');
+      const nextName = String(input ? input.value : currentRoomName || '').trim();
+
+      if (btn) btn.disabled = true;
+      try {
+        const res = await postGas({
+          action: 'set_room_name',
+          roomId: ROOM_ID,
+          adminId: ADMIN_ID,
+          roomName: nextName
+        });
+        if (res && res.ok) {
+          currentRoomName = String(res.roomName || nextName).trim();
+          if (currentRoomName) {
+            roomNameMap[ROOM_ID] = currentRoomName;
+          } else {
+            delete roomNameMap[ROOM_ID];
+          }
+          saveCachedRoomNames();
+          if (Array.isArray(res.rooms)) {
+            syncRoomNamesFromServer(res.rooms, ROOM_ID, currentRoomName);
+          }
+          isRoomNameDirty = false;
+          renderRoomNameInput(true);
+          renderContextBadge();
+          renderRoomHistoryChips();
+          setLog(res.message || `[room: ${ROOM_ID}] 配信名「${currentRoomName || '（未設定）'}」を保存しました。`);
+          await loadAll();
+        } else {
+          setLog((res && res.error) || '配信名の保存に失敗しました。');
+        }
+      } catch (e) {
+        console.error(e);
+        setLog('配信名の保存中に通信エラーが発生しました。');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
 
     function isDefaultAdmin() {
       return ADMIN_ID === DEFAULT_ADMIN;
@@ -2267,7 +2415,10 @@
       lastQuestionId = '';
       latestVoteLogs = [];
       isObsAppearanceDirty = false;
+      isRoomNameDirty = false;
+      currentRoomName = roomNameMap[ROOM_ID] || '';
       syncRoomInputAndUrl();
+      renderRoomNameInput(true);
       renderContextBadge();
       renderRoomHistoryChips();
       updateModalAdminHeader();
@@ -2604,7 +2755,8 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'room-chip' + (room === ROOM_ID ? ' is-current' : '');
-        btn.textContent = room;
+        const rName = roomNameMap[room] || '';
+        btn.textContent = rName ? `${room} (${rName})` : room;
         btn.disabled = locked && room !== DEFAULT_ROOM;
         btn.onclick = () => switchRoom(room);
         wrap.appendChild(btn);
@@ -2630,7 +2782,10 @@
       lastQuestionId = '';
       latestVoteLogs = [];
       isObsAppearanceDirty = false;
+      isRoomNameDirty = false;
+      currentRoomName = roomNameMap[ROOM_ID] || '';
       syncRoomInputAndUrl();
+      renderRoomNameInput(true);
       renderContextBadge();
       rememberRoom(ROOM_ID);
       setLog(`配信「${ROOM_ID}」に切り替えました。`);
@@ -2652,7 +2807,8 @@
       enforceRoomRuleForAdmin();
       const badge = document.getElementById('contextBadge');
       if (badge) {
-        badge.textContent = `admin: ${ADMIN_ID} / room: ${ROOM_ID}`;
+        const namePart = currentRoomName ? ` / 配信名: ${currentRoomName}` : '';
+        badge.textContent = `admin: ${ADMIN_ID} / room: ${ROOM_ID}${namePart}`;
       }
     }
 
@@ -2746,6 +2902,10 @@
         });
         if (targetRoomAtStart !== ROOM_ID) return;
 
+        if (Array.isArray(res?.rooms) || typeof res?.roomName === 'string') {
+          syncRoomNamesFromServer(res.rooms, res.roomId || targetRoomAtStart, res.roomName);
+        }
+
         if (res && res.ok && Array.isArray(res.logs)) {
           latestVoteLogs = res.logs.map(normalizeLogEntry).filter(Boolean).reverse();
           renderVoteLogsTable();
@@ -2780,10 +2940,10 @@
         setLog('出力対象の投票ログがありません。');
         return;
       }
-      const header = ['roomId', 'timestamp', 'questionId', 'option', 'clientId'];
+      const header = ['roomId', 'roomName', 'timestamp', 'questionId', 'option', 'clientId'];
       const lines = [header.join(',')];
       filtered.forEach(row => {
-        const vals = [ROOM_ID, row.timestamp, row.questionId, row.option, row.clientId].map(v => {
+        const vals = [ROOM_ID, currentRoomName, row.timestamp, row.questionId, row.option, row.clientId].map(v => {
           const s = String(v ?? '').replace(/"/g, '""');
           return `"${s}"`;
         });
@@ -3042,7 +3202,8 @@
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
           const sizeKey = currentState.size || selectedSize;
           const sizeText = SIZE_LABELS[sizeKey] || '通常';
-          metaEl.textContent = `[room: ${ROOM_ID}] 出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
+          const roomLabel = currentRoomName ? `${ROOM_ID} (${currentRoomName})` : ROOM_ID;
+          metaEl.textContent = `[room: ${roomLabel}] 出題中 [${data.question.id} / ${typeText}] ・ テーマ: ${currentState.theme} ・ 位置: ${currentState.position} ・ サイズ: ${sizeText}`;
         }
         if (qLabel) {
           qLabel.textContent = data.question.question;
@@ -3175,8 +3336,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      roomNameMap = loadCachedRoomNames();
+      currentRoomName = roomNameMap[ROOM_ID] || '';
       mergeAdminAccounts([{ adminId: ADMIN_ID }]);
       syncRoomInputAndUrl();
+      renderRoomNameInput(true);
       renderContextBadge();
       updateModalAdminHeader();
       rememberRoom(ROOM_ID);
@@ -3390,6 +3554,9 @@
         if (!data.ok || targetRoomAtStart !== ROOM_ID) return;
 
         currentState = data.state;
+        if (Array.isArray(data.rooms) || typeof data.roomName === 'string') {
+          syncRoomNamesFromServer(data.rooms, data.roomId || targetRoomAtStart, data.roomName);
+        }
         latestQuestions = (data.questions || []).map(q => ({
           ...q,
           adminId: String(q.adminId || q.admin_id || data.adminId || ADMIN_ID).trim()
@@ -3518,5 +3685,3 @@
   </script>
 </body>
 </html>
-
-
