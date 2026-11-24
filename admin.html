@@ -2968,11 +2968,11 @@
     function copyPageUrl(filename) {
       enforceRoomRuleForAdmin();
       const url = new URL('./' + filename, window.location.href);
-      if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
-        url.searchParams.set('room', ROOM_ID);
-      }
       if (ADMIN_ID && ADMIN_ID !== DEFAULT_ADMIN) {
         url.searchParams.set('admin', ADMIN_ID);
+      }
+      if (ROOM_ID && ROOM_ID !== DEFAULT_ROOM) {
+        url.searchParams.set('room', ROOM_ID);
       }
       const href = url.href;
 
@@ -3518,4 +3518,5 @@
   </script>
 </body>
 </html>
+
 
