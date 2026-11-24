@@ -143,8 +143,8 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px 12px;
-      flex: 1 1 560px;
+      gap: 8px 14px;
+      flex: 1 1 680px;
       min-width: 0;
     }
 
@@ -168,8 +168,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      flex: 1 1 260px;
-      max-width: 480px;
+      flex: 1 1 310px;
       min-width: 0;
     }
 
@@ -182,10 +181,20 @@
       min-width: 0;
     }
 
-    .room-input-wrap input[type="text"],
+    .room-input-wrap input[type="text"] {
+      flex: 1 1 130px;
+      min-width: 126px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 7px 10px;
+      border-radius: 8px;
+    }
+
     .room-name-wrap input[type="text"] {
       flex: 1 1 auto;
-      min-width: 0;
+      min-width: 130px;
       font-size: 14px;
       font-weight: 700;
       padding: 7px 11px;
@@ -212,49 +221,29 @@
       white-space: nowrap;
     }
 
-    .room-history-list {
+    .room-history-select-wrap {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: 6px;
+      flex: 0 1 270px;
+      min-width: 190px;
     }
 
     .room-history-caption {
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       color: #94a3b8;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    button.room-chip {
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 800;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: #0b101b;
-      color: #cbd5e1;
-      border: 1px solid #334155;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    button.room-chip:hover:not(:disabled) {
-      border-color: #38bdf8;
-      color: #ffffff;
-      background: #172236;
-    }
-
-    button.room-chip:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    button.room-chip.is-current {
-      background: #1d4ed8;
-      color: #ffffff;
-      border-color: #60a5fa;
-      opacity: 1;
+    .room-history-select-wrap select {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 8px;
     }
 
     /* 2カラムレイアウト */
@@ -427,7 +416,7 @@
     }
     button.btn.btn-sm {
       font-size: 13px;
-      padding: 7px 12px;
+      padding: 7px 11px;
     }
     button.btn:hover:not(:disabled) {
       filter: brightness(1.12);
@@ -1408,7 +1397,7 @@
     <!-- 配信（room）即時切替・配信名記録バー -->
     <section id="roomSwitcherBar" class="room-switcher-bar" aria-label="配信ルーム切替と配信名管理">
       <form class="room-switcher-form" onsubmit="handleRoomSwitchSubmit(event)">
-        <div class="room-control-group" style="flex:1 1 320px;">
+        <div class="room-control-group" style="flex:1 1 350px;">
           <label class="room-switcher-label" for="roomSwitchInput">配信（room）ID</label>
           <div class="room-input-wrap">
             <input
@@ -1423,7 +1412,7 @@
           </div>
         </div>
 
-        <div class="room-control-group" style="flex:1 1 260px;">
+        <div class="room-control-group" style="flex:1 1 250px;">
           <label class="room-switcher-label" for="roomNameInput">配信名</label>
           <div class="room-name-wrap">
             <input
@@ -1440,7 +1429,13 @@
 
         <span id="roomLockNote" class="room-lock-note" style="display:none;">admin が default のため room は default 固定</span>
       </form>
-      <div id="roomHistoryList" class="room-history-list"></div>
+
+      <div class="room-history-select-wrap">
+        <label class="room-history-caption" for="roomHistorySelect">履歴</label>
+        <select id="roomHistorySelect" aria-label="過去の配信ルーム履歴" onchange="handleRoomHistorySelectChange(event)">
+          <option value="">履歴から選択</option>
+        </select>
+      </div>
     </section>
 
     <div class="main-layout">
@@ -1798,8 +1793,8 @@
                   <td>テストや固定枠用の既定ルーム <span class="help-code">default</span> にワンクリックで戻ります。</td>
                 </tr>
                 <tr>
-                  <td><strong>履歴チップ</strong></td>
-                  <td>過去に切り替えたルームを直近6件まで表示します（配信名が紐づいている場合は併記）。青く光っているチップが現在のルームです。</td>
+                  <td><strong>履歴ドロップダウン</strong></td>
+                  <td>過去に切り替えたルームを一覧から選択して即座に切り替えられます（配信名が紐づいている場合は併記）。</td>
                 </tr>
               </tbody>
             </table>
@@ -2732,35 +2727,48 @@
 
     function rememberRoom(roomId) {
       const safe = normalizeRoomId(roomId);
-      const list = [safe, ...getRecentRooms().filter(r => r !== safe)].slice(0, 6);
+      const list = [safe, ...getRecentRooms().filter(r => r !== safe)].slice(0, 12);
       try {
         localStorage.setItem(ROOM_HISTORY_KEY, JSON.stringify(list));
       } catch (e) {}
       renderRoomHistoryChips();
     }
 
+    function handleRoomHistorySelectChange(event) {
+      const selectedRoom = String(event?.target?.value || '').trim();
+      if (!selectedRoom) return;
+      switchRoom(selectedRoom);
+    }
+
     function renderRoomHistoryChips() {
-      const wrap = document.getElementById('roomHistoryList');
-      if (!wrap) return;
+      const select = document.getElementById('roomHistorySelect');
+      if (!select) return;
 
       const rooms = getRecentRooms();
-      if (!rooms.length) {
-        wrap.innerHTML = '';
+      const locked = isDefaultAdmin();
+      const list = rooms.includes(ROOM_ID) ? rooms : [ROOM_ID, ...rooms].filter(Boolean);
+
+      select.innerHTML = '';
+      if (!list.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '履歴なし';
+        select.appendChild(opt);
+        select.disabled = true;
         return;
       }
 
-      const locked = isDefaultAdmin();
-      wrap.innerHTML = '<span class="room-history-caption">履歴:</span>';
-      rooms.forEach(room => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'room-chip' + (room === ROOM_ID ? ' is-current' : '');
+      list.forEach(room => {
+        const opt = document.createElement('option');
+        opt.value = room;
         const rName = roomNameMap[room] || '';
-        btn.textContent = rName ? `${room} (${rName})` : room;
-        btn.disabled = locked && room !== DEFAULT_ROOM;
-        btn.onclick = () => switchRoom(room);
-        wrap.appendChild(btn);
+        opt.textContent = rName ? `${room}（${rName}）` : room;
+        opt.disabled = locked && room !== DEFAULT_ROOM;
+        opt.selected = room === ROOM_ID;
+        select.appendChild(opt);
       });
+
+      select.disabled = locked && list.every(r => r !== DEFAULT_ROOM);
     }
 
     function syncRoomInputAndUrl() {
