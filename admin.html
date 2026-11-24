@@ -712,15 +712,18 @@
 
     .live-status-row {
       display: flex;
+      flex-direction: row;
       flex-wrap: nowrap;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 12px;
+      width: 100%;
     }
 
     .state-pill {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       padding: 5px 12px;
       border-radius: 8px;
       font-size: 14px;
@@ -742,6 +745,7 @@
       color: #fde047;
       white-space: nowrap;
       flex-shrink: 0;
+      text-align: right;
     }
 
     .live-question-box {
