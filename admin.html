@@ -576,22 +576,25 @@
     /* OBS表示サイズ切替 */
     .size-switch-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
       margin-top: 8px;
     }
 
     button.size-btn {
       font-family: inherit;
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 800;
       color: #e2e8f0;
       background: #0b101b;
       border: 1.5px solid #334155;
       border-radius: 8px;
-      padding: 8px 8px;
+      padding: 8px 6px;
       cursor: pointer;
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     button.size-btn:hover {
