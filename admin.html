@@ -1515,6 +1515,24 @@
               </div>
             </div>
           </div>
+
+          <!-- ★ ここに「index.html ヘッダ画像設定」を追加 -->
+          <div class="obs-sub-box" style="margin-top:14px;">
+            <label class="lbl" for="headerImageUrlInput">回答者画面（index.html）ヘッダ画像URL</label>
+            <div class="inline-select-row">
+              <input
+                id="headerImageUrlInput"
+                type="text"
+                placeholder="https://example.com/banner.png または assets/header.png"
+                autocomplete="off"
+                oninput="markHeaderImageDirty(true)"
+              />
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn btn-sky btn-sm" onclick="applyHeaderImage()">ヘッダ反映</button>
+                <button type="button" class="btn btn-gray btn-sm" onclick="clearHeaderImage()">解除</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- 3. 質問の作成・編集・削除（折りたたみ） -->
@@ -2072,6 +2090,60 @@
     let selectedTheme = 'dark';
     let selectedPosition = 'bottom-right';
     let selectedSize = 'normal';
+
+    let selectedHeaderImage = '';
+    let isHeaderImageDirty = false;
+
+    function markHeaderImageDirty(dirty) {
+      isHeaderImageDirty = Boolean(dirty);
+    }
+
+    function syncHeaderImageInput(state) {
+      if (isHeaderImageDirty || !state) return;
+      const val = String(state.headerImage || state.header_image || '').trim();
+      selectedHeaderImage = val;
+      const input = document.getElementById('headerImageUrlInput');
+      if (input && document.activeElement !== input) {
+        input.value = val;
+      }
+    }
+
+    async function applyHeaderImage() {
+      enforceRoomRuleForAdmin();
+      const input = document.getElementById('headerImageUrlInput');
+      const nextUrl = String(input ? input.value : selectedHeaderImage).trim();
+
+      if (nextUrl && !/^(https?:\/\/|\/|\.\/|\.\.\/|data:image\/)/i.test(nextUrl)) {
+        setLog('ヘッダ画像URLは http(s)://、相対パス、または画像Data URLを指定してください。');
+        return;
+      }
+
+      selectedHeaderImage = nextUrl;
+      const res = await callGasPost({
+        action: 'set_state',
+        roomId: ROOM_ID,
+        adminId: ADMIN_ID,
+        headerImage: nextUrl,
+        header_image: nextUrl
+      });
+
+      isHeaderImageDirty = false;
+      if (res && res.ok) {
+        setLog(nextUrl
+          ? `[room: ${ROOM_ID}] index.html のヘッダ画像を更新しました。`
+          : `[room: ${ROOM_ID}] index.html のヘッダ画像を解除しました。`);
+        await loadAll();
+      } else {
+        setLog((res && res.error) || 'ヘッダ画像の更新に失敗しました。');
+      }
+    }
+
+    async function clearHeaderImage() {
+      const input = document.getElementById('headerImageUrlInput');
+      if (input) input.value = '';
+      selectedHeaderImage = '';
+      await applyHeaderImage();
+    }
 
     const STATUS_LABELS = {
       WAITING: '待機中（非表示）',
@@ -3668,6 +3740,7 @@
           renderVoteLogsTable();
         }
         syncObsAppearanceInputs(currentState);
+        syncHeaderImageInput(currentState);
         updateMonitorPanel(data);
 
         const editSel = document.getElementById('editTargetSelect');
