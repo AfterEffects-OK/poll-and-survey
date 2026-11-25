@@ -255,15 +255,27 @@
       word-break: break-word;
     }
 
-    /* 質問文と同じ文字サイズのルームID表示 */
+    /* 質問文と同じ文字サイズのルームID表示（ラベル部分のみ少し縮小） */
     .room-id-title {
       margin: 0 0 12px;
-      font-size: clamp(18px, 2vw, 26px);
+      font-size: clamp(22px, 2vw, 26px);
       font-weight: 800;
       line-height: 1.35;
       color: var(--accent);
       overflow-wrap: anywhere;
       word-break: break-word;
+    }
+
+    .room-id-label {
+      font-size: 0.72em;
+      font-weight: 700;
+      opacity: 0.9;
+      margin-right: 4px;
+    }
+
+    .room-id-value {
+      font-size: 1em;
+      font-weight: 800;
     }
 
     .rows {
@@ -601,7 +613,11 @@
       const el = document.getElementById('roomIdDisplay');
       if (!el) return;
       const safeRoom = String(roomId || '').trim();
-      el.textContent = safeRoom ? `ルームID: ${safeRoom}` : '';
+      if (!safeRoom) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = `<span class="room-id-label">ルームID:</span><span class="room-id-value">${escapeHtml(safeRoom)}</span>`;
     }
 
     function getVoteTargetUrl() {
