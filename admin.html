@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票 管理パネル</title>
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
-  <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
+  <link rel="shortcut" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,6 +83,7 @@
       border: 1px solid #475569;
       cursor: pointer;
       white-space: nowrap;
+      touch-action: manipulation;
     }
     .copy-btn:hover {
       border-color: #38bdf8;
@@ -101,6 +102,7 @@
       border: 1px solid #34d399;
       cursor: pointer;
       white-space: nowrap;
+      touch-action: manipulation;
     }
     .account-open-btn:hover {
       background: #059669;
@@ -118,6 +120,7 @@
       border: 1px solid #38bdf8;
       cursor: pointer;
       white-space: nowrap;
+      touch-action: manipulation;
     }
     .help-open-btn:hover {
       background: #2563eb;
@@ -415,7 +418,8 @@
       background: #2563eb;
       text-align: center;
       white-space: nowrap;
-      transition: filter 0.12s ease, transform 0.06s ease;
+      touch-action: manipulation;
+      transition: filter 0.05s ease, transform 0.04s ease, border-color 0.06s ease, box-shadow 0.06s ease;
     }
     button.btn.btn-sm {
       font-size: 13px;
@@ -511,7 +515,8 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      transition: border-color 0.12s ease, background 0.12s ease;
+      touch-action: manipulation;
+      transition: border-color 0.06s ease, background 0.06s ease, box-shadow 0.06s ease;
     }
 
     button.theme-chip:hover {
@@ -554,6 +559,8 @@
       cursor: pointer;
       text-align: center;
       line-height: 1.2;
+      touch-action: manipulation;
+      transition: border-color 0.06s ease, background 0.06s ease, box-shadow 0.06s ease;
     }
 
     button.pos-btn:hover {
@@ -598,6 +605,8 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      touch-action: manipulation;
+      transition: border-color 0.06s ease, background 0.06s ease, box-shadow 0.06s ease;
     }
 
     button.size-btn:hover {
@@ -834,7 +843,7 @@
       height: 100%;
       width: 0%;
       background: #38bdf8;
-      transition: width 0.3s ease;
+      transition: width 0.25s ease;
     }
 
     /* 選択肢入力行 */
@@ -1537,7 +1546,7 @@
             </div>
           </div>
 
-          <!-- ★ ここに「index.html ヘッダ画像設定」を追加 -->
+          <!-- index.html ヘッダ画像設定 -->
           <div class="obs-sub-box" style="margin-top:14px;">
             <label class="lbl" for="headerImageUrlInput">回答者画面（index.html）ヘッダ画像URL</label>
             <div class="inline-select-row">
@@ -2103,7 +2112,16 @@
     let latestVoteLogs = [];
     let registeredAdmins = [];
     let lastGeneratedAdminId = '';
-    let currentState = { status: 'WAITING', questionId: '', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
+    let currentState = {
+      status: 'WAITING',
+      questionId: '',
+      deadlineAt: 0,
+      theme: 'dark',
+      position: 'bottom-right',
+      size: 'normal',
+      headerImage: ''
+    };
+    let latestTotalVotes = 0;
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
 
@@ -2142,6 +2160,86 @@
     let selectedHeaderImage = '';
     let isHeaderImageDirty = false;
 
+    function buildMonitorSnapshot(overrideState = null) {
+      const stObj = overrideState || currentState || {};
+      const qId = stObj.questionId || document.getElementById('questionSelect')?.value || '';
+      const qObj = latestQuestions.find(q => q.id === qId) || null;
+      return {
+        state: {
+          ...currentState,
+          ...stObj,
+          questionId: qId,
+          theme: stObj.theme || selectedTheme || currentState.theme || 'dark',
+          position: stObj.position || selectedPosition || currentState.position || 'bottom-right',
+          size: stObj.size || selectedSize || currentState.size || 'normal'
+        },
+        question: qObj,
+        totalVotes: latestTotalVotes
+      };
+    }
+
+    function applyInstantStatePatch(patch, logMessage, options = {}) {
+      const { refreshAfterPost = true, extraPostPayload = null } = options;
+      enforceRoomRuleForAdmin();
+
+      const nextState = {
+        ...currentState,
+        ...patch
+      };
+      currentState = nextState;
+
+      if (patch.theme && THEME_OPTIONS.some(t => t.key === patch.theme)) {
+        selectedTheme = patch.theme;
+        renderThemeChips();
+      }
+      if (patch.position && POSITION_SLOTS.some(p => p.key === patch.position)) {
+        selectedPosition = patch.position;
+        renderPositionButtons();
+      }
+      if (patch.size === 'normal' || patch.size === 'compact' || patch.size === 'large') {
+        selectedSize = patch.size;
+        renderSizeButtons();
+      }
+
+      const sel = document.getElementById('questionSelect');
+      if (patch.questionId && sel && [...sel.options].some(o => o.value === patch.questionId)) {
+        sel.value = patch.questionId;
+        lastQuestionId = patch.questionId;
+      }
+
+      const activeQObj = latestQuestions.find(q => q.id === (patch.questionId || (sel && sel.value) || currentState.questionId));
+      renderStatusButtons(activeQObj ? activeQObj.type : 'poll');
+      updateMonitorPanel(buildMonitorSnapshot(nextState));
+      renderAdminCountdown();
+
+      if (logMessage) {
+        setLog(logMessage);
+      }
+
+      const postPayload = {
+        action: 'set_state',
+        roomId: ROOM_ID,
+        adminId: ADMIN_ID,
+        ...patch,
+        ...(extraPostPayload || {})
+      };
+
+      (async () => {
+        try {
+          const res = await callGasPost(postPayload);
+          if (res && !res.ok && res.error) {
+            setLog(res.error);
+          }
+          if (refreshAfterPost) {
+            await loadAll();
+          }
+        } catch (err) {
+          console.error(err);
+          setLog('状態送信中に通信エラーが発生しました。');
+        }
+      })();
+    }
+
     function markHeaderImageDirty(dirty) {
       isHeaderImageDirty = Boolean(dirty);
     }
@@ -2156,7 +2254,7 @@
       }
     }
 
-    async function applyHeaderImage() {
+    function applyHeaderImage() {
       enforceRoomRuleForAdmin();
       const input = document.getElementById('headerImageUrlInput');
       const nextUrl = String(input ? input.value : selectedHeaderImage).trim();
@@ -2167,30 +2265,20 @@
       }
 
       selectedHeaderImage = nextUrl;
-      const res = await callGasPost({
-        action: 'set_state',
-        roomId: ROOM_ID,
-        adminId: ADMIN_ID,
-        headerImage: nextUrl,
-        header_image: nextUrl
-      });
-
       isHeaderImageDirty = false;
-      if (res && res.ok) {
-        setLog(nextUrl
+      applyInstantStatePatch(
+        { headerImage: nextUrl, header_image: nextUrl },
+        nextUrl
           ? `[room: ${ROOM_ID}] index.html のヘッダ画像を更新しました。`
-          : `[room: ${ROOM_ID}] index.html のヘッダ画像を解除しました。`);
-        await loadAll();
-      } else {
-        setLog((res && res.error) || 'ヘッダ画像の更新に失敗しました。');
-      }
+          : `[room: ${ROOM_ID}] index.html のヘッダ画像を解除しました。`
+      );
     }
 
-    async function clearHeaderImage() {
+    function clearHeaderImage() {
       const input = document.getElementById('headerImageUrlInput');
       if (input) input.value = '';
       selectedHeaderImage = '';
-      await applyHeaderImage();
+      applyHeaderImage();
     }
 
     const STATUS_LABELS = {
@@ -2326,6 +2414,18 @@
       const btn = document.getElementById('saveRoomNameBtn');
       const nextName = String(input ? input.value : currentRoomName || '').trim();
 
+      currentRoomName = nextName;
+      if (nextName) {
+        roomNameMap[ROOM_ID] = nextName;
+      } else {
+        delete roomNameMap[ROOM_ID];
+      }
+      saveCachedRoomNames();
+      isRoomNameDirty = false;
+      renderContextBadge();
+      renderRoomHistoryChips();
+      setLog(`[room: ${ROOM_ID}] 配信名「${currentRoomName || '（未設定）'}」を反映しました。`);
+
       if (btn) btn.disabled = true;
       try {
         const res = await callGasPost({
@@ -2345,7 +2445,6 @@
           if (Array.isArray(res.rooms)) {
             syncRoomNamesFromServer(res.rooms, ROOM_ID, currentRoomName);
           }
-          isRoomNameDirty = false;
           renderRoomNameInput(true);
           renderContextBadge();
           renderRoomHistoryChips();
@@ -3263,11 +3362,11 @@
       });
     }
 
-    async function selectThemeChip(themeKey) {
+    function selectThemeChip(themeKey) {
       selectedTheme = themeKey;
       isObsAppearanceDirty = true;
       renderThemeChips();
-      await applyObsAppearance();
+      applyObsAppearance();
     }
 
     function renderPositionButtons() {
@@ -3294,11 +3393,11 @@
       });
     }
 
-    async function selectPositionButton(posKey) {
+    function selectPositionButton(posKey) {
       selectedPosition = posKey;
       isObsAppearanceDirty = true;
       renderPositionButtons();
-      await applyObsAppearance();
+      applyObsAppearance();
     }
 
     function renderSizeButtons() {
@@ -3316,11 +3415,11 @@
       });
     }
 
-    async function selectSizeButton(sizeKey) {
+    function selectSizeButton(sizeKey) {
       selectedSize = (sizeKey === 'compact' || sizeKey === 'large') ? sizeKey : 'normal';
       isObsAppearanceDirty = true;
       renderSizeButtons();
-      await applyObsAppearance();
+      applyObsAppearance();
     }
 
     function setLog(message) {
@@ -3601,15 +3700,15 @@
       }
     }
 
-    async function applyObsAppearance() {
-      enforceRoomRuleForAdmin();
+    function applyObsAppearance() {
       const theme = selectedTheme || 'dark';
       const position = selectedPosition || 'bottom-right';
       const size = selectedSize || 'normal';
-      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, theme, position, size });
       isObsAppearanceDirty = false;
-      setLog(res && res.ok ? `[room: ${ROOM_ID}] OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。` : (res && res.error) || 'OBS表示設定の更新に失敗しました。');
-      await loadAll();
+      applyInstantStatePatch(
+        { theme, position, size },
+        `[room: ${ROOM_ID}] OBS表示を「${theme} / ${position} / ${SIZE_LABELS[size] || '通常'}」に更新しました。`
+      );
     }
 
     function toggleAccordion(forceOpen) {
@@ -3798,6 +3897,7 @@
         if (!data || !data.ok || targetRoomAtStart !== ROOM_ID) return;
 
         currentState = data.state || currentState;
+        latestTotalVotes = Number(data.totalVotes || 0);
         if (Array.isArray(data.rooms) || typeof data.roomName === 'string') {
           syncRoomNamesFromServer(data.rooms, data.roomId || targetRoomAtStart, data.roomName);
         }
@@ -3878,27 +3978,31 @@
       }
     }
 
-    async function applyQuestion() {
-      enforceRoomRuleForAdmin();
+    function applyQuestion() {
       const questionId = document.getElementById('questionSelect').value;
-      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
-      setLog((res && res.ok) ? `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。` : ((res && res.error) || '出題切替に失敗しました。'));
-      await loadAll();
+      if (!questionId) return;
+      applyInstantStatePatch(
+        { questionId, deadlineAt: 0 },
+        `[room: ${ROOM_ID}] 出題を「${questionId}」に切り替えました。`
+      );
     }
 
-    async function setStatus(status) {
-      enforceRoomRuleForAdmin();
-      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status });
-      setLog((res && res.ok) ? `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。` : ((res && res.error) || 'ステータス変更に失敗しました。'));
-      await loadAll();
+    function setStatus(status) {
+      const nextDeadline = status === 'VOTING' ? currentState.deadlineAt : 0;
+      applyInstantStatePatch(
+        { status, deadlineAt: nextDeadline },
+        `[room: ${ROOM_ID}] ステータスを「${STATUS_LABELS[status] || status}」に変更しました。`
+      );
     }
 
-    async function startTimedVoting() {
-      enforceRoomRuleForAdmin();
+    function startTimedVoting() {
       const durationSec = Number(document.getElementById('timerSec').value);
-      const res = await callGasPost({ action: 'set_state', roomId: ROOM_ID, adminId: ADMIN_ID, status: 'VOTING', durationSec });
-      setLog((res && res.ok) ? `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。` : ((res && res.error) || 'タイマー開始に失敗しました。'));
-      await loadAll();
+      const deadlineAt = Date.now() + durationSec * 1000;
+      applyInstantStatePatch(
+        { status: 'VOTING', deadlineAt },
+        `[room: ${ROOM_ID}] ${durationSec}秒タイマーで受付を開始しました。`,
+        { extraPostPayload: { durationSec } }
+      );
     }
 
     async function clearCurrentVotes(mode = 'live') {
