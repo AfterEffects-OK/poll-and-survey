@@ -775,6 +775,24 @@
       word-break: break-word;
     }
 
+    /* コンパクト表示で結果・正解が選択された時の案内メッセージ */
+    .compact-state-notice {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1.5px solid #fbbf24;
+      color: #fef08a;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .compact-state-notice.show {
+      display: block;
+    }
+
     /* 集計プレビュー */
     .result-item {
       margin-bottom: 10px;
@@ -1616,6 +1634,8 @@
             <div id="liveQuestionMeta" class="live-q-meta">出題中の質問</div>
             <div id="liveQuestionLabel" class="live-q-title">読み込み中...</div>
           </div>
+
+          <div id="compactResultNotice" class="compact-state-notice" role="status" aria-live="polite"></div>
         </section>
 
         <section class="card">
@@ -3367,8 +3387,30 @@
       });
     }
 
+    function updateCompactResultNotice(st, sizeKey, isQuiz) {
+      const noticeEl = document.getElementById('compactResultNotice');
+      if (!noticeEl) return;
+
+      const isCompact = sizeKey === 'compact';
+      const isResultOrAnswer = st === 'RESULT' || st === 'ANSWER';
+
+      if (isCompact && isResultOrAnswer) {
+        const modeLabel = st === 'ANSWER'
+          ? '正解発表'
+          : (isQuiz ? '集計結果表示' : 'アンケート結果表示');
+        noticeEl.textContent = `コンパクト表示中はOBSオーバーレイで「${modeLabel}」が表示されません（受付中のみQR表示）。集計・正解をOBSに出したい場合は「通常サイズ」または「拡大表示」に切り替えてください。`;
+        noticeEl.classList.add('show');
+      } else {
+        noticeEl.textContent = '';
+        noticeEl.classList.remove('show');
+      }
+    }
+
     function updateMonitorPanel(data) {
       const st = (data.state && data.state.status) || 'WAITING';
+      const sizeKey = (data.state && data.state.size) || currentState.size || selectedSize;
+      const isQuiz = Boolean(data.question && data.question.type === 'quiz');
+
       const badge = document.getElementById('liveStatusBadge');
       if (badge) {
         badge.textContent = STATUS_LABELS[st] || st;
@@ -3385,7 +3427,6 @@
       if (data.question) {
         if (metaEl) {
           const typeText = data.question.type === 'quiz' ? 'クイズ' : 'アンケート';
-          const sizeKey = (data.state && data.state.size) || currentState.size || selectedSize;
           const sizeText = SIZE_LABELS[sizeKey] || '通常';
           const themeVal = (data.state && data.state.theme) || currentState.theme || selectedTheme;
           const posVal = (data.state && data.state.position) || currentState.position || selectedPosition;
@@ -3396,6 +3437,8 @@
           qLabel.textContent = data.question.question || '';
         }
       }
+
+      updateCompactResultNotice(st, sizeKey, isQuiz);
     }
 
     function onQuestionSelectChange() {
