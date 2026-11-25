@@ -1340,18 +1340,11 @@
         `;
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
 
-        // ANSWER 画面を描画した直後の正解分岐
-        if (state.status === 'ANSWER') {
-          if (isUserCorrect) {
-            const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
-            scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
-          } else {
-            if (quizWinDelayTimer) {
-              clearTimeout(quizWinDelayTimer);
-              quizWinDelayTimer = null;
-            }
-            activeCelebToken = '';
-          }
+        // admin から ANSWER 状態が来て、index.html 内で回答と正解が同じときに正解演出を実行
+        const isSameAnswerInPage = Boolean(isQuiz && cleanAnswer && cleanMyChoice && cleanMyChoice === cleanAnswer);
+        if (state.status === 'ANSWER' && isSameAnswerInPage) {
+          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
+          scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
         } else {
           if (quizWinDelayTimer) {
             clearTimeout(quizWinDelayTimer);
