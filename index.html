@@ -545,7 +545,7 @@
       gap: 8px;
     }
 
-    /* ================= クイズ正解時の豪華演出オーバーレイ ================= */
+    /* ================= クイズ正解時の豪華演出オーバーレイ（視覚のみ） ================= */
     .quiz-win-overlay {
       position: fixed;
       inset: 0;
@@ -664,7 +664,7 @@
       font-family: inherit;
       font-size: 14px;
       font-weight: 900;
-      padding: 11px 22px;
+      padding: 11px 24px;
       border-radius: 999px;
       border: none;
       cursor: pointer;
@@ -677,18 +677,6 @@
     .quiz-win-btn:hover {
       filter: brightness(1.08);
       transform: translateY(-1px);
-    }
-
-    .quiz-win-sound-btn {
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 800;
-      padding: 11px 16px;
-      border-radius: 999px;
-      border: 1.5px solid rgba(255, 255, 255, 0.35);
-      cursor: pointer;
-      background: rgba(15, 23, 42, 0.75);
-      color: #f8fafc;
     }
 
     @keyframes winBackdropPulse {
@@ -735,7 +723,6 @@
       <p id="quizWinAnswer" class="quiz-win-answer"></p>
       <div class="quiz-win-actions">
         <button type="button" class="quiz-win-btn" onclick="dismissQuizWinCelebration()">結果・正解を見る</button>
-        <button type="button" id="quizSoundToggleBtn" class="quiz-win-sound-btn" onclick="toggleQuizSound()">効果音: ON</button>
       </div>
     </div>
   </div>
@@ -783,48 +770,9 @@
     let isSubmitting = false;
 
     // クイズ正解演出用ステート
-    let quizSoundEnabled = true;
     let lastCelebratedToken = '';
     let confettiRafId = null;
     let quizWinAutoCloseTimer = null;
-
-    function toggleQuizSound() {
-      quizSoundEnabled = !quizSoundEnabled;
-      const btn = document.getElementById('quizSoundToggleBtn');
-      if (btn) {
-        btn.textContent = `効果音: ${quizSoundEnabled ? 'ON' : 'OFF'}`;
-      }
-    }
-
-    function playQuizFanfare() {
-      if (!quizSoundEnabled) return;
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const melody = [
-          { freq: 523.25, delay: 0.00, dur: 0.16, type: 'triangle' },
-          { freq: 659.25, delay: 0.11, dur: 0.16, type: 'triangle' },
-          { freq: 783.99, delay: 0.22, dur: 0.18, type: 'triangle' },
-          { freq: 1046.50, delay: 0.34, dur: 0.55, type: 'sine' },
-          { freq: 1318.51, delay: 0.44, dur: 0.62, type: 'sine' }
-        ];
-        melody.forEach(n => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = n.type;
-          osc.frequency.value = n.freq;
-          const startAt = ctx.currentTime + n.delay;
-          gain.gain.setValueAtTime(0.001, startAt);
-          gain.gain.exponentialRampToValueAtTime(0.18, startAt + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0008, startAt + n.dur);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(startAt);
-          osc.stop(startAt + n.dur + 0.04);
-        });
-      } catch (e) {}
-    }
 
     function launchQuizConfetti() {
       const canvas = document.getElementById('quizConfettiCanvas');
@@ -909,7 +857,6 @@
       overlay.classList.add('is-active');
       overlay.setAttribute('aria-hidden', 'false');
 
-      playQuizFanfare();
       launchQuizConfetti();
 
       if (quizWinAutoCloseTimer) clearTimeout(quizWinAutoCloseTimer);
