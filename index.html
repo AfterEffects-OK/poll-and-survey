@@ -591,6 +591,24 @@
     function renderRoomPrompt(errorMsg = '') {
       const card = document.getElementById('appCard');
       if (!card) return;
+
+      const existingInput = document.getElementById('roomIdPromptInput');
+      if (existingInput) {
+        let errEl = card.querySelector('.room-prompt-error');
+        if (errorMsg) {
+          if (!errEl) {
+            errEl = document.createElement('p');
+            errEl.className = 'room-prompt-error';
+            const form = card.querySelector('.room-prompt-box');
+            if (form) form.appendChild(errEl);
+          }
+          errEl.textContent = errorMsg;
+        } else if (errEl) {
+          errEl.remove();
+        }
+        return;
+      }
+
       card.innerHTML = `
         <div class="waiting-box" style="padding: 16px 8px;">
           <p class="waiting-title">ルームIDを入力してください</p>
