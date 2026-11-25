@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票・クイズ 回答ページ</title>
-  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
-  <link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
-  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
+  <link rel="icon" type="image/png" href="./OBS_poii_icon.png" />
+  <link rel="shortcut icon" type="image/png" href="./OBS_poii_icon.png" />
+  <link rel="apple-touch-icon" href="./OBS_poii_icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@500;700;800&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
@@ -231,7 +231,7 @@
       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
 
-    /* アンケート・クイズタグ直上の配信者別ヘッダ画像（枠幅いっぱい・控えめな高さ） */
+    /* アンケート・クイズタグ直上の配信者別ヘッダ画像 */
     .streamer-header-banner {
       display: none;
       width: 100%;
@@ -305,6 +305,51 @@
       font-size: 14px;
       color: var(--muted);
       line-height: 1.6;
+    }
+
+    /* ルームID入力フォーム */
+    .room-prompt-box {
+      display: grid;
+      gap: 12px;
+      padding: 8px 0 4px;
+    }
+
+    .room-prompt-input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--item-bg);
+      border: 2px solid var(--item-border);
+      border-radius: var(--item-radius);
+      padding: 13px 14px;
+      outline: none;
+    }
+
+    .room-prompt-input:focus {
+      border-color: var(--accent);
+    }
+
+    .room-prompt-btn {
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent-text);
+      background: var(--accent);
+      border: none;
+      border-radius: var(--item-radius);
+      padding: 14px 16px;
+      cursor: pointer;
+    }
+
+    .room-prompt-error {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ng);
+      text-align: center;
     }
 
     .choices {
@@ -504,9 +549,33 @@
 
   <script src="config.js"></script>
   <script>
-    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
     const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
+
+    function isTrailingRoomParam() {
+      const search = window.location.search || '';
+      const params = new URLSearchParams(search);
+      const hasRoomKey = params.has('room');
+      const roomVal = (params.get('room') || '').trim();
+      return /(?:\?|&)room=$/.test(search) || (hasRoomKey && roomVal === '');
+    }
+
+    function resolveInitialRoomId() {
+      if (isTrailingRoomParam()) {
+        return '';
+      }
+      const params = new URLSearchParams(window.location.search);
+      const paramRoom = (params.get('room') || '').trim();
+      if (paramRoom) return paramRoom;
+      if (typeof getRoomId === 'function') {
+        return String(getRoomId() || '').trim();
+      }
+      return 'default';
+    }
+
+    let ROOM_ID = resolveInitialRoomId();
+    let needsRoomInput = !ROOM_ID;
+
     let currentState = {
       status: 'WAITING',
       deadlineAt: 0,
@@ -518,6 +587,53 @@
     let latestData = null;
     let lastResultSignature = '';
     let isSubmitting = false;
+
+    function renderRoomPrompt(errorMsg = '') {
+      const card = document.getElementById('appCard');
+      if (!card) return;
+      card.innerHTML = `
+        <div class="waiting-box" style="padding: 16px 8px;">
+          <p class="waiting-title">ルームIDを入力してください</p>
+          <p class="waiting-sub" style="margin-bottom: 16px;">配信者から案内されたルームIDを入力して参加します</p>
+          <form class="room-prompt-box" onsubmit="handleRoomIdSubmit(event)">
+            <input
+              id="roomIdPromptInput"
+              class="room-prompt-input"
+              type="text"
+              placeholder="例: 49417815"
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="room-prompt-btn">このルームに参加する</button>
+            ${errorMsg ? `<p class="room-prompt-error">${escapeHtml(errorMsg)}</p>` : ''}
+          </form>
+        </div>
+      `;
+      const input = document.getElementById('roomIdPromptInput');
+      if (input) input.focus();
+    }
+
+    function handleRoomIdSubmit(event) {
+      event.preventDefault();
+      const input = document.getElementById('roomIdPromptInput');
+      const raw = input ? input.value : '';
+      const cleaned = String(raw || '').trim().replace(/[^a-zA-Z0-9_@-]/g, '');
+      if (!cleaned) {
+        renderRoomPrompt('有効なルームIDを入力してください。');
+        return;
+      }
+
+      ROOM_ID = cleaned;
+      needsRoomInput = false;
+
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', ROOM_ID);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+
+      pollState();
+    }
 
     function getStateHeaderImage(state) {
       if (!state) return '';
@@ -651,7 +767,7 @@
     }
 
     async function submitVote(questionId, option) {
-      if (isSubmitting) return;
+      if (isSubmitting || needsRoomInput || !ROOM_ID) return;
       isSubmitting = true;
       setSavedChoice(questionId, option);
       await pollState();
@@ -677,6 +793,11 @@
     }
 
     async function pollState() {
+      if (needsRoomInput || !ROOM_ID) {
+        renderRoomPrompt();
+        return;
+      }
+
       try {
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
