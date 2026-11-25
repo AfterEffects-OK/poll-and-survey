@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登録済みadminアカウント一覧 - 配信投票</title>
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
+  <link rel="shortcut" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      background: #090d16;
+      color: #f8fafc;
+      padding: 16px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px 16px;
+      background: #141c2b;
+      border: 2px solid #2b3a55;
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+    }
+
+    .header-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .context-pill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #0b101b;
+      color: #6ee7b7;
+      border: 1px solid #34d399;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 7px 13px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      border-color: #38bdf8;
+      background: #263449;
+      color: #ffffff;
+    }
+
+    .nav-btn.primary {
+      background: #065f46;
+      color: #d1fae5;
+      border-color: #34d399;
+    }
+
+    .nav-btn.primary:hover {
+      background: #059669;
+      color: #ffffff;
+    }
+
+    .card {
+      background: #141c2b;
+      border: 2px solid #2b3a55;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #24334d;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: #7dd3fc;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .search-wrap {
+      flex: 1 1 280px;
+      max-width: 460px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #0b101b;
+      color: #ffffff;
+      border: 1.5px solid #475569;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    button.btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 8px 13px;
+      border-radius: 8px;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      color: #ffffff;
+      background: #2563eb;
+      white-space: nowrap;
+    }
+
+    button.btn:hover:not(:disabled) {
+      filter: brightness(1.12);
+    }
+
+    button.btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.btn-green { background: #059669; }
+    button.btn-sky { background: #0284c7; }
+    button.btn-gray { background: #334155; border-color: #64748b; }
+
+    .status-banner {
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #0b101b;
+      border-left: 4px solid #34d399;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #25344f;
+      border-radius: 10px;
+      background: #0b101b;
+    }
+
+    table.accounts-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table.accounts-table th,
+    table.accounts-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #1e293b;
+      vertical-align: middle;
+      word-break: break-word;
+    }
+
+    table.accounts-table th {
+      background: #131c2e;
+      color: #7dd3fc;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    table.accounts-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .id-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #6ee7b7;
+      background: #062e24;
+      border: 1px solid #10b981;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .header-thumb {
+      width: 96px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #141c2b;
+      display: block;
+    }
+
+    .url-sub {
+      font-size: 11.5px;
+      color: #94a3b8;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .empty-box {
+      padding: 24px 14px;
+      text-align: center;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="header-bar">
+      <div class="header-left">
+        <h1 class="header-title">登録済みadminアカウント一覧</h1>
+        <span id="countBadge" class="context-pill">0 件</span>
+      </div>
+      <div class="header-actions">
+        <a id="openAdminLink" href="admin.html" class="nav-btn primary">管理パネルへ戻る</a>
+        <a href="index.html" class="nav-btn">回答者画面</a>
+        <a href="obs.html" class="nav-btn">OBSオーバーレイ</a>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">アカウント一覧（admins シート連携）</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" id="reloadBtn" class="btn btn-sky" onclick="loadAccounts(true)">最新データを再読込</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="adminId・アカウント名・メモ・作成日時で検索"
+            oninput="renderTable()"
+          />
+        </div>
+        <div id="summaryText" style="font-size:13px;font-weight:700;color:#93c5fd;"></div>
+      </div>
+
+      <div id="statusBanner" class="status-banner">アカウント一覧を読み込んでいます...</div>
+
+      <div class="table-wrap">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>adminId</th>
+              <th>アカウント名</th>
+              <th>メモ</th>
+              <th>作成日時</th>
+              <th>ヘッダ画像</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="accountsTbody">
+            <tr>
+              <td colspan="7" class="empty-box">読み込み中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const DEFAULT_ADMIN = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ADMIN_ID) ? CONFIG.DEFAULT_ADMIN_ID : 'default';
+    const DEFAULT_ROOM = (typeof CONFIG !== 'undefined' && CONFIG.DEFAULT_ROOM_ID) ? CONFIG.DEFAULT_ROOM_ID : 'default';
+    const GAS_ENDPOINT = (typeof CONFIG !== 'undefined' && (CONFIG.GAS_URL || CONFIG.API_URL || CONFIG.ENDPOINT))
+      ? (CONFIG.GAS_URL || CONFIG.API_URL || CONFIG.ENDPOINT)
+      : '';
+
+    const ADMIN_ACCOUNTS_CACHE_KEY = 'stream_poll_admin_accounts_v1';
+
+    const SEED_ACCOUNTS = [
+      {
+        adminId: 'zWqUjfLm',
+        name: 'aftereffects',
+        memo: 'AE_kagisen.010101',
+        createdAt: '2026/11/24 0:15:24',
+        headerImage: 'https://raw.githubusercontent.com/AfterEffects-OK/PortalSite/main/OBS_poll_0001.png'
+      }
+    ];
+
+    let accountsList = [];
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m]));
+    }
+
+    function normalizeAccount(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+      const adminId = String(raw.adminId || raw.admin_id || raw.id || '').trim();
+      if (!adminId) return null;
+      return {
+        adminId,
+        name: String(raw.name || raw.accountName || raw.label || '').trim(),
+        memo: String(raw.memo || raw.email || raw.note || '').trim(),
+        createdAt: String(raw.createdAt || raw.created_at || raw.timestamp || '').trim(),
+        headerImage: String(raw.headerImage || raw.header_image || '').trim()
+      };
+    }
+
+    function loadCachedAccounts() {
+      try {
+        const raw = localStorage.getItem(ADMIN_ACCOUNTS_CACHE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCachedAccounts(list) {
+      try {
+        localStorage.setItem(ADMIN_ACCOUNTS_CACHE_KEY, JSON.stringify(list.slice(0, 100)));
+      } catch (e) {}
+    }
+
+    function mergeAccounts(incoming) {
+      const map = new Map();
+      const sources = [
+        ...SEED_ACCOUNTS,
+        ...loadCachedAccounts(),
+        ...accountsList,
+        ...(Array.isArray(incoming) ? incoming : [])
+      ];
+
+      sources.map(normalizeAccount).filter(Boolean).forEach((item) => {
+        const prev = map.get(item.adminId);
+        map.set(item.adminId, {
+          adminId: item.adminId,
+          name: item.name || (prev ? prev.name : ''),
+          memo: item.memo || (prev ? prev.memo : ''),
+          createdAt: item.createdAt || (prev ? prev.createdAt : ''),
+          headerImage: item.headerImage || (prev ? prev.headerImage : '')
+        });
+      });
+
+      accountsList = [...map.values()];
+      saveCachedAccounts(accountsList);
+      return accountsList;
+    }
+
+    function setBanner(text) {
+      const el = document.getElementById('statusBanner');
+      if (el) el.textContent = text;
+    }
+
+    function buildAdminUrl(adminId) {
+      const url = new URL('./admin.html', window.location.href);
+      if (adminId && adminId !== DEFAULT_ADMIN) {
+        url.searchParams.set('admin', adminId);
+      }
+      return url.href;
+    }
+
+    function copyAdminId(adminId) {
+      if (!adminId) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(adminId)
+          .then(() => setBanner(`adminId「${adminId}」をクリップボードにコピーしました。`))
+          .catch(() => setBanner(`adminId: ${adminId}`));
+      } else {
+        setBanner(`adminId: ${adminId}`);
+      }
+    }
+
+    function getFilteredAccounts() {
+      const q = String(document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      if (!q) return accountsList;
+      return accountsList.filter((acc) => {
+        const hay = `${acc.adminId} ${acc.name} ${acc.memo} ${acc.createdAt} ${acc.headerImage}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('accountsTbody');
+      const countBadge = document.getElementById('countBadge');
+      const summaryText = document.getElementById('summaryText');
+      if (!tbody) return;
+
+      const filtered = getFilteredAccounts();
+      if (countBadge) countBadge.textContent = `${accountsList.length} 件`;
+      if (summaryText) {
+        summaryText.textContent = `${filtered.length} 件表示（全 ${accountsList.length} 件）`;
+      }
+
+      if (!filtered.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-box">条件に一致する登録済みアカウントはありません。</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((acc, idx) => {
+        const safeImg = /^https?:\/\//i.test(acc.headerImage) ? acc.headerImage : '';
+        const imgCell = safeImg
+          ? `
+            <img src="${escapeHtml(safeImg)}" alt="${escapeHtml(acc.adminId)} のヘッダ画像" class="header-thumb" loading="lazy" />
+            <div class="url-sub" title="${escapeHtml(safeImg)}">${escapeHtml(safeImg)}</div>
+          `
+          : `<span style="color:#64748b;">未設定</span>`;
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><span class="id-code">${escapeHtml(acc.adminId)}</span></td>
+            <td><strong>${escapeHtml(acc.name || '（未設定）')}</strong></td>
+            <td>${escapeHtml(acc.memo || '-')}</td>
+            <td>${escapeHtml(acc.createdAt || '-')}</td>
+            <td>${imgCell}</td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="btn btn-gray" onclick="copyAdminId('${escapeHtml(acc.adminId)}')">IDコピー</button>
+                <a href="${escapeHtml(buildAdminUrl(acc.adminId))}" class="btn btn-green" style="text-decoration:none;">管理画面で開く</a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function callGasListAdmins() {
+      if (typeof window.fetchGas === 'function') {
+        return await window.fetchGas({
+          action: 'list_admins',
+          roomId: DEFAULT_ROOM,
+          adminId: DEFAULT_ADMIN
+        });
+      }
+      if (!GAS_ENDPOINT) {
+        return { ok: false, error: 'GASエンドポイント（config.js）が未設定です。' };
+      }
+      const url = new URL(GAS_ENDPOINT);
+      url.searchParams.set('action', 'list_admins');
+      url.searchParams.set('roomId', DEFAULT_ROOM);
+      url.searchParams.set('adminId', DEFAULT_ADMIN);
+      url.searchParams.set('_ts', String(Date.now()));
+      const resp = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
+      if (!resp.ok) {
+        return { ok: false, error: `HTTP ${resp.status}` };
+      }
+      return await resp.json();
+    }
+
+    async function loadAccounts(showFeedback = false) {
+      const btn = document.getElementById('reloadBtn');
+      if (btn) btn.disabled = true;
+
+      mergeAccounts([]);
+      renderTable();
+
+      try {
+        const res = await callGasListAdmins();
+        if (res && res.ok) {
+          const rawList = Array.isArray(res.admins)
+            ? res.admins
+            : (Array.isArray(res.accounts) ? res.accounts : []);
+          mergeAccounts(rawList);
+          renderTable();
+          setBanner(
+            showFeedback
+              ? `GASから最新アカウント一覧（${accountsList.length}件）を取得しました。`
+              : `登録済みアカウント一覧（${accountsList.length}件）を表示中です。`
+          );
+        } else {
+          renderTable();
+          setBanner(
+            `キャッシュ・初期データ（${accountsList.length}件）を表示中です${res && res.error ? `（${res.error}）` : ''}。`
+          );
+        }
+      } catch (e) {
+        console.error(e);
+        renderTable();
+        setBanner(`通信エラーのため、ローカル/初期データ（${accountsList.length}件）を表示中です。`);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    (function init() {
+      try {
+        const qAdmin = new URLSearchParams(window.location.search).get('admin');
+        const linkEl = document.getElementById('openAdminLink');
+        if (qAdmin && linkEl) {
+          linkEl.href = buildAdminUrl(qAdmin.trim());
+        }
+      } catch (e) {}
+
+      loadAccounts(false);
+    })();
+  </script>
+</body>
+</html>
