@@ -2124,6 +2124,28 @@
     let latestTotalVotes = 0;
     let isObsAppearanceDirty = false;
     let isEditingQuestionForm = false;
+    let pendingStateVersion = 0;
+    let activeStatePatch = null; // { version, roomId, adminId, patch, snapshot }
+
+    function isFieldLockedByActivePatch(fieldName) {
+      if (!activeStatePatch) return false;
+      if (activeStatePatch.roomId !== ROOM_ID || activeStatePatch.adminId !== ADMIN_ID) {
+        return false;
+      }
+      return Object.prototype.hasOwnProperty.call(activeStatePatch.patch, fieldName);
+    }
+
+    function mergeStateWithActivePatch(serverState) {
+      const base = { ...(serverState || {}) };
+      if (!activeStatePatch) return base;
+      if (activeStatePatch.roomId !== ROOM_ID || activeStatePatch.adminId !== ADMIN_ID) {
+        return base;
+      }
+      Object.keys(activeStatePatch.patch).forEach((key) => {
+        base[key] = activeStatePatch.patch[key];
+      });
+      return base;
+    }
 
     const THEME_OPTIONS = [
       { key: 'dark',      label: 'ダークモダン',       color: '#38bdf8' },
@@ -2160,6 +2182,55 @@
     let selectedHeaderImage = '';
     let isHeaderImageDirty = false;
 
+    function captureStateSnapshot() {
+      const qSel = document.getElementById('questionSelect');
+      const hInput = document.getElementById('headerImageUrlInput');
+      return {
+        state: { ...currentState },
+        selectedTheme,
+        selectedPosition,
+        selectedSize,
+        selectedHeaderImage,
+        lastQuestionId,
+        questionSelectValue: qSel ? qSel.value : '',
+        headerImageInputValue: hInput ? hInput.value : selectedHeaderImage
+      };
+    }
+
+    function rollbackStateSnapshot(snapshot, reasonText = '') {
+      if (!snapshot) return;
+      currentState = { ...snapshot.state };
+      selectedTheme = snapshot.selectedTheme;
+      selectedPosition = snapshot.selectedPosition;
+      selectedSize = snapshot.selectedSize;
+      selectedHeaderImage = snapshot.selectedHeaderImage;
+      lastQuestionId = snapshot.lastQuestionId;
+
+      const qSel = document.getElementById('questionSelect');
+      if (qSel && snapshot.questionSelectValue && [...qSel.options].some(o => o.value === snapshot.questionSelectValue)) {
+        qSel.value = snapshot.questionSelectValue;
+      }
+
+      const hInput = document.getElementById('headerImageUrlInput');
+      if (hInput && document.activeElement !== hInput) {
+        hInput.value = snapshot.headerImageInputValue;
+      }
+
+      renderThemeChips();
+      renderPositionButtons();
+      renderSizeButtons();
+
+      const activeQObj = latestQuestions.find(
+        q => q.id === ((qSel && qSel.value) || currentState.questionId)
+      );
+      renderStatusButtons(activeQObj ? activeQObj.type : 'poll');
+      updateMonitorPanel(buildMonitorSnapshot(currentState));
+      renderAdminCountdown();
+
+      const suffix = reasonText ? `（${reasonText}）` : '';
+      setLog(`[room: ${ROOM_ID}] GAS送信に失敗したため、操作前の状態へ戻しました${suffix}。`);
+    }
+
     function buildMonitorSnapshot(overrideState = null) {
       const stObj = overrideState || currentState || {};
       const qId = stObj.questionId || document.getElementById('questionSelect')?.value || '';
@@ -2181,6 +2252,20 @@
     function applyInstantStatePatch(patch, logMessage, options = {}) {
       const { refreshAfterPost = true, extraPostPayload = null } = options;
       enforceRoomRuleForAdmin();
+
+      const snapshot = captureStateSnapshot();
+      const opVersion = ++pendingStateVersion;
+      const targetRoomAtStart = ROOM_ID;
+      const targetAdminAtStart = ADMIN_ID;
+
+      // 送信完了または失敗まで、定期ポーリングによる古いGAS stateの上書きを防ぐ
+      activeStatePatch = {
+        version: opVersion,
+        roomId: targetRoomAtStart,
+        adminId: targetAdminAtStart,
+        patch: { ...patch },
+        snapshot
+      };
 
       const nextState = {
         ...currentState,
@@ -2218,8 +2303,8 @@
 
       const postPayload = {
         action: 'set_state',
-        roomId: ROOM_ID,
-        adminId: ADMIN_ID,
+        roomId: targetRoomAtStart,
+        adminId: targetAdminAtStart,
         ...patch,
         ...(extraPostPayload || {})
       };
@@ -2227,15 +2312,35 @@
       (async () => {
         try {
           const res = await callGasPost(postPayload);
-          if (res && !res.ok && res.error) {
-            setLog(res.error);
+          const contextChanged = targetRoomAtStart !== ROOM_ID || targetAdminAtStart !== ADMIN_ID;
+          const hasNewerOp = opVersion !== pendingStateVersion;
+
+          if (activeStatePatch && activeStatePatch.version === opVersion) {
+            activeStatePatch = null;
           }
-          if (refreshAfterPost) {
+
+          if (!res || res.ok === false) {
+            if (!contextChanged && !hasNewerOp) {
+              rollbackStateSnapshot(snapshot, res && res.error ? res.error : '応答エラー');
+            }
+            return;
+          }
+
+          if (refreshAfterPost && !contextChanged && !hasNewerOp) {
             await loadAll();
           }
         } catch (err) {
           console.error(err);
-          setLog('状態送信中に通信エラーが発生しました。');
+          const contextChanged = targetRoomAtStart !== ROOM_ID || targetAdminAtStart !== ADMIN_ID;
+          const hasNewerOp = opVersion !== pendingStateVersion;
+
+          if (activeStatePatch && activeStatePatch.version === opVersion) {
+            activeStatePatch = null;
+          }
+
+          if (!contextChanged && !hasNewerOp) {
+            rollbackStateSnapshot(snapshot, err && err.message ? err.message : '通信エラー');
+          }
         }
       })();
     }
@@ -2245,7 +2350,7 @@
     }
 
     function syncHeaderImageInput(state) {
-      if (isHeaderImageDirty || !state) return;
+      if (isHeaderImageDirty || isFieldLockedByActivePatch('headerImage') || isFieldLockedByActivePatch('header_image') || !state) return;
       const val = String(state.headerImage || state.header_image || '').trim();
       selectedHeaderImage = val;
       const input = document.getElementById('headerImageUrlInput');
@@ -2414,6 +2519,9 @@
       const btn = document.getElementById('saveRoomNameBtn');
       const nextName = String(input ? input.value : currentRoomName || '').trim();
 
+      const prevRoomName = currentRoomName;
+      const prevCachedName = roomNameMap[ROOM_ID];
+
       currentRoomName = nextName;
       if (nextName) {
         roomNameMap[ROOM_ID] = nextName;
@@ -2451,11 +2559,31 @@
           setLog(res.message || `[room: ${ROOM_ID}] 配信名「${currentRoomName || '（未設定）'}」を保存しました。`);
           await loadAll();
         } else {
-          setLog((res && res.error) || '配信名の保存に失敗しました。');
+          currentRoomName = prevRoomName;
+          if (prevCachedName) {
+            roomNameMap[ROOM_ID] = prevCachedName;
+          } else {
+            delete roomNameMap[ROOM_ID];
+          }
+          saveCachedRoomNames();
+          renderRoomNameInput(true);
+          renderContextBadge();
+          renderRoomHistoryChips();
+          setLog(((res && res.error) || '配信名の保存に失敗しました') + '（元の配信名に戻しました）。');
         }
       } catch (e) {
         console.error(e);
-        setLog('配信名の保存中に通信エラーが発生しました。');
+        currentRoomName = prevRoomName;
+        if (prevCachedName) {
+          roomNameMap[ROOM_ID] = prevCachedName;
+        } else {
+          delete roomNameMap[ROOM_ID];
+        }
+        saveCachedRoomNames();
+        renderRoomNameInput(true);
+        renderContextBadge();
+        renderRoomHistoryChips();
+        setLog('配信名の保存中に通信エラーが発生したため、元の配信名に戻しました。');
       } finally {
         if (btn) btn.disabled = false;
       }
@@ -2703,6 +2831,8 @@
     async function applyAdminId(nextAdminRaw, options = {}) {
       const { announcePrefix = '' } = options;
       const nextAdmin = normalizeAdminId(nextAdminRaw);
+      pendingStateVersion++;
+      activeStatePatch = null;
       ADMIN_ID = nextAdmin;
       if (isDefaultAdmin()) {
         ROOM_ID = DEFAULT_ROOM;
@@ -3083,6 +3213,8 @@
         return;
       }
       const nextRoom = normalizeRoomId(nextRoomRaw);
+      pendingStateVersion++;
+      activeStatePatch = null;
       ROOM_ID = nextRoom;
       lastQuestionId = '';
       latestVoteLogs = [];
@@ -3686,15 +3818,15 @@
 
     function syncObsAppearanceInputs(state) {
       if (isObsAppearanceDirty || !state) return;
-      if (state.theme && THEME_OPTIONS.some(t => t.key === state.theme)) {
+      if (!isFieldLockedByActivePatch('theme') && state.theme && THEME_OPTIONS.some(t => t.key === state.theme)) {
         selectedTheme = state.theme;
         renderThemeChips();
       }
-      if (state.position && POSITION_SLOTS.some(p => p.key === state.position)) {
+      if (!isFieldLockedByActivePatch('position') && state.position && POSITION_SLOTS.some(p => p.key === state.position)) {
         selectedPosition = state.position;
         renderPositionButtons();
       }
-      if (state.size === 'normal' || state.size === 'compact' || state.size === 'large') {
+      if (!isFieldLockedByActivePatch('size') && (state.size === 'normal' || state.size === 'compact' || state.size === 'large')) {
         selectedSize = state.size;
         renderSizeButtons();
       }
@@ -3892,27 +4024,45 @@
     async function loadAll() {
       enforceRoomRuleForAdmin();
       const targetRoomAtStart = ROOM_ID;
+      const opVersionAtFetch = pendingStateVersion;
+
       try {
         const data = await callGasGet({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
         if (!data || !data.ok || targetRoomAtStart !== ROOM_ID) return;
 
-        currentState = data.state || currentState;
+        // 取得中に新しい即時操作が始まった場合は古いポーリング結果で上書きしない
+        if (opVersionAtFetch !== pendingStateVersion && activeStatePatch) {
+          return;
+        }
+
+        const mergedState = mergeStateWithActivePatch(data.state || currentState);
+        currentState = mergedState;
         latestTotalVotes = Number(data.totalVotes || 0);
+
         if (Array.isArray(data.rooms) || typeof data.roomName === 'string') {
           syncRoomNamesFromServer(data.rooms, data.roomId || targetRoomAtStart, data.roomName);
         }
+
         latestQuestions = (data.questions || []).map(q => ({
           ...q,
           adminId: String(q.adminId || q.admin_id || data.adminId || ADMIN_ID).trim()
         }));
+
         refreshLogQuestionFilter();
+
         if (Array.isArray(data.logs)) {
           latestVoteLogs = data.logs.map(normalizeLogEntry).filter(Boolean).reverse();
           renderVoteLogsTable();
         }
-        syncObsAppearanceInputs(currentState);
+
+        if (!isFieldLockedByActivePatch('theme') && !isFieldLockedByActivePatch('position') && !isFieldLockedByActivePatch('size')) {
+          syncObsAppearanceInputs(currentState);
+        }
         syncHeaderImageInput(currentState);
-        updateMonitorPanel(data);
+        updateMonitorPanel({
+          ...data,
+          state: currentState
+        });
 
         const editSel = document.getElementById('editTargetSelect');
         const accordionOpen = document.getElementById('questionAccordion').classList.contains('open');
@@ -3939,7 +4089,7 @@
 
         const sel = document.getElementById('questionSelect');
         const prevSelected = sel.value;
-        const stateQId = (data.state && data.state.questionId) || '';
+        const stateQId = (currentState && currentState.questionId) || '';
         sel.innerHTML = '';
         latestQuestions.forEach(q => {
           const opt = document.createElement('option');
@@ -3947,7 +4097,11 @@
           opt.textContent = `[${q.type}] ${q.id}: ${q.question}`;
           sel.appendChild(opt);
         });
-        if (stateQId && stateQId !== lastQuestionId && [...sel.options].some(o => o.value === stateQId)) {
+
+        if (isFieldLockedByActivePatch('questionId') && stateQId && [...sel.options].some(o => o.value === stateQId)) {
+          sel.value = stateQId;
+          lastQuestionId = stateQId;
+        } else if (stateQId && stateQId !== lastQuestionId && [...sel.options].some(o => o.value === stateQId)) {
           sel.value = stateQId;
           lastQuestionId = stateQId;
         } else if ([...sel.options].some(o => o.value === prevSelected)) {
