@@ -206,7 +206,7 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      min-height: 100dvh;
       font-family: var(--font-main);
       background: var(--bg);
       color: var(--text);
@@ -234,7 +234,6 @@
       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
     }
 
-    /* アンケート・クイズタグ直上の配信者別ヘッダ画像 */
     .streamer-header-banner {
       display: none;
       width: 100%;
@@ -310,7 +309,6 @@
       line-height: 1.6;
     }
 
-    /* ルームID入力フォーム */
     .room-prompt-box {
       display: grid;
       gap: 12px;
@@ -476,30 +474,16 @@
     }
 
     @keyframes barSmooth {
-      0% {
-        width: 0%;
-      }
-      100% {
-        width: var(--target-pct, 0%);
-      }
+      0% { width: 0%; }
+      100% { width: var(--target-pct, 0%); }
     }
 
     @keyframes barBounce {
-      0% {
-        width: 0%;
-      }
-      58% {
-        width: calc(min(100%, var(--target-pct, 0%) * 1.18 + 3%));
-      }
-      78% {
-        width: calc(max(0%, var(--target-pct, 0%) * 0.92));
-      }
-      90% {
-        width: calc(min(100%, var(--target-pct, 0%) * 1.04));
-      }
-      100% {
-        width: var(--target-pct, 0%);
-      }
+      0% { width: 0%; }
+      58% { width: calc(min(100%, var(--target-pct, 0%) * 1.18 + 3%)); }
+      78% { width: calc(max(0%, var(--target-pct, 0%) * 0.92)); }
+      90% { width: calc(min(100%, var(--target-pct, 0%) * 1.04)); }
+      100% { width: var(--target-pct, 0%); }
     }
 
     .fill.bounce {
@@ -548,14 +532,20 @@
     /* ================= クイズ正解時の演出オーバーレイ ================= */
     .quiz-win-overlay {
       position: fixed;
-      inset: 0;
-      z-index: 9500;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 99999;
       display: none;
       align-items: center;
       justify-content: center;
       padding: 20px;
       overflow: hidden;
       pointer-events: none;
+      transform: translateZ(0);
     }
 
     .quiz-win-overlay.is-active {
@@ -565,7 +555,7 @@
     .quiz-win-backdrop {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 50% 42%, rgba(250, 204, 21, 0.35), rgba(236, 72, 153, 0.18) 45%, rgba(6, 10, 20, 0.72) 100%);
+      background: radial-gradient(circle at 50% 42%, rgba(250, 204, 21, 0.35), rgba(236, 72, 153, 0.18) 45%, rgba(6, 10, 20, 0.76) 100%);
       animation: winBackdropPulse 1.4s ease-out forwards;
     }
 
@@ -601,7 +591,7 @@
       text-align: center;
       padding: 28px 24px 24px;
       border-radius: 26px;
-      background: linear-gradient(155deg, rgba(17, 24, 39, 0.96), rgba(30, 27, 75, 0.96));
+      background: linear-gradient(155deg, rgba(17, 24, 39, 0.97), rgba(30, 27, 75, 0.97));
       border: 3px solid #facc15;
       box-shadow:
         0 0 34px rgba(250, 204, 21, 0.65),
@@ -632,7 +622,7 @@
 
     .quiz-win-title {
       margin: 0 0 10px;
-      font-size: clamp(26px, 6.2vw, 36px);
+      font-size: clamp(24px, 6vw, 34px);
       font-weight: 900;
       line-height: 1.25;
       background: linear-gradient(90deg, #fef08a 0%, #facc15 35%, #f472b6 70%, #67e8f9 100%);
@@ -769,7 +759,6 @@
     let lastResultSignature = '';
     let isSubmitting = false;
 
-    // クイズ正解演出用ステート
     let lastCelebratedToken = '';
     let confettiRafId = null;
     let quizWinDelayTimer = null;
@@ -866,14 +855,20 @@
       }, 5200);
     }
 
-    function scheduleQuizWinAfterGraph(answerText) {
+    function scheduleQuizWinAfterGraph(answerText, celebToken) {
+      if (lastCelebratedToken === celebToken) return;
+      lastCelebratedToken = celebToken;
+
       if (quizWinDelayTimer) {
         clearTimeout(quizWinDelayTimer);
         quizWinDelayTimer = null;
       }
+
       quizWinDelayTimer = setTimeout(() => {
         quizWinDelayTimer = null;
-        triggerQuizWinCelebration(answerText);
+        if (currentState && currentState.status === 'ANSWER') {
+          triggerQuizWinCelebration(answerText);
+        }
       }, 500);
     }
 
@@ -1075,29 +1070,38 @@
     }
 
     function getSavedChoice(questionId) {
-      return localStorage.getItem(getChoiceStorageKey(questionId)) || '';
+      try {
+        return localStorage.getItem(getChoiceStorageKey(questionId)) || '';
+      } catch (e) {
+        return '';
+      }
     }
 
     function setSavedChoice(questionId, option) {
-      const key = getChoiceStorageKey(questionId);
-      if (option) {
-        localStorage.setItem(key, option);
-      } else {
-        localStorage.removeItem(key);
-      }
+      try {
+        const key = getChoiceStorageKey(questionId);
+        if (option) {
+          localStorage.setItem(key, option);
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch (e) {}
     }
 
     function syncResetSeq(state) {
       if (!state) return;
-      const seqKey = `stream_poll_reset_seq::${ROOM_ID}`;
-      const prevSeq = Number(localStorage.getItem(seqKey) || '0') || 0;
-      const nextSeq = Number(state.resetSeq || 0) || 0;
-      if (nextSeq > prevSeq) {
-        if (state.resetQuestionId) {
-          setSavedChoice(state.resetQuestionId, '');
+      try {
+        const seqKey = `stream_poll_reset_seq::${ROOM_ID}`;
+        const prevSeq = Number(localStorage.getItem(seqKey) || '0') || 0;
+        const nextSeq = Number(state.resetSeq || 0) || 0;
+        if (nextSeq > prevSeq) {
+          if (state.resetQuestionId) {
+            setSavedChoice(state.resetQuestionId, '');
+          }
+          lastCelebratedToken = '';
+          localStorage.setItem(seqKey, String(nextSeq));
         }
-        localStorage.setItem(seqKey, String(nextSeq));
-      }
+      } catch (e) {}
     }
 
     function applyTheme(state) {
@@ -1321,13 +1325,9 @@
         `;
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
 
-        // 結果グラフ描画後、回答者の選択が正解なら 0.5秒後に演出を自動表示
         if (isUserCorrect) {
           const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${myChoice}::ANSWER`;
-          if (lastCelebratedToken !== celebToken) {
-            lastCelebratedToken = celebToken;
-            scheduleQuizWinAfterGraph(question.answer);
-          }
+          scheduleQuizWinAfterGraph(question.answer, celebToken);
         } else if (quizWinDelayTimer) {
           clearTimeout(quizWinDelayTimer);
           quizWinDelayTimer = null;
