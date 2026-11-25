@@ -375,11 +375,13 @@
       border-radius: var(--item-radius);
       padding: 15px 16px;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.05s ease, background 0.08s ease, border-color 0.08s ease;
     }
 
     button.choice-btn:hover:not(:disabled) {
@@ -1113,32 +1115,76 @@
       }
     }
 
-    async function submitVote(questionId, option) {
-      if (isSubmitting || needsRoomInput || !ROOM_ID) return;
-      isSubmitting = true;
+    // 選択状態を画面に即時反映する（ネットワーク通信を待たない）
+    function applyInstantChoiceSelection(questionId, option, isQuiz) {
+      const cleanSelected = String(option || '').trim();
+      const card = document.getElementById('appCard');
+      if (!card) return;
+
+      const buttons = card.querySelectorAll('button.choice-btn');
+      buttons.forEach(btn => {
+        const btnOpt = String(btn.dataset.option || '').trim();
+        const isMatch = Boolean(cleanSelected) && btnOpt === cleanSelected;
+        btn.classList.toggle('selected', isMatch);
+        let badge = btn.querySelector('.choice-badge');
+        if (isMatch) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'choice-badge';
+            badge.textContent = '選択中';
+            btn.appendChild(badge);
+          }
+        } else if (badge) {
+          badge.remove();
+        }
+      });
+
+      const noticeEl = card.querySelector('.notice-banner');
+      if (noticeEl) {
+        noticeEl.textContent = cleanSelected
+          ? `「${cleanSelected}」で${isQuiz ? '回答' : '投票'}済みです（タップで変更できます）`
+          : `選択肢をタップして${isQuiz ? '回答' : '投票'}してください`;
+      }
+    }
+
+    function submitVote(questionId, option) {
+      if (needsRoomInput || !ROOM_ID) return;
+
+      const isQuiz = Boolean(
+        latestData &&
+        latestData.question &&
+        String(latestData.question.id || '') === String(questionId || '') &&
+        String(latestData.question.type || '').trim() === 'quiz'
+      );
+
+      // 1. まずローカル保存と画面表示を即座に更新（数秒の通信待ちをしない）
       setSavedChoice(questionId, option);
       lastCelebratedToken = '';
       activeCelebToken = '';
-      await pollState();
+      applyInstantChoiceSelection(questionId, option, isQuiz);
 
-      try {
-        const res = await postGas({
-          action: 'vote',
-          roomId: ROOM_ID,
-          adminId: ADMIN_ID,
-          questionId,
-          option,
-          clientId: getClientId()
-        });
-        if (!res.ok && res.error) {
-          alert(res.error);
+      // 2. サーバーへの送信と最新状態の同期はバックグラウンドで実行
+      isSubmitting = true;
+      (async () => {
+        try {
+          const res = await postGas({
+            action: 'vote',
+            roomId: ROOM_ID,
+            adminId: ADMIN_ID,
+            questionId,
+            option,
+            clientId: getClientId()
+          });
+          if (res && !res.ok && res.error) {
+            alert(res.error);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          isSubmitting = false;
+          await pollState();
         }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        isSubmitting = false;
-        await pollState();
-      }
+      })();
     }
 
     async function pollState() {
@@ -1200,8 +1246,8 @@
               <button
                 type="button"
                 class="choice-btn ${isSelected ? 'selected' : ''}"
+                data-option="${escapeHtml(opt)}"
                 onclick="submitVote('${escapeAttr(question.id)}', '${escapeAttr(opt)}')"
-                ${isSubmitting ? 'disabled' : ''}
               >
                 <span>${escapeHtml(opt)}</span>
                 ${isSelected ? '<span class="choice-badge">選択中</span>' : ''}
