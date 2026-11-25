@@ -587,10 +587,10 @@
       z-index: 2;
       pointer-events: auto;
       width: 100%;
-      max-width: 460px;
+      max-width: 500px;
       text-align: center;
-      padding: 30px 24px 26px;
-      border-radius: 26px;
+      padding: 36px 28px 30px;
+      border-radius: 28px;
       background: linear-gradient(155deg, rgba(17, 24, 39, 0.97), rgba(30, 27, 75, 0.97));
       border: 3px solid #facc15;
       box-shadow:
@@ -601,9 +601,9 @@
     }
 
     .quiz-win-sparkles {
-      font-size: 56px;
+      font-size: 60px;
       line-height: 1.1;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.85));
       animation: winIconFloat 1.15s ease-in-out infinite;
     }
@@ -617,31 +617,19 @@
       border-radius: 999px;
       background: linear-gradient(90deg, #facc15, #f472b6, #38bdf8);
       color: #090d16;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .quiz-win-title {
-      margin: 0 0 14px;
-      font-size: clamp(34px, 8.5vw, 50px);
+      margin: 0 0 26px;
+      font-size: clamp(46px, 11vw, 72px);
       font-weight: 900;
-      letter-spacing: 0.04em;
-      line-height: 1.2;
+      letter-spacing: 0.05em;
+      line-height: 1.12;
       background: linear-gradient(90deg, #fef08a 0%, #facc15 35%, #f472b6 70%, #67e8f9 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-    }
-
-    .quiz-win-answer {
-      margin: 0 0 22px;
-      padding: 12px 16px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(250, 204, 21, 0.45);
-      font-size: 18px;
-      font-weight: 800;
-      color: #fef08a;
-      overflow-wrap: anywhere;
     }
 
     .quiz-win-actions {
@@ -711,7 +699,6 @@
       <div class="quiz-win-sparkles">🏆✨🎉</div>
       <div class="quiz-win-badge">QUIZ CORRECT!</div>
       <h2 id="quizWinTitle" class="quiz-win-title">正解！</h2>
-      <p id="quizWinAnswer" class="quiz-win-answer"></p>
       <div class="quiz-win-actions">
         <button type="button" class="quiz-win-btn" onclick="dismissQuizWinCelebration()">結果・正解を見る</button>
       </div>
@@ -835,14 +822,9 @@
       step();
     }
 
-    function triggerQuizWinCelebration(answerText) {
+    function triggerQuizWinCelebration() {
       const overlay = document.getElementById('quizWinOverlay');
-      const answerEl = document.getElementById('quizWinAnswer');
       if (!overlay) return;
-
-      if (answerEl) {
-        answerEl.textContent = answerText ? `正解: 「${answerText}」` : 'あなたの回答は正解です！';
-      }
 
       overlay.classList.remove('is-active');
       void overlay.offsetWidth;
@@ -857,7 +839,7 @@
       }, 5200);
     }
 
-    function scheduleQuizWinAfterGraph(answerText, celebToken) {
+    function scheduleQuizWinAfterGraph(celebToken) {
       if (!celebToken) return;
       if (lastCelebratedToken === celebToken) return;
       if (activeCelebToken === celebToken && quizWinDelayTimer) return;
@@ -874,7 +856,7 @@
         if (activeCelebToken !== celebToken) return;
         lastCelebratedToken = celebToken;
         activeCelebToken = '';
-        triggerQuizWinCelebration(answerText);
+        triggerQuizWinCelebration();
       }, 500);
     }
 
@@ -1345,7 +1327,7 @@
         const isSameAnswerInPage = Boolean(isQuiz && cleanAnswer && cleanMyChoice && cleanMyChoice === cleanAnswer);
         if (state.status === 'ANSWER' && isSameAnswerInPage) {
           const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
-          scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
+          scheduleQuizWinAfterGraph(celebToken);
         } else {
           if (quizWinDelayTimer) {
             clearTimeout(quizWinDelayTimer);
