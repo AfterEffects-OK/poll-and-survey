@@ -1068,10 +1068,10 @@
       background: #1d4ed8;
     }
 
-    /* アカウント登録・復元モーダル */
+    /* アカウント登録・復元モーダル（横幅スリム化・一覧非表示） */
     .account-modal-box {
       width: 100%;
-      max-width: 1080px;
+      max-width: 540px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
@@ -1090,23 +1090,17 @@
     }
 
     .account-modal-body {
-      padding: 18px 20px;
+      padding: 16px 18px;
       overflow-y: auto;
       display: grid;
-      gap: 16px;
+      gap: 14px;
     }
 
     .account-grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 16px;
+      gap: 14px;
       align-items: start;
-    }
-
-    @media (min-width: 760px) {
-      .account-grid {
-        grid-template-columns: minmax(280px, 1fr) minmax(420px, 1.35fr);
-      }
     }
 
     .account-box {
@@ -1146,37 +1140,12 @@
       margin: 4px 0 8px;
     }
 
+    .registered-accounts-section {
+      display: none !important;
+    }
+
     .account-list-wrap {
-      max-height: 230px;
-      overflow: auto;
-      border: 1px solid #25344f;
-      border-radius: 8px;
-      background: #090d16;
-      margin-top: 10px;
-    }
-
-    table.account-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12.5px;
-    }
-
-    table.account-table th,
-    table.account-table td {
-      padding: 7px 9px;
-      text-align: left;
-      border-bottom: 1px solid #1e293b;
-      vertical-align: middle;
-      word-break: break-word;
-    }
-
-    table.account-table th {
-      position: sticky;
-      top: 0;
-      background: #131c2e;
-      color: #6ee7b7;
-      font-weight: 800;
-      z-index: 1;
+      display: none !important;
     }
 
     .account-status-msg {
@@ -1744,19 +1713,18 @@
                   type="text"
                   placeholder="例: 山田太郎 / AbCdEfGh"
                   autocomplete="off"
-                  oninput="renderAdminAccountsTable()"
                 />
                 <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminByDirectOrFirst()">復元</button>
               </div>
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
-              <span class="lbl" style="margin:0;">登録済みアカウント一覧</span>
-              <button type="button" class="btn btn-gray btn-sm" onclick="fetchRegisteredAdmins(true)">シートから再読込</button>
-            </div>
+            <div id="accountListSection" class="registered-accounts-section" style="display:none;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+                <span class="lbl" style="margin:0;">登録済みアカウント一覧</span>
+                <button type="button" class="btn btn-gray btn-sm" onclick="fetchRegisteredAdmins(true)">シートから再読込</button>
+              </div>
 
-            <div id="accountListContainer" class="account-list-wrap">
-              <div class="log-empty-box">アカウント一覧を読み込み中...</div>
+              <div id="accountListContainer" class="account-list-wrap" style="display:none;"></div>
             </div>
           </div>
         </div>
@@ -1874,7 +1842,7 @@
             <h4><span class="help-step-pill">アカウント</span> adminアカウント登録・復元モーダルの使い方</h4>
             <ul class="help-list">
               <li><strong>新規アカウント登録</strong>：8桁のランダム英字 <span class="help-code">adminId</span> を自動生成して登録し、即座にその <span class="help-code">admin</span> に切り替えます。</li>
-              <li><strong>IDを忘れた時の復元</strong>：名前・メモ・IDでの絞り込み検索や一覧の「復元」ボタンから、以前の <span class="help-code">adminId</span> を呼び戻せます。</li>
+              <li><strong>IDを忘れた時の復元</strong>：IDまたは検索ワードを入力して「復元」を押すことで、以前の <span class="help-code">adminId</span> を呼び戻せます。</li>
               <li><strong>default アカウントの制限</strong>：<span class="help-code">admin</span> が <span class="help-code">default</span> の場合、<span class="help-code">room</span> は <span class="help-code">default</span> 固定となり、<span class="help-code">default</span> 所属の質問は編集・削除・新規作成がロックされます。</li>
             </ul>
           </section>
@@ -2893,18 +2861,11 @@
           mergeAdminAccounts(rawList);
           renderAdminAccountsTable();
           if (showFeedback) {
-            setAccountStatusMessage(`スプレッドシートから登録済みアカウント（${registeredAdmins.length}件）を読み込みました。現在: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
+            setAccountStatusMessage(`現在: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
           }
-          return;
-        }
-        if (showFeedback) {
-          setAccountStatusMessage(`ローカル保存分（${registeredAdmins.length}件）を表示中です。現在: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
         }
       } catch (e) {
         console.error(e);
-        if (showFeedback) {
-          setAccountStatusMessage(`シート通信を確認できませんでした。ローカル保存分（${registeredAdmins.length}件）を表示中です。`);
-        }
       }
     }
 
@@ -2995,45 +2956,13 @@
     }
 
     function renderAdminAccountsTable() {
+      const section = document.getElementById('accountListSection');
       const container = document.getElementById('accountListContainer');
-      if (!container) return;
-
-      const list = getFilteredAdminAccounts();
-      if (!list.length) {
-        container.innerHTML = `<div class="log-empty-box">一致する登録アカウントがありません。IDを直接入力して「復元」を押すこともできます。</div>`;
-        return;
+      if (section) section.style.display = 'none';
+      if (container) {
+        container.style.display = 'none';
+        container.innerHTML = '';
       }
-
-      const rowsHtml = list.map(acc => {
-        const isCurrent = acc.adminId === ADMIN_ID;
-        return `
-          <tr>
-            <td>
-              <strong style="font-family:ui-monospace,monospace;color:#6ee7b7;">${escapeHtml(acc.adminId)}</strong>
-              ${isCurrent ? '<span class="context-pill" style="margin-left:6px;padding:1px 7px;">使用中</span>' : ''}
-            </td>
-            <td>${escapeHtml(acc.name || '-')}</td>
-            <td>${escapeHtml(acc.memo || '-')}</td>
-            <td>
-              <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminById('${escapeHtml(acc.adminId)}')">復元</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      container.innerHTML = `
-        <table class="account-table">
-          <thead>
-            <tr>
-              <th>admin ID</th>
-              <th>名前</th>
-              <th>メモ</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      `;
     }
 
     async function restoreAdminById(targetAdminId) {
@@ -3054,7 +2983,7 @@
         await restoreAdminById(filtered[0].adminId);
         return;
       }
-      setAccountStatusMessage('復元する admin ID を入力するか、一覧から選択してください。');
+      setAccountStatusMessage('復元する admin ID を入力してください。');
     }
 
     function openAccountModal() {
@@ -3064,7 +2993,6 @@
       renderAdminAccountsTable();
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
-      fetchRegisteredAdmins(false);
     }
 
     function closeAccountModal() {
