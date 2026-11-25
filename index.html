@@ -631,7 +631,18 @@
       if (input) input.focus();
     }
 
-    function handleRoomIdSubmit(event) {
+    function renderRoomJoiningNotice(roomId) {
+      const card = document.getElementById('appCard');
+      if (!card) return;
+      card.innerHTML = `
+        <div class="waiting-box" style="padding: 28px 16px;">
+          <p class="waiting-title">ルーム「${escapeHtml(roomId)}」に参加しています...</p>
+          <p class="waiting-sub">配信状態を取得しています。しばらくお待ちください。</p>
+        </div>
+      `;
+    }
+
+    async function handleRoomIdSubmit(event) {
       event.preventDefault();
       const input = document.getElementById('roomIdPromptInput');
       const raw = input ? input.value : '';
@@ -650,7 +661,9 @@
         window.history.replaceState({}, '', url.toString());
       } catch (e) {}
 
-      pollState();
+      renderRoomJoiningNotice(ROOM_ID);
+      await new Promise(resolve => setTimeout(resolve, 600));
+      await pollState();
     }
 
     function getStateHeaderImage(state) {
