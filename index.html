@@ -344,6 +344,11 @@
       cursor: pointer;
     }
 
+    .room-prompt-btn:disabled {
+      opacity: 0.75;
+      cursor: wait;
+    }
+
     .room-prompt-error {
       margin: 0;
       font-size: 13px;
@@ -575,6 +580,7 @@
 
     let ROOM_ID = resolveInitialRoomId();
     let needsRoomInput = !ROOM_ID;
+    let isConnectingRoom = false;
 
     let currentState = {
       status: 'WAITING',
@@ -588,12 +594,25 @@
     let lastResultSignature = '';
     let isSubmitting = false;
 
+    function setRoomSubmitButtonState(connecting) {
+      const btn = document.getElementById('roomIdPromptBtn');
+      const input = document.getElementById('roomIdPromptInput');
+      if (btn) {
+        btn.disabled = Boolean(connecting);
+        btn.textContent = connecting ? 'ルームに接続中…' : 'このルームに参加する';
+      }
+      if (input) {
+        input.disabled = Boolean(connecting);
+      }
+    }
+
     function renderRoomPrompt(errorMsg = '') {
       const card = document.getElementById('appCard');
       if (!card) return;
 
       const existingInput = document.getElementById('roomIdPromptInput');
       if (existingInput) {
+        setRoomSubmitButtonState(isConnectingRoom);
         let errEl = card.querySelector('.room-prompt-error');
         if (errorMsg) {
           if (!errEl) {
@@ -622,37 +641,20 @@
               autocomplete="off"
               required
             />
-            <button type="submit" class="room-prompt-btn" onclick="showJoiningMessageImmediately()">このルームに参加する</button>
+            <button id="roomIdPromptBtn" type="submit" class="room-prompt-btn">このルームに参加する</button>
             ${errorMsg ? `<p class="room-prompt-error">${escapeHtml(errorMsg)}</p>` : ''}
           </form>
         </div>
       `;
+      setRoomSubmitButtonState(isConnectingRoom);
       const input = document.getElementById('roomIdPromptInput');
-      if (input) input.focus();
-    }
-
-    function renderRoomJoiningNotice(roomId) {
-      const card = document.getElementById('appCard');
-      if (!card) return;
-      card.innerHTML = `
-        <div class="waiting-box" style="padding: 28px 16px;">
-          <p class="waiting-title">ルーム「${escapeHtml(roomId)}」に参加しています...</p>
-          <p class="waiting-sub">配信状態を取得しています。しばらくお待ちください。</p>
-        </div>
-      `;
-    }
-
-    function showJoiningMessageImmediately() {
-      const input = document.getElementById('roomIdPromptInput');
-      const raw = input ? input.value : '';
-      const cleaned = String(raw || '').trim().replace(/[^a-zA-Z0-9_@-]/g, '');
-      if (cleaned) {
-        renderRoomJoiningNotice(cleaned);
-      }
+      if (input && !isConnectingRoom) input.focus();
     }
 
     async function handleRoomIdSubmit(event) {
       event.preventDefault();
+      if (isConnectingRoom) return;
+
       const input = document.getElementById('roomIdPromptInput');
       const raw = input ? input.value : '';
       const cleaned = String(raw || '').trim().replace(/[^a-zA-Z0-9_@-]/g, '');
@@ -661,11 +663,11 @@
         return;
       }
 
+      isConnectingRoom = true;
+      setRoomSubmitButtonState(true);
+
       ROOM_ID = cleaned;
       needsRoomInput = false;
-
-      // ボタンを押した瞬間にすぐメッセージを表示
-      renderRoomJoiningNotice(ROOM_ID);
 
       try {
         const url = new URL(window.location.href);
@@ -673,7 +675,14 @@
         window.history.replaceState({}, '', url.toString());
       } catch (e) {}
 
-      await pollState();
+      try {
+        await pollState();
+      } finally {
+        isConnectingRoom = false;
+        if (needsRoomInput || !ROOM_ID) {
+          setRoomSubmitButtonState(false);
+        }
+      }
     }
 
     function getStateHeaderImage(state) {
@@ -841,7 +850,12 @@
 
       try {
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
-        if (!data.ok) return;
+        if (!data || !data.ok) {
+          if (isConnectingRoom) {
+            renderRoomPrompt('ルーム情報を取得できませんでした。IDを確認してください。');
+          }
+          return;
+        }
 
         latestData = data;
         const effectiveAdminId = (data && data.adminId) ? data.adminId : ADMIN_ID;
@@ -1001,6 +1015,9 @@
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
       } catch (e) {
         console.error(e);
+        if (isConnectingRoom) {
+          renderRoomPrompt('通信エラーが発生しました。時間をおいて再度お試しください。');
+        }
       }
     }
 
