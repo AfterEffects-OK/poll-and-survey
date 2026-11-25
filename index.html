@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@500;700;800&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Fredoka:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800&family=Noto+Sans+JP:wght@500;700;800;900&family=Orbitron:wght@700&family=Oswald:wght@600&family=Share+Tech+Mono&family=Shippori+Mincho:wght@700;800&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -215,11 +215,14 @@
       align-items: center;
       padding: 20px 16px;
       transition: background 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
     }
 
     .container {
       width: 100%;
       max-width: 540px;
+      position: relative;
+      z-index: 2;
     }
 
     .card {
@@ -425,6 +428,7 @@
     .result-row.correct {
       background: var(--correct-bg);
       border-color: var(--ok);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.28);
     }
 
     .result-row.wrong-pick {
@@ -540,6 +544,173 @@
       align-items: center;
       gap: 8px;
     }
+
+    /* ================= クイズ正解時の豪華演出オーバーレイ ================= */
+    .quiz-win-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .quiz-win-overlay.is-active {
+      display: flex;
+    }
+
+    .quiz-win-backdrop {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 42%, rgba(250, 204, 21, 0.35), rgba(236, 72, 153, 0.18) 45%, rgba(6, 10, 20, 0.72) 100%);
+      animation: winBackdropPulse 1.4s ease-out forwards;
+    }
+
+    .quiz-win-rays {
+      position: absolute;
+      width: 180vmax;
+      height: 180vmax;
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(250, 204, 21, 0.24) 0deg 7deg,
+        rgba(56, 189, 248, 0.16) 7deg 14deg,
+        rgba(236, 72, 153, 0.16) 14deg 21deg,
+        transparent 21deg 28deg
+      );
+      border-radius: 50%;
+      animation: winRaysSpin 11s linear infinite;
+    }
+
+    #quizConfettiCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .quiz-win-card {
+      position: relative;
+      z-index: 2;
+      pointer-events: auto;
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      padding: 28px 24px 24px;
+      border-radius: 26px;
+      background: linear-gradient(155deg, rgba(17, 24, 39, 0.96), rgba(30, 27, 75, 0.96));
+      border: 3px solid #facc15;
+      box-shadow:
+        0 0 34px rgba(250, 204, 21, 0.65),
+        0 0 80px rgba(236, 72, 153, 0.42),
+        0 24px 60px rgba(0, 0, 0, 0.75);
+      animation: winCardPop 0.58s cubic-bezier(0.22, 1.38, 0.36, 1) both;
+    }
+
+    .quiz-win-sparkles {
+      font-size: 52px;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.85));
+      animation: winIconFloat 1.15s ease-in-out infinite;
+    }
+
+    .quiz-win-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #facc15, #f472b6, #38bdf8);
+      color: #090d16;
+      margin-bottom: 10px;
+    }
+
+    .quiz-win-title {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 6.2vw, 36px);
+      font-weight: 900;
+      line-height: 1.25;
+      background: linear-gradient(90deg, #fef08a 0%, #facc15 35%, #f472b6 70%, #67e8f9 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .quiz-win-answer {
+      margin: 0 0 20px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+      overflow-wrap: anywhere;
+    }
+
+    .quiz-win-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .quiz-win-btn {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 11px 22px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, #facc15, #f59e0b);
+      color: #090d16;
+      box-shadow: 0 8px 22px rgba(250, 204, 21, 0.42);
+      transition: transform 0.1s ease, filter 0.15s ease;
+    }
+
+    .quiz-win-btn:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .quiz-win-sound-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 11px 16px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      background: rgba(15, 23, 42, 0.75);
+      color: #f8fafc;
+    }
+
+    @keyframes winBackdropPulse {
+      0% { opacity: 0; }
+      25% { opacity: 1; }
+      100% { opacity: 0.65; }
+    }
+
+    @keyframes winRaysSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes winCardPop {
+      0% { opacity: 0; transform: scale(0.55) translateY(28px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes winIconFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-7px) scale(1.08); }
+    }
   </style>
 </head>
 <body>
@@ -550,6 +721,23 @@
         <p class="waiting-sub">配信画面と接続しています</p>
       </div>
     </main>
+  </div>
+
+  <!-- クイズ正解時の豪華演出オーバーレイ -->
+  <div id="quizWinOverlay" class="quiz-win-overlay" aria-live="assertive" aria-hidden="true">
+    <div class="quiz-win-backdrop"></div>
+    <div class="quiz-win-rays"></div>
+    <canvas id="quizConfettiCanvas"></canvas>
+    <div class="quiz-win-card" role="dialog" aria-modal="true" aria-labelledby="quizWinTitle">
+      <div class="quiz-win-sparkles">🏆✨🎉</div>
+      <div class="quiz-win-badge">QUIZ CORRECT!</div>
+      <h2 id="quizWinTitle" class="quiz-win-title">大正解おめでとうございます！</h2>
+      <p id="quizWinAnswer" class="quiz-win-answer"></p>
+      <div class="quiz-win-actions">
+        <button type="button" class="quiz-win-btn" onclick="dismissQuizWinCelebration()">結果・正解を見る</button>
+        <button type="button" id="quizSoundToggleBtn" class="quiz-win-sound-btn" onclick="toggleQuizSound()">効果音: ON</button>
+      </div>
+    </div>
   </div>
 
   <script src="config.js"></script>
@@ -593,6 +781,158 @@
     let latestData = null;
     let lastResultSignature = '';
     let isSubmitting = false;
+
+    // クイズ正解演出用ステート
+    let quizSoundEnabled = true;
+    let lastCelebratedToken = '';
+    let confettiRafId = null;
+    let quizWinAutoCloseTimer = null;
+
+    function toggleQuizSound() {
+      quizSoundEnabled = !quizSoundEnabled;
+      const btn = document.getElementById('quizSoundToggleBtn');
+      if (btn) {
+        btn.textContent = `効果音: ${quizSoundEnabled ? 'ON' : 'OFF'}`;
+      }
+    }
+
+    function playQuizFanfare() {
+      if (!quizSoundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const melody = [
+          { freq: 523.25, delay: 0.00, dur: 0.16, type: 'triangle' },
+          { freq: 659.25, delay: 0.11, dur: 0.16, type: 'triangle' },
+          { freq: 783.99, delay: 0.22, dur: 0.18, type: 'triangle' },
+          { freq: 1046.50, delay: 0.34, dur: 0.55, type: 'sine' },
+          { freq: 1318.51, delay: 0.44, dur: 0.62, type: 'sine' }
+        ];
+        melody.forEach(n => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = n.type;
+          osc.frequency.value = n.freq;
+          const startAt = ctx.currentTime + n.delay;
+          gain.gain.setValueAtTime(0.001, startAt);
+          gain.gain.exponentialRampToValueAtTime(0.18, startAt + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0008, startAt + n.dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(startAt);
+          osc.stop(startAt + n.dur + 0.04);
+        });
+      } catch (e) {}
+    }
+
+    function launchQuizConfetti() {
+      const canvas = document.getElementById('quizConfettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const palette = ['#facc15', '#f472b6', '#38bdf8', '#34d399', '#a78bfa', '#fb923c', '#ffffff'];
+      const particles = Array.from({ length: 145 }, (_, i) => {
+        const fromLeft = i % 2 === 0;
+        return {
+          x: fromLeft ? canvas.width * 0.25 + (Math.random() - 0.5) * 90 : canvas.width * 0.75 + (Math.random() - 0.5) * 90,
+          y: canvas.height * 0.48 + (Math.random() - 0.5) * 60,
+          vx: (fromLeft ? 2.5 : -2.5) + (Math.random() - 0.5) * 14,
+          vy: -7.5 - Math.random() * 11,
+          gravity: 0.25 + Math.random() * 0.12,
+          drag: 0.988,
+          w: 7 + Math.random() * 8,
+          h: 5 + Math.random() * 6,
+          color: palette[Math.floor(Math.random() * palette.length)],
+          angle: Math.random() * Math.PI * 2,
+          vAngle: (Math.random() - 0.5) * 0.28,
+          isCircle: Math.random() > 0.58
+        };
+      });
+
+      if (confettiRafId) {
+        cancelAnimationFrame(confettiRafId);
+        confettiRafId = null;
+      }
+
+      const step = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let activeCount = 0;
+
+        for (const p of particles) {
+          p.vx *= p.drag;
+          p.vy = p.vy * p.drag + p.gravity;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.angle += p.vAngle;
+
+          if (p.y < canvas.height + 40) {
+            activeCount++;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            if (p.isCircle) {
+              ctx.beginPath();
+              ctx.arc(0, 0, p.w * 0.45, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            }
+            ctx.restore();
+          }
+        }
+
+        if (activeCount > 0) {
+          confettiRafId = requestAnimationFrame(step);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      };
+
+      step();
+    }
+
+    function triggerQuizWinCelebration(answerText) {
+      const overlay = document.getElementById('quizWinOverlay');
+      const answerEl = document.getElementById('quizWinAnswer');
+      if (!overlay) return;
+
+      if (answerEl) {
+        answerEl.textContent = answerText ? `正解: 「${answerText}」` : 'あなたの回答は正解です！';
+      }
+
+      overlay.classList.remove('is-active');
+      void overlay.offsetWidth;
+      overlay.classList.add('is-active');
+      overlay.setAttribute('aria-hidden', 'false');
+
+      playQuizFanfare();
+      launchQuizConfetti();
+
+      if (quizWinAutoCloseTimer) clearTimeout(quizWinAutoCloseTimer);
+      quizWinAutoCloseTimer = setTimeout(() => {
+        dismissQuizWinCelebration();
+      }, 5200);
+    }
+
+    function dismissQuizWinCelebration() {
+      const overlay = document.getElementById('quizWinOverlay');
+      if (overlay) {
+        overlay.classList.remove('is-active');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+      if (confettiRafId) {
+        cancelAnimationFrame(confettiRafId);
+        confettiRafId = null;
+      }
+      if (quizWinAutoCloseTimer) {
+        clearTimeout(quizWinAutoCloseTimer);
+        quizWinAutoCloseTimer = null;
+      }
+    }
 
     function setRoomSubmitButtonState(connecting) {
       const btn = document.getElementById('roomIdPromptBtn');
@@ -876,6 +1216,7 @@
 
         if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
+          dismissQuizWinCelebration();
           card.innerHTML = `
             <div class="waiting-box">
               <p class="waiting-title">次のアンケート・クイズを待機中です</p>
@@ -891,6 +1232,7 @@
 
         if (state.status === 'VOTING') {
           lastResultSignature = '';
+          dismissQuizWinCelebration();
           const choicesHtml = (question.options || []).map(opt => {
             const isSelected = myChoice === opt;
             return `
@@ -931,6 +1273,7 @@
 
         if (state.status === 'CLOSED') {
           lastResultSignature = '';
+          dismissQuizWinCelebration();
           card.innerHTML = `
             ${headerHtml}
             <div class="top-bar">
@@ -985,9 +1328,10 @@
         }).join('');
 
         let bottomNotice = '';
+        const isUserCorrect = Boolean(isAnswerMode && myChoice && myChoice === question.answer);
         if (isAnswerMode && myChoice) {
-          if (myChoice === question.answer) {
-            bottomNotice = `<div class="notice-banner ok">正解おめでとうございます！</div>`;
+          if (isUserCorrect) {
+            bottomNotice = `<div class="notice-banner ok">🎉 正解おめでとうございます！（${escapeHtml(question.answer)}）</div>`;
           } else {
             bottomNotice = `<div class="notice-banner ng">残念！正解は「${escapeHtml(question.answer)}」でした</div>`;
           }
@@ -1013,6 +1357,14 @@
           </div>
         `;
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
+
+        if (isUserCorrect) {
+          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::ANSWER`;
+          if (lastCelebratedToken !== celebToken) {
+            lastCelebratedToken = celebToken;
+            triggerQuizWinCelebration(question.answer);
+          }
+        }
       } catch (e) {
         console.error(e);
         if (isConnectingRoom) {
