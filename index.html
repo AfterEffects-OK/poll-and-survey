@@ -545,7 +545,7 @@
       gap: 8px;
     }
 
-    /* ================= クイズ正解時の豪華演出オーバーレイ（視覚のみ） ================= */
+    /* ================= クイズ正解時の演出オーバーレイ ================= */
     .quiz-win-overlay {
       position: fixed;
       inset: 0;
@@ -711,7 +711,7 @@
     </main>
   </div>
 
-  <!-- クイズ正解時の豪華演出オーバーレイ -->
+  <!-- クイズ正解時の演出オーバーレイ -->
   <div id="quizWinOverlay" class="quiz-win-overlay" aria-live="assertive" aria-hidden="true">
     <div class="quiz-win-backdrop"></div>
     <div class="quiz-win-rays"></div>
@@ -772,6 +772,7 @@
     // クイズ正解演出用ステート
     let lastCelebratedToken = '';
     let confettiRafId = null;
+    let quizWinDelayTimer = null;
     let quizWinAutoCloseTimer = null;
 
     function launchQuizConfetti() {
@@ -865,7 +866,22 @@
       }, 5200);
     }
 
+    function scheduleQuizWinAfterGraph(answerText) {
+      if (quizWinDelayTimer) {
+        clearTimeout(quizWinDelayTimer);
+        quizWinDelayTimer = null;
+      }
+      quizWinDelayTimer = setTimeout(() => {
+        quizWinDelayTimer = null;
+        triggerQuizWinCelebration(answerText);
+      }, 500);
+    }
+
     function dismissQuizWinCelebration() {
+      if (quizWinDelayTimer) {
+        clearTimeout(quizWinDelayTimer);
+        quizWinDelayTimer = null;
+      }
       const overlay = document.getElementById('quizWinOverlay');
       if (overlay) {
         overlay.classList.remove('is-active');
@@ -1305,12 +1321,16 @@
         `;
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
 
+        // 結果グラフ描画後、回答者の選択が正解なら 0.5秒後に演出を自動表示
         if (isUserCorrect) {
-          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::ANSWER`;
+          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${myChoice}::ANSWER`;
           if (lastCelebratedToken !== celebToken) {
             lastCelebratedToken = celebToken;
-            triggerQuizWinCelebration(question.answer);
+            scheduleQuizWinAfterGraph(question.answer);
           }
+        } else if (quizWinDelayTimer) {
+          clearTimeout(quizWinDelayTimer);
+          quizWinDelayTimer = null;
         }
       } catch (e) {
         console.error(e);
