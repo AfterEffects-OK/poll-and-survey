@@ -760,6 +760,7 @@
     let isSubmitting = false;
 
     let lastCelebratedToken = '';
+    let activeCelebToken = '';
     let confettiRafId = null;
     let quizWinDelayTimer = null;
     let quizWinAutoCloseTimer = null;
@@ -856,8 +857,11 @@
     }
 
     function scheduleQuizWinAfterGraph(answerText, celebToken) {
+      if (!celebToken) return;
       if (lastCelebratedToken === celebToken) return;
-      lastCelebratedToken = celebToken;
+      if (activeCelebToken === celebToken && quizWinDelayTimer) return;
+
+      activeCelebToken = celebToken;
 
       if (quizWinDelayTimer) {
         clearTimeout(quizWinDelayTimer);
@@ -866,13 +870,15 @@
 
       quizWinDelayTimer = setTimeout(() => {
         quizWinDelayTimer = null;
-        if (currentState && currentState.status === 'ANSWER') {
-          triggerQuizWinCelebration(answerText);
-        }
+        if (activeCelebToken !== celebToken) return;
+        lastCelebratedToken = celebToken;
+        activeCelebToken = '';
+        triggerQuizWinCelebration(answerText);
       }, 500);
     }
 
     function dismissQuizWinCelebration() {
+      activeCelebToken = '';
       if (quizWinDelayTimer) {
         clearTimeout(quizWinDelayTimer);
         quizWinDelayTimer = null;
@@ -1099,6 +1105,7 @@
             setSavedChoice(state.resetQuestionId, '');
           }
           lastCelebratedToken = '';
+          activeCelebToken = '';
           localStorage.setItem(seqKey, String(nextSeq));
         }
       } catch (e) {}
@@ -1127,6 +1134,8 @@
       if (isSubmitting || needsRoomInput || !ROOM_ID) return;
       isSubmitting = true;
       setSavedChoice(questionId, option);
+      lastCelebratedToken = '';
+      activeCelebToken = '';
       await pollState();
 
       try {
@@ -1183,6 +1192,7 @@
 
         if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
+          lastCelebratedToken = '';
           dismissQuizWinCelebration();
           card.innerHTML = `
             <div class="waiting-box">
@@ -1193,15 +1203,16 @@
           return;
         }
 
-        const isQuiz = question.type === 'quiz';
+        const isQuiz = String(question.type || '').trim() === 'quiz';
         const myChoice = getSavedChoice(question.id);
         const tagText = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
 
         if (state.status === 'VOTING') {
           lastResultSignature = '';
+          lastCelebratedToken = '';
           dismissQuizWinCelebration();
           const choicesHtml = (question.options || []).map(opt => {
-            const isSelected = myChoice === opt;
+            const isSelected = String(myChoice || '').trim() === String(opt || '').trim();
             return `
               <button
                 type="button"
@@ -1266,10 +1277,14 @@
         const shouldBounce = lastResultSignature !== resultSig;
         lastResultSignature = resultSig;
 
-        const isAnswerMode = state.status === 'ANSWER' && isQuiz && question.answer;
+        const cleanAnswer = String(question.answer || '').trim();
+        const cleanMyChoice = String(myChoice || '').trim();
+        const isAnswerMode = state.status === 'ANSWER' && isQuiz && Boolean(cleanAnswer);
+
         const rowsHtml = (results || []).map((r, idx) => {
-          const isCorrect = isAnswerMode && r.label === question.answer;
-          const isMyPick = myChoice === r.label;
+          const cleanLabel = String(r.label || '').trim();
+          const isCorrect = isAnswerMode && cleanLabel === cleanAnswer;
+          const isMyPick = Boolean(cleanMyChoice) && cleanMyChoice === cleanLabel;
           const isWrongPick = isAnswerMode && isMyPick && !isCorrect;
           const pct = Math.max(0, Math.min(100, Number(r.pct || 0)));
 
@@ -1295,12 +1310,12 @@
         }).join('');
 
         let bottomNotice = '';
-        const isUserCorrect = Boolean(isAnswerMode && myChoice && myChoice === question.answer);
-        if (isAnswerMode && myChoice) {
+        const isUserCorrect = Boolean(isAnswerMode && cleanMyChoice && cleanMyChoice === cleanAnswer);
+        if (isAnswerMode && cleanMyChoice) {
           if (isUserCorrect) {
-            bottomNotice = `<div class="notice-banner ok">🎉 正解おめでとうございます！（${escapeHtml(question.answer)}）</div>`;
+            bottomNotice = `<div class="notice-banner ok">🎉 正解おめでとうございます！（${escapeHtml(cleanAnswer)}）</div>`;
           } else {
-            bottomNotice = `<div class="notice-banner ng">残念！正解は「${escapeHtml(question.answer)}」でした</div>`;
+            bottomNotice = `<div class="notice-banner ng">残念！正解は「${escapeHtml(cleanAnswer)}」でした</div>`;
           }
         }
 
@@ -1326,11 +1341,14 @@
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
 
         if (isUserCorrect) {
-          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${myChoice}::ANSWER`;
-          scheduleQuizWinAfterGraph(question.answer, celebToken);
-        } else if (quizWinDelayTimer) {
-          clearTimeout(quizWinDelayTimer);
-          quizWinDelayTimer = null;
+          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
+          scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
+        } else {
+          if (quizWinDelayTimer) {
+            clearTimeout(quizWinDelayTimer);
+            quizWinDelayTimer = null;
+          }
+          activeCelebToken = '';
         }
       } catch (e) {
         console.error(e);
