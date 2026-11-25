@@ -1920,7 +1920,7 @@
                 </tr>
                 <tr>
                   <td><strong>クイズ正解表示</strong></td>
-                  <td><span class="help-code">quiz</span> 種別時に表示され、正解の選択肢を強調表示します。</td>
+                  <td><span class="help-code">quiz</span> 種別時に表示され、正解の選択肢を強調表示（紙吹雪などの演出）します。</td>
                   <td>正解発表と集計結果を表示します。</td>
                 </tr>
               </tbody>
@@ -1930,10 +1930,11 @@
           <section class="help-section">
             <h4><span class="help-step-pill">正解演出</span> クイズ正解表示（ANSWER）時の演出と表示ルール</h4>
             <ul class="help-list">
+              <li><strong>紙吹雪などの祝賀エフェクト</strong>：<span class="help-code">クイズ正解表示</span>（<span class="help-code">ANSWER</span>）に切り替わると、正解発表に合わせた紙吹雪などの演出が動き、クイズの盛り上がりや正解の達成感を視覚的にわかりやすく伝えます。</li>
               <li><strong>正解選択肢の強調表示</strong>：<span class="help-code">quiz</span> 種別の質問で設定した正解選択肢が強調表示され、視聴者・回答者に正解が一目でわかるように演出されます。</li>
               <li><strong>OBS・回答者画面の連動</strong>：<span class="help-code">クイズ正解表示</span> に切り替えると、OBSオーバーレイと回答者画面（<span class="help-code">index.html</span>）が同時に正解発表状態へ同期します。</li>
               <li><strong>集計結果との併用</strong>：回答者画面では正解発表とあわせて集計結果も確認でき、配信の流れに合わせて <span class="help-code">集計結果表示</span> → <span class="help-code">クイズ正解表示</span> の順で切り替えるのがおすすめです。</li>
-              <li><strong>コンパクト表示時の注意</strong>：OBS表示サイズが <span class="help-code">コンパクト</span> の場合、オーバーレイ側で結果・正解表示が省略されるため、正解演出を配信画面に出したいときは <span class="help-code">通常サイズ</span> または <span class="help-code">拡大表示</span> を選択してください。</li>
+              <li><strong>コンパクト表示時の注意</strong>：OBS表示サイズが <span class="help-code">コンパクト</span> の場合、オーバーレイ側で結果・正解表示や紙吹雪などの演出が省略されるため、正解演出を配信画面に出したいときは <span class="help-code">通常サイズ</span> または <span class="help-code">拡大表示</span> を選択してください。</li>
             </ul>
           </section>
 
