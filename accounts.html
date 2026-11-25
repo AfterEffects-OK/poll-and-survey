@@ -331,7 +331,7 @@
       border-color: #38bdf8;
     }
 
-    button.btn {
+    button.btn, a.btn {
       font-family: inherit;
       font-size: 13px;
       font-weight: 800;
@@ -348,7 +348,7 @@
       justify-content: center;
     }
 
-    button.btn:hover:not(:disabled) {
+    button.btn:hover:not(:disabled), a.btn:hover {
       filter: brightness(1.12);
     }
 
@@ -379,22 +379,25 @@
       background: #0b101b;
     }
 
-    table.accounts-table {
+    table.accounts-table, table.sub-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
 
     table.accounts-table th,
-    table.accounts-table td {
+    table.accounts-table td,
+    table.sub-table th,
+    table.sub-table td {
       padding: 10px 12px;
       text-align: left;
       border-bottom: 1px solid #1e293b;
-      vertical-align: middle;
+      vertical-align: top;
       word-break: break-word;
     }
 
-    table.accounts-table th {
+    table.accounts-table th,
+    table.sub-table th {
       background: #131c2e;
       color: #7dd3fc;
       font-weight: 800;
@@ -416,7 +419,8 @@
       outline-offset: -2px;
     }
 
-    table.accounts-table tr:last-child td {
+    table.accounts-table tr:last-child td,
+    table.sub-table tr:last-child td {
       border-bottom: none;
     }
 
@@ -477,6 +481,22 @@
       border: 1px solid #273854;
       border-radius: 10px;
       padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .detail-box:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-grid .detail-box {
+      margin-bottom: 0;
+    }
+
+    .detail-section-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #93c5fd;
     }
 
     .detail-label {
@@ -493,6 +513,33 @@
       word-break: break-all;
     }
 
+    .detail-kv-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 14px;
+      font-size: 13px;
+    }
+
+    .detail-kv-item {
+      padding: 6px 8px;
+      border-radius: 7px;
+      background: #10192b;
+      border: 1px solid #1e2d47;
+    }
+
+    .detail-kv-k {
+      font-size: 11px;
+      font-weight: 800;
+      color: #94a3b8;
+      display: block;
+    }
+
+    .detail-kv-v {
+      font-weight: 700;
+      color: #f8fafc;
+      word-break: break-all;
+    }
+
     .detail-preview-banner {
       width: 100%;
       max-width: 420px;
@@ -503,6 +550,61 @@
       background: #141c2b;
       display: block;
       margin-top: 8px;
+    }
+
+    .detail-result-row {
+      margin-bottom: 8px;
+    }
+
+    .detail-result-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-result-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 9px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #38bdf8;
+    }
+
+    .url-copy-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #10192b;
+      border: 1px solid #1e2d47;
+      margin-bottom: 8px;
+    }
+
+    .url-copy-box:last-child {
+      margin-bottom: 0;
+    }
+
+    .url-copy-text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #bae6fd;
+      word-break: break-all;
+      flex: 1 1 260px;
     }
 
     .detail-links-row {
@@ -760,6 +862,16 @@
       renderDetailPanel();
     }
 
+    function formatDeadlineText(deadlineAt) {
+      const ts = Number(deadlineAt || 0);
+      if (!ts) return '設定なし';
+      try {
+        return new Date(ts).toLocaleString('ja-JP');
+      } catch (e) {
+        return String(ts);
+      }
+    }
+
     function renderDetailPanel() {
       const titleEl = document.getElementById('detailTitle');
       const bodyEl = document.getElementById('detailBody');
@@ -784,65 +896,232 @@
       const stClass = st.toLowerCase();
       const remainTxt = getRemainSecondsText(ops);
       const roomDisplay = ops.roomName ? `${ops.roomId}（${ops.roomName}）` : (ops.roomId || '-');
-      const safeImg = /^https?:\/\//i.test(acc.headerImage) ? acc.headerImage : '';
+      const effectiveHeaderImage = acc.headerImage || ops.headerImage || '';
+      const safeImg = /^https?:\/\//i.test(effectiveHeaderImage) ? effectiveHeaderImage : '';
 
       const adminHref = buildPageUrl('admin.html', acc.adminId, ops.roomId);
       const indexHref = buildPageUrl('index.html', acc.adminId, ops.roomId);
       const obsHref = buildPageUrl('obs.html', acc.adminId, ops.roomId);
 
+      const questions = Array.isArray(ops.questions) ? ops.questions : [];
+      const results = Array.isArray(ops.results) ? ops.results : [];
+      const rooms = Array.isArray(ops.rooms) ? ops.rooms : [];
+      const logs = Array.isArray(ops.logs) ? ops.logs : [];
+
+      const questionsHtml = questions.length
+        ? `
+          <div class="table-wrap">
+            <table class="sub-table">
+              <thead>
+                <tr>
+                  <th>質問ID</th>
+                  <th>種別</th>
+                  <th>質問文</th>
+                  <th>選択肢</th>
+                  <th>正解</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${questions.map((q) => {
+                  const optsArr = Array.isArray(q.options) ? q.options : [];
+                  return `
+                    <tr>
+                      <td><span class="id-code">${escapeHtml(q.id || '-')}</span></td>
+                      <td>${escapeHtml(q.type === 'quiz' ? 'クイズ (quiz)' : 'アンケート (poll)')}</td>
+                      <td><strong>${escapeHtml(q.question || '')}</strong></td>
+                      <td>${optsArr.length ? optsArr.map((o) => `・${escapeHtml(o)}`).join('<br>') : '-'}</td>
+                      <td>${escapeHtml(q.answer || '-')}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `<div class="empty-box" style="padding:12px;">紐づく質問データはありません。</div>`;
+
+      const resultsHtml = results.length
+        ? results.map((r) => {
+            const pct = Math.max(0, Math.min(100, Number(r.pct || 0)));
+            return `
+              <div class="detail-result-row">
+                <div class="detail-result-top">
+                  <span>${escapeHtml(r.label || '')}</span>
+                  <span style="color:#7dd3fc;">${Number(r.count || 0)} 票 (${pct}%)</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:${pct}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')
+        : `<div class="empty-box" style="padding:10px;">集計データはありません。</div>`;
+
+      const roomsHtml = rooms.length
+        ? `
+          <div class="table-wrap">
+            <table class="sub-table">
+              <thead>
+                <tr>
+                  <th>room_id</th>
+                  <th>room_name</th>
+                  <th>admin_id</th>
+                  <th>更新日時</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rooms.map((rm) => `
+                  <tr>
+                    <td>${escapeHtml(rm.roomId || rm.room_id || '-')}</td>
+                    <td>${escapeHtml(rm.roomName || rm.room_name || '-')}</td>
+                    <td>${escapeHtml(rm.adminId || rm.admin_id || acc.adminId)}</td>
+                    <td>${escapeHtml(rm.updatedAt || rm.updated_at || '-')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `<div class="detail-kv-list"><div class="detail-kv-item"><span class="detail-kv-k">現在のルーム</span><span class="detail-kv-v">${escapeHtml(roomDisplay)}</span></div></div>`;
+
+      const logsHtml = logs.length
+        ? `
+          <div class="table-wrap">
+            <table class="sub-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>日時</th>
+                  <th>質問ID</th>
+                  <th>選択肢</th>
+                  <th>回答者ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${logs.slice(0, 20).map((lg, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${escapeHtml(lg.timestamp || lg.createdAt || '-')}</td>
+                    <td>${escapeHtml(lg.questionId || lg.question_id || '-')}</td>
+                    <td><strong>${escapeHtml(lg.option || lg.choice || '-')}</strong></td>
+                    <td>${escapeHtml(lg.clientId || lg.voterId || lg.voter_id || '-')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `<div class="empty-box" style="padding:10px;">表示できる投票ログはありません。</div>`;
+
       titleEl.textContent = `選択アカウントの詳細情報：${acc.name || acc.adminId} [${acc.adminId}]`;
 
       bodyEl.innerHTML = `
-        <div class="detail-grid">
-          <div class="detail-box">
-            <div class="detail-label">adminId</div>
-            <div class="detail-value"><span class="id-code">${escapeHtml(acc.adminId)}</span></div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-label">アカウント名</div>
-            <div class="detail-value">${escapeHtml(acc.name || '（未設定）')}</div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-label">メモ</div>
-            <div class="detail-value">${escapeHtml(acc.memo || '-')}</div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-label">作成日時</div>
-            <div class="detail-value">${escapeHtml(acc.createdAt || '-')}</div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-label">現在の運用状況・配信ルーム</div>
-            <div class="detail-value" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span class="state-badge ${escapeHtml(stClass)}">${escapeHtml(stLabel)}</span>
-              <span>room: ${escapeHtml(roomDisplay)}</span>
+        <div class="detail-box">
+          <h3 class="detail-section-title">1. アカウント基本情報（admins）</h3>
+          <div class="detail-kv-list">
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">adminId</span>
+              <span class="detail-kv-v"><span class="id-code">${escapeHtml(acc.adminId)}</span></span>
             </div>
-          </div>
-
-          <div class="detail-box">
-            <div class="detail-label">出題中の質問・総票数</div>
-            <div class="detail-value">
-              ${escapeHtml(ops.questionText || '出題情報なし')}
-              <div style="font-size:12.5px;color:#93c5fd;margin-top:4px;">
-                総票数: <strong>${Number(ops.totalVotes || 0)}</strong> 票${remainTxt ? ` ・ <span style="color:#fde047;">${escapeHtml(remainTxt)}</span>` : ''}
-              </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">アカウント名（name）</span>
+              <span class="detail-kv-v">${escapeHtml(acc.name || '（未設定）')}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">メモ（memo）</span>
+              <span class="detail-kv-v">${escapeHtml(acc.memo || '-')}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">作成日時（createdAt）</span>
+              <span class="detail-kv-v">${escapeHtml(acc.createdAt || '-')}</span>
             </div>
           </div>
         </div>
 
-        <div class="detail-box" style="margin-bottom:14px;">
-          <div class="detail-label">ヘッダ画像（headerImage）</div>
-          <div class="detail-value">${escapeHtml(acc.headerImage || '未設定')}</div>
+        <div class="detail-box">
+          <h3 class="detail-section-title">2. 現在の運用・OBS表示状態（state）</h3>
+          <div class="detail-kv-list">
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">ステータス</span>
+              <span class="detail-kv-v"><span class="state-badge ${escapeHtml(stClass)}">${escapeHtml(stLabel)}</span> (${escapeHtml(st)})</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">現在の配信ルーム</span>
+              <span class="detail-kv-v">${escapeHtml(roomDisplay)}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">出題中の質問</span>
+              <span class="detail-kv-v">${escapeHtml(ops.questionText || '出題情報なし')} (${escapeHtml(ops.questionId || '-')})</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">総票数・タイマー</span>
+              <span class="detail-kv-v">${Number(ops.totalVotes || 0)} 票 / ${escapeHtml(remainTxt || formatDeadlineText(ops.deadlineAt))}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">OBSテーマ</span>
+              <span class="detail-kv-v">${escapeHtml(ops.theme || 'dark')}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">OBS表示位置</span>
+              <span class="detail-kv-v">${escapeHtml(ops.position || 'bottom-right')}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">OBS表示サイズ</span>
+              <span class="detail-kv-v">${escapeHtml(ops.size || 'normal')}</span>
+            </div>
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">状態ヘッダ画像（state.headerImage）</span>
+              <span class="detail-kv-v">${escapeHtml(ops.headerImage || '未設定')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">3. ヘッダ画像（headerImage）</h3>
+          <div class="detail-value">${escapeHtml(effectiveHeaderImage || '未設定')}</div>
           ${safeImg ? `<img src="${escapeHtml(safeImg)}" alt="${escapeHtml(acc.adminId)} のヘッダ画像プレビュー" class="detail-preview-banner" />` : ''}
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">4. 配信ルーム一覧（rooms）</h3>
+          ${roomsHtml}
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">5. 登録済み質問一覧（questions / ${questions.length} 件）</h3>
+          ${questionsHtml}
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">6. 現在の集計結果（results / 総票数: ${Number(ops.totalVotes || 0)} 票）</h3>
+          ${resultsHtml}
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">7. 投票ログ（直近 ${Math.min(logs.length, 20)} 件 / 全 ${logs.length} 件）</h3>
+          ${logsHtml}
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">8. 連携URL一覧</h3>
+          <div class="url-copy-box">
+            <span class="url-copy-text">管理パネル: ${escapeHtml(adminHref)}</span>
+            <button type="button" class="btn btn-gray" onclick="copyTextValue('${escapeHtml(adminHref)}', '管理パネルURL')">URLコピー</button>
+          </div>
+          <div class="url-copy-box">
+            <span class="url-copy-text">回答者画面: ${escapeHtml(indexHref)}</span>
+            <button type="button" class="btn btn-gray" onclick="copyTextValue('${escapeHtml(indexHref)}', '回答者画面URL')">URLコピー</button>
+          </div>
+          <div class="url-copy-box">
+            <span class="url-copy-text">OBSオーバーレイ: ${escapeHtml(obsHref)}</span>
+            <button type="button" class="btn btn-gray" onclick="copyTextValue('${escapeHtml(obsHref)}', 'OBS画面URL')">URLコピー</button>
+          </div>
         </div>
 
         <div class="detail-links-row">
           <button type="button" class="btn btn-gray" onclick="copyAdminId('${escapeHtml(acc.adminId)}')">adminIdをコピー</button>
-          <a href="${escapeHtml(adminHref)}" class="btn btn-green">管理パネルで開く</a>
-          <a href="${escapeHtml(indexHref)}" target="_blank" rel="noopener" class="btn btn-sky">回答者画面を別タブで開く</a>
+          <a href="${escapeHtml(adminHref)}" class="btn btn-gray">管理パネルで開く</a>
+          <a href="${escapeHtml(indexHref)}" target="_blank" rel="noopener" class="btn btn-gray">回答者画面を別タブで開く</a>
           <a href="${escapeHtml(obsHref)}" target="_blank" rel="noopener" class="btn btn-gray">OBS画面を別タブで開く</a>
         </div>
       `;
@@ -860,9 +1139,18 @@
         roomId: adminId === DEFAULT_ADMIN ? DEFAULT_ROOM : '未取得',
         roomName: '',
         status: 'WAITING',
+        questionId: '',
         questionText: '出題情報なし',
         totalVotes: 0,
-        deadlineAt: 0
+        deadlineAt: 0,
+        theme: 'dark',
+        position: 'bottom-right',
+        size: 'normal',
+        headerImage: '',
+        questions: [],
+        results: [],
+        rooms: [],
+        logs: []
       };
       return operationsByAdmin.get(adminId) || fallback;
     }
@@ -965,7 +1253,7 @@
             <td onclick="event.stopPropagation()">
               <div class="row-actions">
                 <button type="button" class="btn btn-gray" onclick="copyAdminId('${escapeHtml(acc.adminId)}')">IDコピー</button>
-                <a href="${escapeHtml(adminHref)}" class="btn btn-green">管理画面で開く</a>
+                <a href="${escapeHtml(adminHref)}" class="btn btn-gray">管理画面で開く</a>
               </div>
             </td>
           </tr>
@@ -1003,9 +1291,8 @@
       if (!res || !res.ok) return null;
 
       const resolvedRoomId = String(res.roomId || (res.state && res.state.roomId) || targetRoom || DEFAULT_ROOM).trim();
-      const matchedRoom = Array.isArray(res.rooms)
-        ? res.rooms.find((r) => String(r && r.roomId || '').trim() === resolvedRoomId)
-        : null;
+      const roomsArr = Array.isArray(res.rooms) ? res.rooms : [];
+      const matchedRoom = roomsArr.find((r) => String(r && r.roomId || '').trim() === resolvedRoomId);
       const resolvedRoomName = String(
         res.roomName ||
         (matchedRoom && (matchedRoom.roomName || matchedRoom.room_name)) ||
@@ -1013,18 +1300,43 @@
       ).trim();
 
       const stObj = res.state || {};
-      const qObj = res.question || (Array.isArray(res.questions)
-        ? res.questions.find((q) => q && q.id === stObj.questionId)
-        : null);
+      const qId = String(stObj.questionId || '').trim();
+      const questionsArr = Array.isArray(res.questions) ? res.questions : [];
+      const qObj = res.question || questionsArr.find((q) => q && q.id === qId) || null;
+
+      let logsArr = Array.isArray(res.logs) ? res.logs : (Array.isArray(res.votes) ? res.votes : []);
+      if (!logsArr.length && GAS_ENDPOINT) {
+        try {
+          const logRes = await callGasGet({
+            action: 'get_logs',
+            adminId,
+            roomId: resolvedRoomId
+          });
+          if (logRes && logRes.ok) {
+            logsArr = Array.isArray(logRes.logs)
+              ? logRes.logs
+              : (Array.isArray(logRes.votes) ? logRes.votes : []);
+          }
+        } catch (e) {}
+      }
 
       return {
         adminId,
         roomId: resolvedRoomId,
         roomName: resolvedRoomName,
         status: String(stObj.status || 'WAITING').toUpperCase(),
-        questionText: (qObj && qObj.question) ? String(qObj.question) : (stObj.questionId ? `質問ID: ${stObj.questionId}` : '出題情報なし'),
+        questionId: qId,
+        questionText: (qObj && qObj.question) ? String(qObj.question) : (qId ? `質問ID: ${qId}` : '出題情報なし'),
         totalVotes: Number(res.totalVotes || 0),
-        deadlineAt: Number(stObj.deadlineAt || 0)
+        deadlineAt: Number(stObj.deadlineAt || 0),
+        theme: String(stObj.theme || 'dark'),
+        position: String(stObj.position || 'bottom-right'),
+        size: String(stObj.size || 'normal'),
+        headerImage: String(stObj.headerImage || stObj.header_image || '').trim(),
+        questions: questionsArr,
+        results: Array.isArray(res.results) ? res.results : [],
+        rooms: roomsArr,
+        logs: logsArr
       };
     }
 
