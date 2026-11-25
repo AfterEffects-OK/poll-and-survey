@@ -146,6 +146,14 @@
       margin-bottom: 16px;
     }
 
+    .detail-card {
+      background: #132238;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+
     .card-header {
       display: flex;
       flex-wrap: wrap;
@@ -201,6 +209,18 @@
       padding: 12px 14px;
       display: grid;
       gap: 6px;
+      cursor: pointer;
+      transition: border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .ops-tile:hover {
+      border-color: #38bdf8;
+      background: #0f172a;
+    }
+
+    .ops-tile.is-selected {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
     }
 
     .ops-tile-top {
@@ -322,6 +342,10 @@
       color: #ffffff;
       background: #2563eb;
       white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     button.btn:hover:not(:disabled) {
@@ -333,9 +357,9 @@
       cursor: not-allowed;
     }
 
-    button.btn-green { background: #059669; }
-    button.btn-sky { background: #0284c7; }
-    button.btn-gray { background: #334155; border-color: #64748b; }
+    button.btn-green, a.btn-green { background: #059669; }
+    button.btn-sky, a.btn-sky { background: #0284c7; }
+    button.btn-gray, a.btn-gray { background: #334155; border-color: #64748b; }
 
     .status-banner {
       padding: 9px 12px;
@@ -375,6 +399,21 @@
       color: #7dd3fc;
       font-weight: 800;
       white-space: nowrap;
+    }
+
+    table.accounts-table tbody tr.account-row {
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+
+    table.accounts-table tbody tr.account-row:hover {
+      background: #132036;
+    }
+
+    table.accounts-table tbody tr.account-row.is-selected {
+      background: #172d4f;
+      outline: 2px solid #38bdf8;
+      outline-offset: -2px;
     }
 
     table.accounts-table tr:last-child td {
@@ -424,6 +463,55 @@
       color: #94a3b8;
       font-weight: 700;
     }
+
+    /* 詳細情報パネル */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .detail-box {
+      background: #0b101b;
+      border: 1px solid #273854;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .detail-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #93c5fd;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+      word-break: break-all;
+    }
+
+    .detail-preview-banner {
+      width: 100%;
+      max-width: 420px;
+      max-height: 110px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #141c2b;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .detail-links-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid #24334d;
+    }
   </style>
 </head>
 <body>
@@ -472,7 +560,7 @@
     <!-- 登録済みアカウント一覧 -->
     <section class="card">
       <div class="card-header">
-        <h2 class="card-title">アカウント一覧（admins シート連携）</h2>
+        <h2 class="card-title">アカウント一覧（admins シート連携・行クリックで詳細表示）</h2>
       </div>
 
       <div class="toolbar">
@@ -511,6 +599,17 @@
         </table>
       </div>
     </section>
+
+    <!-- 選択したレコードの詳細情報 -->
+    <section id="detailCard" class="detail-card" aria-label="選択アカウントの詳細情報">
+      <div class="card-header">
+        <h2 id="detailTitle" class="card-title">選択アカウントの詳細情報</h2>
+        <button type="button" class="btn btn-gray" onclick="clearSelectedAccount()">選択解除</button>
+      </div>
+      <div id="detailBody">
+        <div class="empty-box">一覧のレコードをクリックすると、ここに詳細情報が表示されます。</div>
+      </div>
+    </section>
   </div>
 
   <script src="config.js"></script>
@@ -543,6 +642,7 @@
 
     let accountsList = [];
     let operationsByAdmin = new Map();
+    let selectedAdminId = '';
     let autoRefreshTimer = null;
     let countdownTickTimer = null;
     let isSyncing = false;
@@ -616,8 +716,8 @@
       if (el) el.textContent = text;
     }
 
-    function buildAdminUrl(adminId, roomId = '') {
-      const url = new URL('./admin.html', window.location.href);
+    function buildPageUrl(pageName, adminId, roomId = '') {
+      const url = new URL(`./${pageName}`, window.location.href);
       if (adminId && adminId !== DEFAULT_ADMIN) {
         url.searchParams.set('admin', adminId);
       }
@@ -627,15 +727,125 @@
       return url.href;
     }
 
-    function copyAdminId(adminId) {
-      if (!adminId) return;
+    function buildAdminUrl(adminId, roomId = '') {
+      return buildPageUrl('admin.html', adminId, roomId);
+    }
+
+    function copyTextValue(val, labelText = '値') {
+      if (!val) return;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(adminId)
-          .then(() => setBanner(`adminId「${adminId}」をクリップボードにコピーしました。`))
-          .catch(() => setBanner(`adminId: ${adminId}`));
+        navigator.clipboard.writeText(val)
+          .then(() => setBanner(`${labelText}「${val}」をクリップボードにコピーしました。`))
+          .catch(() => setBanner(`${labelText}: ${val}`));
       } else {
-        setBanner(`adminId: ${adminId}`);
+        setBanner(`${labelText}: ${val}`);
       }
+    }
+
+    function copyAdminId(adminId) {
+      copyTextValue(adminId, 'adminId');
+    }
+
+    function selectAccount(adminId) {
+      selectedAdminId = String(adminId || '').trim();
+      renderOperationsPanel();
+      renderTable();
+      renderDetailPanel();
+    }
+
+    function clearSelectedAccount() {
+      selectedAdminId = '';
+      renderOperationsPanel();
+      renderTable();
+      renderDetailPanel();
+    }
+
+    function renderDetailPanel() {
+      const titleEl = document.getElementById('detailTitle');
+      const bodyEl = document.getElementById('detailBody');
+      if (!titleEl || !bodyEl) return;
+
+      if (!selectedAdminId) {
+        titleEl.textContent = '選択アカウントの詳細情報';
+        bodyEl.innerHTML = `<div class="empty-box">一覧のレコードをクリックすると、ここに詳細情報が表示されます。</div>`;
+        return;
+      }
+
+      const acc = accountsList.find((item) => item.adminId === selectedAdminId) || {
+        adminId: selectedAdminId,
+        name: selectedAdminId === DEFAULT_ADMIN ? 'default' : '',
+        memo: '',
+        createdAt: '',
+        headerImage: ''
+      };
+      const ops = getOperationSummary(acc.adminId);
+      const st = String(ops.status || 'WAITING').toUpperCase();
+      const stLabel = STATUS_LABELS[st] || st;
+      const stClass = st.toLowerCase();
+      const remainTxt = getRemainSecondsText(ops);
+      const roomDisplay = ops.roomName ? `${ops.roomId}（${ops.roomName}）` : (ops.roomId || '-');
+      const safeImg = /^https?:\/\//i.test(acc.headerImage) ? acc.headerImage : '';
+
+      const adminHref = buildPageUrl('admin.html', acc.adminId, ops.roomId);
+      const indexHref = buildPageUrl('index.html', acc.adminId, ops.roomId);
+      const obsHref = buildPageUrl('obs.html', acc.adminId, ops.roomId);
+
+      titleEl.textContent = `選択アカウントの詳細情報：${acc.name || acc.adminId} [${acc.adminId}]`;
+
+      bodyEl.innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-box">
+            <div class="detail-label">adminId</div>
+            <div class="detail-value"><span class="id-code">${escapeHtml(acc.adminId)}</span></div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-label">アカウント名</div>
+            <div class="detail-value">${escapeHtml(acc.name || '（未設定）')}</div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-label">メモ</div>
+            <div class="detail-value">${escapeHtml(acc.memo || '-')}</div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-label">作成日時</div>
+            <div class="detail-value">${escapeHtml(acc.createdAt || '-')}</div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-label">現在の運用状況・配信ルーム</div>
+            <div class="detail-value" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="state-badge ${escapeHtml(stClass)}">${escapeHtml(stLabel)}</span>
+              <span>room: ${escapeHtml(roomDisplay)}</span>
+            </div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-label">出題中の質問・総票数</div>
+            <div class="detail-value">
+              ${escapeHtml(ops.questionText || '出題情報なし')}
+              <div style="font-size:12.5px;color:#93c5fd;margin-top:4px;">
+                総票数: <strong>${Number(ops.totalVotes || 0)}</strong> 票${remainTxt ? ` ・ <span style="color:#fde047;">${escapeHtml(remainTxt)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-box" style="margin-bottom:14px;">
+          <div class="detail-label">ヘッダ画像（headerImage）</div>
+          <div class="detail-value">${escapeHtml(acc.headerImage || '未設定')}</div>
+          ${safeImg ? `<img src="${escapeHtml(safeImg)}" alt="${escapeHtml(acc.adminId)} のヘッダ画像プレビュー" class="detail-preview-banner" />` : ''}
+        </div>
+
+        <div class="detail-links-row">
+          <button type="button" class="btn btn-gray" onclick="copyAdminId('${escapeHtml(acc.adminId)}')">adminIdをコピー</button>
+          <a href="${escapeHtml(adminHref)}" class="btn btn-green">管理パネルで開く</a>
+          <a href="${escapeHtml(indexHref)}" target="_blank" rel="noopener" class="btn btn-sky">回答者画面を別タブで開く</a>
+          <a href="${escapeHtml(obsHref)}" target="_blank" rel="noopener" class="btn btn-gray">OBS画面を別タブで開く</a>
+        </div>
+      `;
     }
 
     function getRemainSecondsText(ops) {
@@ -670,9 +880,10 @@
         const stClass = st.toLowerCase();
         const remainTxt = getRemainSecondsText(ops);
         const roomDisplay = ops.roomName ? `${ops.roomId}（${ops.roomName}）` : (ops.roomId || '-');
+        const isSelected = selectedAdminId === acc.adminId;
 
         return `
-          <div class="ops-tile">
+          <div class="ops-tile ${isSelected ? 'is-selected' : ''}" onclick="selectAccount('${escapeHtml(acc.adminId)}')">
             <div class="ops-tile-top">
               <span class="ops-room-label">${escapeHtml(acc.name || acc.adminId)} <span style="color:#6ee7b7;font-family:monospace;">[${escapeHtml(acc.adminId)}]</span></span>
               <span class="state-badge ${escapeHtml(stClass)}">${escapeHtml(stLabel)}</span>
@@ -735,9 +946,10 @@
           : `<span style="color:#64748b;">未設定</span>`;
 
         const adminHref = buildAdminUrl(acc.adminId, ops.roomId);
+        const isSelected = selectedAdminId === acc.adminId;
 
         return `
-          <tr>
+          <tr class="account-row ${isSelected ? 'is-selected' : ''}" onclick="selectAccount('${escapeHtml(acc.adminId)}')">
             <td>${idx + 1}</td>
             <td><span class="id-code">${escapeHtml(acc.adminId)}</span></td>
             <td>
@@ -750,10 +962,10 @@
             <td>${escapeHtml(acc.memo || '-')}</td>
             <td>${escapeHtml(acc.createdAt || '-')}</td>
             <td>${imgCell}</td>
-            <td>
+            <td onclick="event.stopPropagation()">
               <div class="row-actions">
                 <button type="button" class="btn btn-gray" onclick="copyAdminId('${escapeHtml(acc.adminId)}')">IDコピー</button>
-                <a href="${escapeHtml(adminHref)}" class="btn btn-green" style="text-decoration:none;">管理画面で開く</a>
+                <a href="${escapeHtml(adminHref)}" class="btn btn-green">管理画面で開く</a>
               </div>
             </td>
           </tr>
@@ -838,6 +1050,7 @@
 
       renderOperationsPanel();
       renderTable();
+      renderDetailPanel();
     }
 
     async function syncAllNow(showFeedback = false) {
@@ -849,6 +1062,7 @@
       mergeAccounts([]);
       renderOperationsPanel();
       renderTable();
+      renderDetailPanel();
 
       try {
         const res = await callGasGet({
@@ -876,6 +1090,7 @@
         console.error(e);
         renderOperationsPanel();
         renderTable();
+        renderDetailPanel();
         setBanner(`通信エラーのため、ローカル/初期データ（${accountsList.length}件）を表示中です。`);
       } finally {
         isSyncing = false;
@@ -923,6 +1138,7 @@
         }
       } catch (e) {}
 
+      renderDetailPanel();
       syncAllNow(false);
       changeRefreshInterval();
 
@@ -934,6 +1150,7 @@
         if (hasActiveTimer) {
           renderOperationsPanel();
           renderTable();
+          renderDetailPanel();
         }
       }, 1000);
     })();
