@@ -255,6 +255,17 @@
       word-break: break-word;
     }
 
+    /* 質問文と同じ文字サイズのルームID表示 */
+    .room-id-title {
+      margin: 0 0 12px;
+      font-size: clamp(22px, 2vw, 26px);
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
     .rows {
       display: grid;
       gap: 8px;
@@ -432,6 +443,7 @@
 
     html[data-size="compact"] .top-bar,
     html[data-size="compact"] .q-title,
+    html[data-size="compact"] .room-id-title,
     html[data-size="compact"] .rows,
     html[data-size="compact"] .footer-meta {
       display: none;
@@ -489,7 +501,8 @@
       font-size: 24px;
     }
 
-    html[data-size="large"] .q-title {
+    html[data-size="large"] .q-title,
+    html[data-size="large"] .room-id-title {
       font-size: clamp(26px, 3.2vw, 38px);
       margin-bottom: 16px;
     }
@@ -534,6 +547,7 @@
         <span id="timerDisplay" class="timer-txt"></span>
       </div>
       <h2 id="qTitle" class="q-title"></h2>
+      <div id="roomIdDisplay" class="room-id-title"></div>
       <div id="rowsContainer" class="rows"></div>
 
       <div id="qrBox" class="qr-box">
@@ -556,7 +570,8 @@
 
   <script src="config.js"></script>
   <script>
-    const ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
+    const INITIAL_ROOM_ID = typeof getRoomId === 'function' ? getRoomId() : 'default';
+    let ROOM_ID = INITIAL_ROOM_ID;
     const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
     const ALLOWED_POSITIONS = [
@@ -569,6 +584,25 @@
     let currentIsQuiz = false;
     let lastResultSignature = '';
     let renderedQrUrl = '';
+
+    function resolveActiveRoomId(apiRoomId) {
+      const params = new URLSearchParams(window.location.search);
+      const paramRoom = (params.get('room') || '').trim();
+      if (paramRoom) return paramRoom;
+      if (apiRoomId && String(apiRoomId).trim()) return String(apiRoomId).trim();
+      if (typeof getRoomId === 'function') {
+        const fnRoom = String(getRoomId() || '').trim();
+        if (fnRoom) return fnRoom;
+      }
+      return ROOM_ID || 'default';
+    }
+
+    function updateRoomIdDisplay(roomId) {
+      const el = document.getElementById('roomIdDisplay');
+      if (!el) return;
+      const safeRoom = String(roomId || '').trim();
+      el.textContent = safeRoom ? `ルームID: ${safeRoom}` : '';
+    }
 
     function getVoteTargetUrl() {
       if (typeof CONFIG !== 'undefined' && CONFIG.VOTE_URL && String(CONFIG.VOTE_URL).trim()) {
@@ -612,16 +646,16 @@
       // ECC Level L: [version, totalCodewords, ecCodewordsPerBlock, numBlocksGroup1, dataCodewordsGroup1, numBlocksGroup2, dataCodewordsGroup2]
       const QR_SPECS = [
         null,
-        [1,  26,   7, 1, 19, 0,  0],  // max data bytes = 19 (mode+len overhead 2 -> 17)
-        [2,  44,  10, 1, 34, 0,  0],  // max data bytes = 34 (overhead 2 -> 32)
-        [3,  70,  15, 1, 55, 0,  0],  // max data bytes = 55 (overhead 2 -> 53)
-        [4,  100, 20, 1, 80, 0,  0],  // max data bytes = 80 (overhead 2 -> 78)
-        [5,  134, 26, 1, 108, 0, 0],  // max data bytes = 108 (overhead 2 -> 106)
-        [6,  172, 18, 2, 68, 0,  0],  // max data bytes = 136 (overhead 2 -> 134)
-        [7,  196, 20, 2, 78, 0,  0],  // max data bytes = 156 (overhead 3 -> 153)
-        [8,  242, 24, 2, 97, 0,  0],  // max data bytes = 194 (overhead 3 -> 191)
-        [9,  292, 30, 2, 116, 0, 0],  // max data bytes = 232 (overhead 3 -> 229)
-        [10, 346, 18, 2, 68, 2, 69]   // max data bytes = 274 (overhead 3 -> 271)
+        [1,  26,   7, 1, 19, 0,  0],
+        [2,  44,  10, 1, 34, 0,  0],
+        [3,  70,  15, 1, 55, 0,  0],
+        [4,  100, 20, 1, 80, 0,  0],
+        [5,  134, 26, 1, 108, 0, 0],
+        [6,  172, 18, 2, 68, 0,  0],
+        [7,  196, 20, 2, 78, 0,  0],
+        [8,  242, 24, 2, 97, 0,  0],
+        [9,  292, 30, 2, 116, 0, 0],
+        [10, 346, 18, 2, 68, 2, 69]
       ];
 
       let spec = null;
@@ -647,7 +681,6 @@
 
       const size = spec.version * 4 + 17;
 
-      // GF(256) with primitive polynomial 0x11d (x^8 + x^4 + x^3 + x^2 + 1)
       const gfExp = new Array(512).fill(0);
       const gfLog = new Array(256).fill(0);
       let x = 1;
@@ -688,7 +721,6 @@
         return rem;
       }
 
-      // ビット列生成（Byteモード = 0100）
       const bits = [];
       function pushBits(val, len) {
         for (let b = len - 1; b >= 0; b--) {
@@ -724,7 +756,6 @@
         dataCodewords.push(val);
       }
 
-      // ブロック分割とインターリーブ
       const dataBlocks = [];
       const ecBlocks = [];
       let offset = 0;
@@ -766,7 +797,6 @@
         codeBits.push(false);
       }
 
-      // 機能パターン配置
       function createBaseGrid() {
         const grid = Array.from({ length: size }, () => Array(size).fill(null));
         const isFunction = Array.from({ length: size }, () => Array(size).fill(false));
@@ -795,14 +825,12 @@
         placeFinder(0, size - 7);
         placeFinder(size - 7, 0);
 
-        // タイミングパターン
         for (let i = 8; i < size - 8; i++) {
           const dark = i % 2 === 0;
           setFunc(6, i, dark);
           setFunc(i, 6, dark);
         }
 
-        // アライメントパターン（Version >= 2）
         const ALIGN_CENTERS = [
           null,
           [],
@@ -831,10 +859,8 @@
           }
         }
 
-        // Dark module
         setFunc(size - 8, 8, true);
 
-        // フォーマット情報領域を予約（ダミー値）
         for (let i = 0; i < 9; i++) {
           if (i < size) {
             isFunction[8][i] = true;
@@ -846,7 +872,6 @@
           isFunction[size - 1 - i][8] = true;
         }
 
-        // バージョン情報領域予約（Version >= 7）
         if (spec.version >= 7) {
           for (let i = 0; i < 6; i++) {
             for (let j = 0; j < 3; j++) {
@@ -859,11 +884,10 @@
         return { grid, isFunction };
       }
 
-      // フォーマット情報（ECC Level L = 01）を計算
       function computeFormatBits(maskIdx) {
-        const data = (0b01 << 3) | (maskIdx & 0b111); // 5 bits
+        const data = (0b01 << 3) | (maskIdx & 0b111);
         let rem = data << 10;
-        const poly = 0b10100110111; // x^10 + x^8 + x^5 + x^4 + x^2 + x + 1
+        const poly = 0b10100110111;
         for (let bit = 14; bit >= 10; bit--) {
           if ((rem >>> bit) & 1) {
             rem ^= (poly << (bit - 10));
@@ -874,21 +898,15 @@
         for (let i = 14; i >= 0; i--) {
           arr.push(((bch >>> i) & 1) === 1);
         }
-        return arr; // index 0 = bit14 (MSB), index 14 = bit0 (LSB)
+        return arr;
       }
 
       function applyFormatBits(grid, maskIdx) {
         const fmt = computeFormatBits(maskIdx);
-        // 横側・縦側配置
-        const hCoords = [
-          [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
-          [8, size - 8], [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]
-        ];
         const vCoords = [
           [size - 1, 8], [size - 2, 8], [size - 3, 8], [size - 4, 8], [size - 5, 8], [size - 6, 8], [size - 7, 8],
           [8, 8], [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8]
         ];
-        // 横側15箇所: [8,0..5], [8,7..8], [8,size-7..size-1]
         const horiz = [
           [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
           [8, size - 7], [8, size - 6], [8, size - 5], [8, size - 4], [8, size - 3], [8, size - 2], [8, size - 1]
@@ -917,7 +935,6 @@
 
       function calcPenalty(grid) {
         let score = 0;
-        // ルール1: 同色連続5以上
         for (let r = 0; r < size; r++) {
           let runColor = grid[r][0];
           let runLen = 1;
@@ -946,7 +963,6 @@
           }
           if (runLen >= 5) score += 3 + (runLen - 5);
         }
-        // ルール2: 2x2同色ブロック
         for (let r = 0; r < size - 1; r++) {
           for (let c = 0; c < size - 1; c++) {
             const v = grid[r][c];
@@ -1026,7 +1042,7 @@
       }
 
       const n = matrix.length;
-      const quiet = 4; // 規格推奨の4モジュール余白
+      const quiet = 4;
       const cell = Math.floor(canvas.width / (n + quiet * 2));
       const drawSize = cell * (n + quiet * 2);
       const offsetX = Math.floor((canvas.width - drawSize) / 2);
@@ -1087,6 +1103,9 @@
       try {
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data.ok) return;
+
+        ROOM_ID = resolveActiveRoomId(data.roomId);
+        updateRoomIdDisplay(ROOM_ID);
 
         const { state, question, totalVotes, results } = data;
         currentState = Object.assign({}, currentState, state || {});
@@ -1173,6 +1192,7 @@
       }[m]));
     }
 
+    updateRoomIdDisplay(ROOM_ID);
     applyAppearance(currentState);
     pollOverlay();
     setInterval(pollOverlay, CONFIG.POLL_INTERVAL_MS);
@@ -1180,10 +1200,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
