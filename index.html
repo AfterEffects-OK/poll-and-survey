@@ -531,6 +531,15 @@
       gap: 8px;
     }
 
+    /* 改行表示が折り返しや高さ不足で切れないようにするスタイル */
+    .room-admin-badge,
+    .stream-meta,
+    .context-info {
+      white-space: normal;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
     /* ================= クイズ正解時の演出オーバーレイ ================= */
     .quiz-win-overlay {
       position: fixed;
@@ -1219,14 +1228,14 @@
         const card = document.getElementById('appCard');
         const headerHtml = buildStreamerHeaderHtml(effectiveAdminId, currentState);
 
-        if (!state || state.status === 'WAITING' || !question) {
+       if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
           lastCelebratedToken = '';
           dismissQuizWinCelebration();
           card.innerHTML = `
             <div class="waiting-box">
-              <p class="waiting-title">次のアンケート・クイズを待機中です</p>
-              <p class="waiting-sub">配信枠: ${escapeHtml(ROOM_ID)} ／ 配信者の操作で自動的に画面が切り替わります</p>
+              <p class="waiting-title">アンケート・クイズを待機中</p>
+              <p class="waiting-sub">配信枠: ${escapeHtml(ROOM_ID)}<br>配信者の操作で自動的に画面が切り替わります</p>
             </div>
           `;
           return;
