@@ -1340,9 +1340,18 @@
         `;
         syncStreamerHeaderVisibility(effectiveAdminId, currentState);
 
-        if (isUserCorrect) {
-          const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
-          scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
+        // ANSWER 画面を描画した直後の正解分岐
+        if (state.status === 'ANSWER') {
+          if (isUserCorrect) {
+            const celebToken = `${ROOM_ID}::${question.id}::${Number(currentState.resetSeq || 0)}::${cleanMyChoice}::ANSWER`;
+            scheduleQuizWinAfterGraph(cleanAnswer, celebToken);
+          } else {
+            if (quizWinDelayTimer) {
+              clearTimeout(quizWinDelayTimer);
+              quizWinDelayTimer = null;
+            }
+            activeCelebToken = '';
+          }
         } else {
           if (quizWinDelayTimer) {
             clearTimeout(quizWinDelayTimer);
