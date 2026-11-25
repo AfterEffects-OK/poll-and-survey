@@ -622,7 +622,7 @@
               autocomplete="off"
               required
             />
-            <button type="submit" class="room-prompt-btn">このルームに参加する</button>
+            <button type="submit" class="room-prompt-btn" onclick="showJoiningMessageImmediately()">このルームに参加する</button>
             ${errorMsg ? `<p class="room-prompt-error">${escapeHtml(errorMsg)}</p>` : ''}
           </form>
         </div>
@@ -642,6 +642,15 @@
       `;
     }
 
+    function showJoiningMessageImmediately() {
+      const input = document.getElementById('roomIdPromptInput');
+      const raw = input ? input.value : '';
+      const cleaned = String(raw || '').trim().replace(/[^a-zA-Z0-9_@-]/g, '');
+      if (cleaned) {
+        renderRoomJoiningNotice(cleaned);
+      }
+    }
+
     async function handleRoomIdSubmit(event) {
       event.preventDefault();
       const input = document.getElementById('roomIdPromptInput');
@@ -655,14 +664,15 @@
       ROOM_ID = cleaned;
       needsRoomInput = false;
 
+      // ボタンを押した瞬間にすぐメッセージを表示
+      renderRoomJoiningNotice(ROOM_ID);
+
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('room', ROOM_ID);
         window.history.replaceState({}, '', url.toString());
       } catch (e) {}
 
-      renderRoomJoiningNotice(ROOM_ID);
-      await new Promise(resolve => setTimeout(resolve, 600));
       await pollState();
     }
 
