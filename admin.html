@@ -2153,6 +2153,7 @@
         return base;
       }
       Object.keys(activeStatePatch.patch).forEach((key) => {
+        if (key === 'status') return;
         base[key] = activeStatePatch.patch[key];
       });
       return base;
@@ -2235,7 +2236,7 @@
         q => q.id === ((qSel && qSel.value) || currentState.questionId)
       );
       renderStatusButtons(activeQObj ? activeQObj.type : 'poll');
-      updateMonitorPanel(buildMonitorSnapshot(currentState));
+      updateMonitorPanel(buildMonitorSnapshot(currentState), { syncBadge: true });
       renderAdminCountdown();
 
       const suffix = reasonText ? `（${reasonText}）` : '';
@@ -2268,6 +2269,7 @@
       const opVersion = ++pendingStateVersion;
       const targetRoomAtStart = ROOM_ID;
       const targetAdminAtStart = ADMIN_ID;
+      const hasStatusPatch = Object.prototype.hasOwnProperty.call(patch, 'status');
 
       activeStatePatch = {
         version: opVersion,
@@ -2279,7 +2281,8 @@
 
       const nextState = {
         ...currentState,
-        ...patch
+        ...patch,
+        status: hasStatusPatch ? currentState.status : (patch.status || currentState.status)
       };
       currentState = nextState;
 
@@ -2303,8 +2306,8 @@
       }
 
       const activeQObj = latestQuestions.find(q => q.id === (patch.questionId || (sel && sel.value) || currentState.questionId));
-      renderStatusButtons(activeQObj ? activeQObj.type : 'poll');
-      updateMonitorPanel(buildMonitorSnapshot(nextState));
+      renderStatusButtons(activeQObj ? activeQObj.type : 'poll', hasStatusPatch ? patch.status : null);
+      updateMonitorPanel(buildMonitorSnapshot(nextState), { syncBadge: !hasStatusPatch });
       renderAdminCountdown();
 
       if (logMessage) {
@@ -2336,8 +2339,19 @@
             return;
           }
 
-          if (refreshAfterPost && !contextChanged && !hasNewerOp) {
-            await loadAll();
+          if (!contextChanged && !hasNewerOp) {
+            if (hasStatusPatch) {
+              const confirmedStatus = (res.state && res.state.status) || patch.status || currentState.status;
+              currentState = {
+                ...currentState,
+                status: confirmedStatus
+              };
+              renderStatusBadgeOnly(confirmedStatus);
+              renderStatusButtons(activeQObj ? activeQObj.type : 'poll', confirmedStatus);
+            }
+            if (refreshAfterPost) {
+              await loadAll();
+            }
           }
         } catch (err) {
           console.error(err);
@@ -3595,7 +3609,7 @@
       isEditingQuestionForm = Boolean(editing);
     }
 
-    function renderStatusButtons(type) {
+    function renderStatusButtons(type, activeStatusOverride = null) {
       const normalizedType = type === 'quiz' ? 'quiz' : 'poll';
       const tag = document.getElementById('statusModeTag');
       if (tag) {
@@ -3613,6 +3627,7 @@
       const row = document.getElementById('statusBtnRow');
       if (!row) return;
 
+      const highlightStatus = activeStatusOverride || (currentState && currentState.status) || '';
       const defs = BUTTON_CONFIGS[normalizedType];
       row.innerHTML = '';
       defs.forEach(def => {
@@ -3621,7 +3636,7 @@
         btn.textContent = def.label;
         const classes = ['btn'];
         if (def.cls) classes.push(def.cls);
-        if (currentState && currentState.status === def.status) classes.push('is-current');
+        if (highlightStatus === def.status) classes.push('is-current');
         btn.className = classes.join(' ');
         btn.onclick = () => setStatus(def.status);
         row.appendChild(btn);
@@ -3647,15 +3662,32 @@
       }
     }
 
-    function updateMonitorPanel(data) {
-      const st = (data.state && data.state.status) || 'WAITING';
-      const sizeKey = (data.state && data.state.size) || currentState.size || selectedSize;
-      const isQuiz = Boolean(data.question && data.question.type === 'quiz');
+    function renderStatusBadgeOnly(status, sizeKey = null, isQuiz = null) {
+      const st = status || 'WAITING';
+      const resolvedSize = sizeKey || (currentState && currentState.size) || selectedSize;
+      const activeQId = (currentState && currentState.questionId) || document.getElementById('questionSelect')?.value || '';
+      const qObj = latestQuestions.find(q => q.id === activeQId) || null;
+      const resolvedIsQuiz = typeof isQuiz === 'boolean' ? isQuiz : Boolean(qObj && qObj.type === 'quiz');
 
       const badge = document.getElementById('liveStatusBadge');
       if (badge) {
         badge.textContent = STATUS_LABELS[st] || st;
         badge.className = 'state-pill ' + st.toLowerCase();
+      }
+
+      updateCompactResultNotice(st, resolvedSize, resolvedIsQuiz);
+    }
+
+    function updateMonitorPanel(data, options = {}) {
+      const { syncBadge = true } = options;
+      const st = (data.state && data.state.status) || 'WAITING';
+      const sizeKey = (data.state && data.state.size) || currentState.size || selectedSize;
+      const isQuiz = Boolean(data.question && data.question.type === 'quiz');
+
+      if (syncBadge) {
+        renderStatusBadgeOnly(st, sizeKey, isQuiz);
+      } else {
+        updateCompactResultNotice(st, sizeKey, isQuiz);
       }
 
       const vLabel = document.getElementById('liveVotesLabel');
@@ -3678,8 +3710,6 @@
           qLabel.textContent = data.question.question || '';
         }
       }
-
-      updateCompactResultNotice(st, sizeKey, isQuiz);
     }
 
     function onQuestionSelectChange() {
@@ -4071,7 +4101,7 @@
         updateMonitorPanel({
           ...data,
           state: currentState
-        });
+        }, { syncBadge: true });
 
         const editSel = document.getElementById('editTargetSelect');
         const accordionOpen = document.getElementById('questionAccordion').classList.contains('open');
@@ -4120,7 +4150,7 @@
         }
 
         const selectedObj = latestQuestions.find(q => q.id === sel.value) || data.question;
-        renderStatusButtons(selectedObj ? selectedObj.type : 'poll');
+        renderStatusButtons(selectedObj ? selectedObj.type : 'poll', currentState.status);
 
         const prev = document.getElementById('previewArea');
         prev.innerHTML = (data.results || []).map(r => `
