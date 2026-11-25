@@ -189,6 +189,11 @@
     [data-pos="bottom-right"] .stage { justify-content: flex-end; align-items: flex-end; }
     [data-pos="bottom-left"] .stage  { justify-content: flex-start; align-items: flex-end; }
     [data-pos="bottom-center"] .stage{ justify-content: center; align-items: flex-end; }
+    [data-pos="bottom-right"] .stage,
+    [data-pos="bottom-left"] .stage,
+    [data-pos="bottom-center"] .stage {
+      padding-bottom: clamp(48px, 6vh, 96px);
+    }
     [data-pos="top-right"] .stage    { justify-content: flex-end; align-items: flex-start; }
     [data-pos="top-left"] .stage     { justify-content: flex-start; align-items: flex-start; }
     [data-pos="top-center"] .stage   { justify-content: center; align-items: flex-start; }
