@@ -436,6 +436,30 @@
       display: inline-block;
     }
 
+    .mini-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #172554;
+      color: #93c5fd;
+      border: 1px solid #3b82f6;
+      white-space: nowrap;
+    }
+
+    .mini-pill.quiz {
+      background: #4c1d95;
+      color: #e9d5ff;
+      border-color: #a855f7;
+    }
+
+    .mini-pill.used {
+      background: #064e3b;
+      color: #6ee7b7;
+      border-color: #10b981;
+    }
+
     .header-thumb {
       width: 96px;
       height: 32px;
@@ -497,6 +521,21 @@
       font-size: 14px;
       font-weight: 800;
       color: #93c5fd;
+    }
+
+    .history-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .history-filter-bar input[type="text"] {
+      flex: 1 1 220px;
+      max-width: 340px;
+      padding: 7px 10px;
+      font-size: 13px;
     }
 
     .detail-label {
@@ -748,6 +787,8 @@
     let autoRefreshTimer = null;
     let countdownTickTimer = null;
     let isSyncing = false;
+    let historyTypeFilterValue = 'ALL';
+    let historyKeywordFilterValue = '';
 
     function escapeHtml(str) {
       return String(str ?? '').replace(/[&<>"']/g, (m) => ({
@@ -768,6 +809,7 @@
         name: String(raw.name || raw.accountName || raw.label || '').trim(),
         memo: String(raw.memo || raw.email || raw.note || '').trim(),
         createdAt: String(raw.createdAt || raw.created_at || raw.timestamp || '').trim(),
+        lastUsedAt: String(raw.lastUsedAt || raw.last_used_at || raw.updatedAt || raw.updated_at || '').trim(),
         headerImage: String(raw.headerImage || raw.header_image || '').trim()
       };
     }
@@ -804,6 +846,7 @@
           name: item.name || (prev ? prev.name : ''),
           memo: item.memo || (prev ? prev.memo : ''),
           createdAt: item.createdAt || (prev ? prev.createdAt : ''),
+          lastUsedAt: item.lastUsedAt || (prev ? prev.lastUsedAt : ''),
           headerImage: item.headerImage || (prev ? prev.headerImage : '')
         });
       });
@@ -857,6 +900,8 @@
 
     function clearSelectedAccount() {
       selectedAdminId = '';
+      historyTypeFilterValue = 'ALL';
+      historyKeywordFilterValue = '';
       renderOperationsPanel();
       renderTable();
       renderDetailPanel();
@@ -870,6 +915,289 @@
       } catch (e) {
         return String(ts);
       }
+    }
+
+    function toTimestampMs(raw) {
+      if (raw === null || raw === undefined || raw === '') return 0;
+      if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw;
+      const str = String(raw).trim();
+      if (!str) return 0;
+      if (/^\d{11,}$/.test(str)) return Number(str);
+      const normalized = str.replace(/\//g, '-');
+      const parsed = Date.parse(normalized);
+      if (!Number.isNaN(parsed)) return parsed;
+      const fallback = Date.parse(str);
+      return Number.isNaN(fallback) ? 0 : fallback;
+    }
+
+    function formatDateTimeDisplay(raw) {
+      if (raw === null || raw === undefined || raw === '') return '';
+      const ms = toTimestampMs(raw);
+      if (ms > 0) {
+        try {
+          return new Date(ms).toLocaleString('ja-JP');
+        } catch (e) {}
+      }
+      return String(raw).trim();
+    }
+
+    function resolveLastUsedInfo(acc, ops) {
+      const candidates = [];
+
+      if (ops && ops.stateUpdatedAt) {
+        candidates.push({
+          ms: toTimestampMs(ops.stateUpdatedAt),
+          text: formatDateTimeDisplay(ops.stateUpdatedAt),
+          source: '配信状態更新 (state.updatedAt)'
+        });
+      }
+      if (ops && ops.lastUsedAt) {
+        candidates.push({
+          ms: toTimestampMs(ops.lastUsedAt),
+          text: formatDateTimeDisplay(ops.lastUsedAt),
+          source: '運用データ更新'
+        });
+      }
+      if (acc && acc.lastUsedAt) {
+        candidates.push({
+          ms: toTimestampMs(acc.lastUsedAt),
+          text: formatDateTimeDisplay(acc.lastUsedAt),
+          source: 'アカウント記録'
+        });
+      }
+      if (ops && Array.isArray(ops.rooms)) {
+        ops.rooms.forEach((rm) => {
+          const rTs = rm && (rm.updatedAt || rm.updated_at);
+          if (rTs) {
+            candidates.push({
+              ms: toTimestampMs(rTs),
+              text: formatDateTimeDisplay(rTs),
+              source: `ルーム更新 (${rm.roomId || rm.room_id || 'room'})`
+            });
+          }
+        });
+      }
+      if (ops && Array.isArray(ops.logs)) {
+        ops.logs.forEach((lg) => {
+          const lTs = lg && (lg.timestamp || lg.createdAt || lg.ts);
+          if (lTs) {
+            candidates.push({
+              ms: toTimestampMs(lTs),
+              text: formatDateTimeDisplay(lTs),
+              source: '投票ログ'
+            });
+          }
+        });
+      }
+
+      const valid = candidates.filter((c) => c.text);
+      valid.sort((a, b) => b.ms - a.ms);
+      if (valid.length > 0) {
+        return valid[0];
+      }
+
+      if (acc && acc.createdAt) {
+        return {
+          ms: toTimestampMs(acc.createdAt),
+          text: `${formatDateTimeDisplay(acc.createdAt)}（作成日時ベース）`,
+          source: '作成日時 (createdAt)'
+        };
+      }
+
+      return {
+        ms: 0,
+        text: '使用履歴なし',
+        source: '未記録'
+      };
+    }
+
+    function buildQuestionUsageHistory(acc, ops) {
+      const questions = Array.isArray(ops && ops.questions) ? ops.questions : [];
+      const currentQ = ops && ops.currentQuestion ? ops.currentQuestion : null;
+      const logs = Array.isArray(ops && ops.logs) ? ops.logs : [];
+      const rooms = Array.isArray(ops && ops.rooms) ? ops.rooms : [];
+      const serverHistory = Array.isArray(ops && ops.questionHistory) ? ops.questionHistory : [];
+
+      const activeRoomId = String((ops && ops.roomId) || DEFAULT_ROOM).trim();
+      const matchedRoom = rooms.find((r) => String((r && (r.roomId || r.room_id)) || '').trim() === activeRoomId);
+      const activeRoomLabel = matchedRoom && (matchedRoom.roomName || matchedRoom.room_name)
+        ? `${activeRoomId}（${matchedRoom.roomName || matchedRoom.room_name}）`
+        : activeRoomId;
+
+      const stateMs = toTimestampMs(ops && ops.stateUpdatedAt);
+      const stateTimeStr = formatDateTimeDisplay(ops && ops.stateUpdatedAt);
+      const stUpper = String((ops && ops.status) || 'WAITING').toUpperCase();
+      const stLabel = STATUS_LABELS[stUpper] || stUpper;
+
+      const map = new Map();
+
+      function ensureQuestionRow(qId, seed = {}) {
+        const idStr = String(qId || '').trim();
+        if (!idStr) return null;
+        if (!map.has(idStr)) {
+          map.set(idStr, {
+            questionId: idStr,
+            type: String(seed.type || 'poll').trim().toLowerCase() === 'quiz' ? 'quiz' : 'poll',
+            question: String(seed.question || idStr).trim(),
+            options: Array.isArray(seed.options) ? seed.options : [],
+            answer: String(seed.answer || '').trim(),
+            usageCount: 0,
+            voteCount: 0,
+            lastRoom: '-',
+            lastStatus: '未使用',
+            lastUsedAt: '',
+            lastUsedMs: 0
+          });
+        }
+        const row = map.get(idStr);
+        if (seed.type) {
+          row.type = String(seed.type).trim().toLowerCase() === 'quiz' ? 'quiz' : 'poll';
+        }
+        if (seed.question) row.question = String(seed.question).trim();
+        if (Array.isArray(seed.options) && seed.options.length > 0) row.options = seed.options;
+        if (seed.answer) row.answer = String(seed.answer).trim();
+        return row;
+      }
+
+      questions.forEach((q) => {
+        if (q && q.id) ensureQuestionRow(q.id, q);
+      });
+
+      const activeQId = String((currentQ && currentQ.id) || (ops && ops.questionId) || '').trim();
+      if (activeQId) {
+        const activeRow = ensureQuestionRow(activeQId, currentQ || {});
+        if (activeRow) {
+          activeRow.usageCount = Math.max(activeRow.usageCount, 1);
+          activeRow.voteCount = Math.max(activeRow.voteCount, Number((ops && ops.totalVotes) || 0));
+          activeRow.lastRoom = activeRoomLabel;
+          activeRow.lastStatus = `現在: ${stLabel}`;
+          if (stateMs >= activeRow.lastUsedMs) {
+            activeRow.lastUsedMs = stateMs;
+            activeRow.lastUsedAt = stateTimeStr;
+          }
+        }
+      }
+
+      logs.forEach((lg) => {
+        const qId = String((lg && (lg.questionId || lg.question_id)) || '').trim();
+        if (!qId) return;
+        const row = ensureQuestionRow(qId);
+        if (!row) return;
+        row.voteCount += 1;
+        row.usageCount = Math.max(row.usageCount, 1);
+        const rId = String((lg && (lg.roomId || lg.room_id)) || activeRoomId).trim();
+        row.lastRoom = rId;
+        if (!row.lastStatus || row.lastStatus === '未使用') {
+          row.lastStatus = '投票記録あり';
+        }
+        const tsRaw = lg && (lg.timestamp || lg.createdAt || lg.ts);
+        const tsMs = toTimestampMs(tsRaw);
+        if (tsMs >= row.lastUsedMs) {
+          row.lastUsedMs = tsMs;
+          row.lastUsedAt = formatDateTimeDisplay(tsRaw);
+        }
+      });
+
+      serverHistory.forEach((h) => {
+        if (!h || typeof h !== 'object') return;
+        const qId = String(h.questionId || h.question_id || h.id || '').trim();
+        if (!qId) return;
+        const row = ensureQuestionRow(qId, h);
+        if (!row) return;
+        const cnt = Number(h.usageCount || h.usedCount || h.count || 1) || 1;
+        row.usageCount = Math.max(row.usageCount, cnt);
+        if (h.voteCount !== undefined || h.votes !== undefined) {
+          row.voteCount = Math.max(row.voteCount, Number(h.voteCount ?? h.votes ?? 0) || 0);
+        }
+        if (h.roomId || h.room_id || h.lastRoom) {
+          row.lastRoom = String(h.lastRoom || h.roomId || h.room_id).trim();
+        }
+        if (h.status || h.lastStatus) {
+          const rawSt = String(h.lastStatus || h.status).trim();
+          row.lastStatus = STATUS_LABELS[rawSt.toUpperCase()] || rawSt;
+        }
+        const hTsRaw = h.lastUsedAt || h.last_used_at || h.usedAt || h.updatedAt || h.timestamp;
+        const hTsMs = toTimestampMs(hTsRaw);
+        if (hTsMs >= row.lastUsedMs) {
+          row.lastUsedMs = hTsMs;
+          row.lastUsedAt = formatDateTimeDisplay(hTsRaw);
+        }
+      });
+
+      return [...map.values()].sort((a, b) => {
+        if (b.lastUsedMs !== a.lastUsedMs) return b.lastUsedMs - a.lastUsedMs;
+        if (b.usageCount !== a.usageCount) return b.usageCount - a.usageCount;
+        if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+        return String(a.questionId).localeCompare(String(b.questionId));
+      });
+    }
+
+    function renderQuestionHistoryTableBody(items) {
+      const tbody = document.getElementById('questionHistoryTbody');
+      const countLabel = document.getElementById('historyFilteredCount');
+      if (!tbody) return;
+
+      const kw = String(historyKeywordFilterValue || '').trim().toLowerCase();
+      const filtered = (Array.isArray(items) ? items : []).filter((row) => {
+        if (historyTypeFilterValue !== 'ALL' && row.type !== historyTypeFilterValue) {
+          return false;
+        }
+        if (!kw) return true;
+        const hay = `${row.questionId} ${row.type} ${row.question} ${row.answer} ${row.lastRoom} ${row.lastStatus} ${row.lastUsedAt}`.toLowerCase();
+        return hay.includes(kw);
+      });
+
+      if (countLabel) {
+        countLabel.textContent = `${filtered.length} / ${items.length} 件表示`;
+      }
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-box" style="padding:14px;">条件に一致する質問履歴はありません。</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((row) => {
+        const isQuiz = row.type === 'quiz';
+        const typeBadge = `<span class="mini-pill ${isQuiz ? 'quiz' : ''}">${isQuiz ? 'QUIZ' : 'POLL'}</span>`;
+        const usedBadge = `<span class="mini-pill ${row.usageCount > 0 || row.voteCount > 0 ? 'used' : ''}">${escapeHtml(row.lastStatus || '未使用')}</span>`;
+        const optsText = row.options && row.options.length ? `選択肢: ${row.options.join(' / ')}` : '';
+        const ansText = isQuiz && row.answer ? `正解: ${row.answer}` : '';
+        const subLine = [optsText, ansText].filter(Boolean).join(' ・ ');
+
+        return `
+          <tr>
+            <td>
+              <span class="id-code">${escapeHtml(row.questionId)}</span>
+              <div style="margin-top:4px;">${typeBadge}</div>
+            </td>
+            <td>
+              <strong>${escapeHtml(row.question)}</strong>
+              ${subLine ? `<div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">${escapeHtml(subLine)}</div>` : ''}
+            </td>
+            <td>${usedBadge}</td>
+            <td>${escapeHtml(row.lastRoom || '-')}</td>
+            <td>${escapeHtml(row.lastUsedAt || '記録なし')}</td>
+            <td>
+              <div>利用 <strong>${Number(row.usageCount || 0)}</strong> 回</div>
+              <div style="font-size:11.5px;color:#94a3b8;">集計 <strong>${Number(row.voteCount || 0)}</strong> 票</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function onHistoryFilterChange() {
+      const sel = document.getElementById('historyTypeSelect');
+      const inp = document.getElementById('historySearchInput');
+      historyTypeFilterValue = sel ? sel.value : 'ALL';
+      historyKeywordFilterValue = inp ? inp.value : '';
+
+      const bodyEl = document.getElementById('detailBody');
+      if (!bodyEl || !bodyEl.dataset.historyRows) return;
+      try {
+        const parsed = JSON.parse(bodyEl.dataset.historyRows);
+        renderQuestionHistoryTableBody(parsed);
+      } catch (e) {}
     }
 
     function renderDetailPanel() {
@@ -888,6 +1216,7 @@
         name: selectedAdminId === DEFAULT_ADMIN ? 'default' : '',
         memo: '',
         createdAt: '',
+        lastUsedAt: '',
         headerImage: ''
       };
       const ops = getOperationSummary(acc.adminId);
@@ -898,6 +1227,8 @@
       const roomDisplay = ops.roomName ? `${ops.roomId}（${ops.roomName}）` : (ops.roomId || '-');
       const effectiveHeaderImage = acc.headerImage || ops.headerImage || '';
       const safeImg = /^https?:\/\//i.test(effectiveHeaderImage) ? effectiveHeaderImage : '';
+      const lastUsedInfo = resolveLastUsedInfo(acc, ops);
+      const historyRows = buildQuestionUsageHistory(acc, ops);
 
       const adminHref = buildPageUrl('admin.html', acc.adminId, ops.roomId);
       const indexHref = buildPageUrl('index.html', acc.adminId, ops.roomId);
@@ -975,7 +1306,7 @@
                     <td>${escapeHtml(rm.roomId || rm.room_id || '-')}</td>
                     <td>${escapeHtml(rm.roomName || rm.room_name || '-')}</td>
                     <td>${escapeHtml(rm.adminId || rm.admin_id || acc.adminId)}</td>
-                    <td>${escapeHtml(rm.updatedAt || rm.updated_at || '-')}</td>
+                    <td>${escapeHtml(formatDateTimeDisplay(rm.updatedAt || rm.updated_at) || '-')}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1001,7 +1332,7 @@
                 ${logs.slice(0, 20).map((lg, idx) => `
                   <tr>
                     <td>${idx + 1}</td>
-                    <td>${escapeHtml(lg.timestamp || lg.createdAt || '-')}</td>
+                    <td>${escapeHtml(formatDateTimeDisplay(lg.timestamp || lg.createdAt || lg.ts) || '-')}</td>
                     <td>${escapeHtml(lg.questionId || lg.question_id || '-')}</td>
                     <td><strong>${escapeHtml(lg.option || lg.choice || '-')}</strong></td>
                     <td>${escapeHtml(lg.clientId || lg.voterId || lg.voter_id || '-')}</td>
@@ -1033,14 +1364,19 @@
             </div>
             <div class="detail-kv-item">
               <span class="detail-kv-k">作成日時（createdAt）</span>
-              <span class="detail-kv-v">${escapeHtml(acc.createdAt || '-')}</span>
+              <span class="detail-kv-v">${escapeHtml(formatDateTimeDisplay(acc.createdAt) || '-')}</span>
             </div>
           </div>
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">2. 現在の運用・OBS表示状態（state）</h3>
+          <h3 class="detail-section-title">2. 直近の使用日時・現在の運用／OBS表示状態（state）</h3>
           <div class="detail-kv-list">
+            <div class="detail-kv-item">
+              <span class="detail-kv-k">直近の使用日時</span>
+              <span class="detail-kv-v" style="color:#6ee7b7;">${escapeHtml(lastUsedInfo.text)}</span>
+              <span class="detail-kv-k" style="margin-top:2px;">参照元: ${escapeHtml(lastUsedInfo.source)}</span>
+            </div>
             <div class="detail-kv-item">
               <span class="detail-kv-k">ステータス</span>
               <span class="detail-kv-v"><span class="state-badge ${escapeHtml(stClass)}">${escapeHtml(stLabel)}</span> (${escapeHtml(st)})</span>
@@ -1077,33 +1413,67 @@
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">3. ヘッダ画像（headerImage）</h3>
+          <h3 class="detail-section-title">3. 質問の使用履歴（利用回数・直近使用日時・集計状況）</h3>
+          <div class="history-filter-bar">
+            <select id="historyTypeSelect" class="auto-select" onchange="onHistoryFilterChange()">
+              <option value="ALL" ${historyTypeFilterValue === 'ALL' ? 'selected' : ''}>すべての種別</option>
+              <option value="poll" ${historyTypeFilterValue === 'poll' ? 'selected' : ''}>アンケート (poll)</option>
+              <option value="quiz" ${historyTypeFilterValue === 'quiz' ? 'selected' : ''}>クイズ (quiz)</option>
+            </select>
+            <input
+              id="historySearchInput"
+              type="text"
+              value="${escapeHtml(historyKeywordFilterValue)}"
+              placeholder="質問ID・質問文・ルーム・状態で絞り込み"
+              oninput="onHistoryFilterChange()"
+            />
+            <span id="historyFilteredCount" style="font-size:12px;font-weight:700;color:#93c5fd;"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="sub-table">
+              <thead>
+                <tr>
+                  <th>質問ID / 種別</th>
+                  <th>質問内容</th>
+                  <th>利用状況</th>
+                  <th>直近ルーム</th>
+                  <th>直近使用日時</th>
+                  <th>利用・集計</th>
+                </tr>
+              </thead>
+              <tbody id="questionHistoryTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="detail-box">
+          <h3 class="detail-section-title">4. ヘッダ画像（headerImage）</h3>
           <div class="detail-value">${escapeHtml(effectiveHeaderImage || '未設定')}</div>
           ${safeImg ? `<img src="${escapeHtml(safeImg)}" alt="${escapeHtml(acc.adminId)} のヘッダ画像プレビュー" class="detail-preview-banner" />` : ''}
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">4. 配信ルーム一覧（rooms）</h3>
+          <h3 class="detail-section-title">5. 配信ルーム一覧（rooms）</h3>
           ${roomsHtml}
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">5. 登録済み質問一覧（questions / ${questions.length} 件）</h3>
+          <h3 class="detail-section-title">6. 登録済み質問一覧（questions / ${questions.length} 件）</h3>
           ${questionsHtml}
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">6. 現在の集計結果（results / 総票数: ${Number(ops.totalVotes || 0)} 票）</h3>
+          <h3 class="detail-section-title">7. 現在の集計結果（results / 総票数: ${Number(ops.totalVotes || 0)} 票）</h3>
           ${resultsHtml}
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">7. 投票ログ（直近 ${Math.min(logs.length, 20)} 件 / 全 ${logs.length} 件）</h3>
+          <h3 class="detail-section-title">8. 投票ログ（直近 ${Math.min(logs.length, 20)} 件 / 全 ${logs.length} 件）</h3>
           ${logsHtml}
         </div>
 
         <div class="detail-box">
-          <h3 class="detail-section-title">8. 連携URL一覧</h3>
+          <h3 class="detail-section-title">9. 連携URL一覧</h3>
           <div class="url-copy-box">
             <span class="url-copy-text">管理パネル: ${escapeHtml(adminHref)}</span>
             <button type="button" class="btn btn-gray" onclick="copyTextValue('${escapeHtml(adminHref)}', '管理パネルURL')">URLコピー</button>
@@ -1125,6 +1495,9 @@
           <a href="${escapeHtml(obsHref)}" target="_blank" rel="noopener" class="btn btn-gray">OBS画面を別タブで開く</a>
         </div>
       `;
+
+      bodyEl.dataset.historyRows = JSON.stringify(historyRows);
+      renderQuestionHistoryTableBody(historyRows);
     }
 
     function getRemainSecondsText(ops) {
@@ -1141,6 +1514,9 @@
         status: 'WAITING',
         questionId: '',
         questionText: '出題情報なし',
+        currentQuestion: null,
+        stateUpdatedAt: 0,
+        lastUsedAt: '',
         totalVotes: 0,
         deadlineAt: 0,
         theme: 'dark',
@@ -1148,6 +1524,7 @@
         size: 'normal',
         headerImage: '',
         questions: [],
+        questionHistory: [],
         results: [],
         rooms: [],
         logs: []
@@ -1292,7 +1669,7 @@
 
       const resolvedRoomId = String(res.roomId || (res.state && res.state.roomId) || targetRoom || DEFAULT_ROOM).trim();
       const roomsArr = Array.isArray(res.rooms) ? res.rooms : [];
-      const matchedRoom = roomsArr.find((r) => String(r && r.roomId || '').trim() === resolvedRoomId);
+      const matchedRoom = roomsArr.find((r) => String(r && (r.roomId || r.room_id) || '').trim() === resolvedRoomId);
       const resolvedRoomName = String(
         res.roomName ||
         (matchedRoom && (matchedRoom.roomName || matchedRoom.room_name)) ||
@@ -1305,7 +1682,7 @@
       const qObj = res.question || questionsArr.find((q) => q && q.id === qId) || null;
 
       let logsArr = Array.isArray(res.logs) ? res.logs : (Array.isArray(res.votes) ? res.votes : []);
-      if (!logsArr.length && GAS_ENDPOINT) {
+      if (!logsArr.length && (GAS_ENDPOINT || typeof window.fetchGas === 'function')) {
         try {
           const logRes = await callGasGet({
             action: 'get_logs',
@@ -1320,6 +1697,10 @@
         } catch (e) {}
       }
 
+      const histArr = Array.isArray(res.questionHistory)
+        ? res.questionHistory
+        : (Array.isArray(res.history) ? res.history : []);
+
       return {
         adminId,
         roomId: resolvedRoomId,
@@ -1327,6 +1708,9 @@
         status: String(stObj.status || 'WAITING').toUpperCase(),
         questionId: qId,
         questionText: (qObj && qObj.question) ? String(qObj.question) : (qId ? `質問ID: ${qId}` : '出題情報なし'),
+        currentQuestion: qObj,
+        stateUpdatedAt: stObj.updatedAt || res.updatedAt || 0,
+        lastUsedAt: String(res.lastUsedAt || res.last_used_at || '').trim(),
         totalVotes: Number(res.totalVotes || 0),
         deadlineAt: Number(stObj.deadlineAt || 0),
         theme: String(stObj.theme || 'dark'),
@@ -1334,6 +1718,7 @@
         size: String(stObj.size || 'normal'),
         headerImage: String(stObj.headerImage || stObj.header_image || '').trim(),
         questions: questionsArr,
+        questionHistory: histArr,
         results: Array.isArray(res.results) ? res.results : [],
         rooms: roomsArr,
         logs: logsArr
