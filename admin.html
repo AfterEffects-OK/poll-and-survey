@@ -1120,6 +1120,44 @@
       color: #6ee7b7;
     }
 
+    .restore-pair-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    @media (min-width: 480px) {
+      .restore-pair-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .restore-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .restore-candidates-box {
+      margin-top: 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .restore-candidate-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #10192b;
+      border: 1px solid #2b3a55;
+      font-size: 12.5px;
+    }
+
     .account-generated-card {
       margin-top: 12px;
       padding: 12px;
@@ -1703,22 +1741,46 @@
             </form>
           </div>
 
-          <!-- 忘れた時の復元 -->
+          <!-- 忘れた時の復元（アカウント名＋メモの2つで特定） -->
           <div class="account-box">
             <h4>2. admin IDを忘れた時の復元</h4>
+            <p class="lbl" style="font-size:12px;color:#94a3b8;margin-bottom:10px;">
+              登録時の「アカウント名」と「メモ」の2つを入力して adminId を特定します。
+            </p>
 
-            <div class="field">
-              <label class="lbl" for="restoreAdminQueryInput">名前・メモ・IDで検索（またはID直接入力）</label>
-              <div class="inline-select-row">
+            <div class="restore-pair-grid">
+              <div>
+                <label class="lbl" for="restoreAdminNameInput">アカウント名</label>
                 <input
-                  id="restoreAdminQueryInput"
+                  id="restoreAdminNameInput"
                   type="text"
-                  placeholder="例: 山田太郎 / AbCdEfGh"
+                  placeholder="例: 山田太郎_配信アカウント"
                   autocomplete="off"
+                  onkeydown="handleRestorePairKeyDown(event)"
                 />
-                <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminByDirectOrFirst()">復元</button>
+              </div>
+              <div>
+                <label class="lbl" for="restoreAdminMemoInput">メモ</label>
+                <input
+                  id="restoreAdminMemoInput"
+                  type="text"
+                  placeholder="例: メイン配信用 / contact@example.com"
+                  autocomplete="off"
+                  onkeydown="handleRestorePairKeyDown(event)"
+                />
               </div>
             </div>
+
+            <div class="restore-actions-row">
+              <button type="button" id="restoreAdminBtn" class="btn btn-sky btn-sm" onclick="restoreAdminByNameAndMemo()">
+                アカウント名とメモから特定
+              </button>
+              <button type="button" class="btn btn-gray btn-sm" onclick="clearRestoreAdminInputs()">
+                入力クリア
+              </button>
+            </div>
+
+            <div id="restoreCandidatesBox" class="restore-candidates-box"></div>
 
             <div id="accountListSection" class="registered-accounts-section" style="display:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
@@ -1788,7 +1850,7 @@
           <section class="help-section">
             <h4><span class="help-step-pill">手順</span> 配信開始から終了までの基本ステップ</h4>
             <ol class="help-list">
-              <li><strong>adminアカウントを登録・復元する</strong>：ヘッダーの「アカウント登録・復元」から8桁英字の <span class="help-code">adminId</span> を作成（または復元）します。</li>
+              <li><strong>adminアカウントを登録・復元する</strong>：ヘッダーの「アカウント登録・復元」から8桁英字の <span class="help-code">adminId</span> を作成（またはアカウント名とメモから復元）します。</li>
               <li><strong>配信ルーム・配信名を決める</strong>：上部の「配信（room）ID」バーで <span class="help-code">ID生成</span> を押すか、任意のID・配信名を入力して <span class="help-code">配信切替</span> / <span class="help-code">配信名保存</span> を押します（※ <span class="help-code">admin</span> が <span class="help-code">default</span> の場合は <span class="help-code">room</span> は <span class="help-code">default</span> 固定）。</li>
               <li><strong>URLを配置・配布する</strong>：「OBS用URLをコピー」でOBSブラウザソースに設定し、「回答者用URLをコピー」で視聴者に共有します。</li>
               <li><strong>質問を選ぶ</strong>：左「1. 出題・受付ステータス操作」で質問を選び、<span class="help-code">出題切替</span> を押します。</li>
@@ -1844,7 +1906,7 @@
             <h4><span class="help-step-pill">アカウント</span> adminアカウント登録・復元モーダルの使い方</h4>
             <ul class="help-list">
               <li><strong>新規アカウント登録</strong>：8桁のランダム英字 <span class="help-code">adminId</span> を自動生成して登録し、即座にその <span class="help-code">admin</span> に切り替えます。</li>
-              <li><strong>IDを忘れた時の復元</strong>：IDまたは検索ワードを入力して「復元」を押すことで、以前の <span class="help-code">adminId</span> を呼び戻せます。</li>
+              <li><strong>IDを忘れた時の復元</strong>：登録時の「アカウント名」と「メモ」の2つを入力して「アカウント名とメモから特定」を押すことで、該当する <span class="help-code">adminId</span> を特定・呼び戻せます。</li>
               <li><strong>default アカウントの制限</strong>：<span class="help-code">admin</span> が <span class="help-code">default</span> の場合、<span class="help-code">room</span> は <span class="help-code">default</span> 固定となり、<span class="help-code">default</span> 所属の質問は編集・削除・新規作成がロックされます。</li>
             </ul>
           </section>
@@ -2765,13 +2827,13 @@
 
     function normalizeAdminAccount(raw) {
       if (!raw || typeof raw !== 'object') return null;
-      const adminId = String(raw.adminId || raw.id || '').trim();
+      const adminId = String(raw.adminId || raw.admin_id || raw.id || '').trim();
       if (!adminId) return null;
       return {
         adminId,
         name: String(raw.name || raw.accountName || raw.label || ''),
         memo: String(raw.memo || raw.email || raw.note || ''),
-        createdAt: String(raw.createdAt || raw.timestamp || '')
+        createdAt: String(raw.createdAt || raw.created_at || raw.timestamp || '')
       };
     }
 
@@ -2952,14 +3014,42 @@
       }
     }
 
-    function getFilteredAdminAccounts() {
-      const q = String(document.getElementById('restoreAdminQueryInput')?.value || '').trim().toLowerCase();
-      const list = mergeAdminAccounts([]);
-      if (!q) return list;
-      return list.filter(acc => {
-        const hay = `${acc.adminId} ${acc.name} ${acc.memo} ${acc.createdAt}`.toLowerCase();
-        return hay.includes(q);
-      });
+    function normalizeRestoreField(val) {
+      return String(val ?? '').trim().toLowerCase();
+    }
+
+    function renderRestoreCandidates(matches) {
+      const box = document.getElementById('restoreCandidatesBox');
+      if (!box) return;
+      if (!Array.isArray(matches) || matches.length <= 1) {
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = matches.map((acc) => `
+        <div class="restore-candidate-item">
+          <span>
+            <strong>${escapeHtml(acc.adminId)}</strong>
+            （アカウント名: ${escapeHtml(acc.name || '-')} / メモ: ${escapeHtml(acc.memo || '-')}）
+          </span>
+          <button type="button" class="btn btn-sky btn-sm" onclick="restoreAdminById('${escapeHtml(acc.adminId)}')">このIDを適用</button>
+        </div>
+      `).join('');
+    }
+
+    function clearRestoreAdminInputs() {
+      const nameEl = document.getElementById('restoreAdminNameInput');
+      const memoEl = document.getElementById('restoreAdminMemoInput');
+      if (nameEl) nameEl.value = '';
+      if (memoEl) memoEl.value = '';
+      renderRestoreCandidates([]);
+      setAccountStatusMessage(`現在の admin ID: <strong>${escapeHtml(ADMIN_ID)}</strong>`);
+    }
+
+    function handleRestorePairKeyDown(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        restoreAdminByNameAndMemo();
+      }
     }
 
     function renderAdminAccountsTable() {
@@ -2975,22 +3065,77 @@
     async function restoreAdminById(targetAdminId) {
       const clean = normalizeAdminId(targetAdminId);
       mergeAdminAccounts([{ adminId: clean }]);
+      renderRestoreCandidates([]);
       setAccountStatusMessage(`admin ID「<strong>${escapeHtml(clean)}</strong>」を復元して呼び出しました。`);
       await applyAdminId(clean, { announcePrefix: '復元・' });
     }
 
-    async function restoreAdminByDirectOrFirst() {
-      const rawInput = String(document.getElementById('restoreAdminQueryInput')?.value || '').trim();
-      const filtered = getFilteredAdminAccounts();
-      if (/^[a-zA-Z0-9_@-]{3,}$/.test(rawInput)) {
-        await restoreAdminById(rawInput);
+    async function restoreAdminByNameAndMemo() {
+      const nameEl = document.getElementById('restoreAdminNameInput');
+      const memoEl = document.getElementById('restoreAdminMemoInput');
+      const btn = document.getElementById('restoreAdminBtn');
+
+      const rawName = String(nameEl?.value || '').trim();
+      const rawMemo = String(memoEl?.value || '').trim();
+
+      renderRestoreCandidates([]);
+
+      if (!rawName && !rawMemo) {
+        setAccountStatusMessage('「アカウント名」と「メモ」の2つを入力してください。');
         return;
       }
-      if (filtered.length > 0) {
-        await restoreAdminById(filtered[0].adminId);
+      if (!rawName || !rawMemo) {
+        setAccountStatusMessage('アカウント名とメモの<strong>両方</strong>を入力して adminId を特定してください。');
         return;
       }
-      setAccountStatusMessage('復元する admin ID を入力してください。');
+
+      if (btn) btn.disabled = true;
+      setAccountStatusMessage('アカウント名とメモを照合中...');
+
+      try {
+        try {
+          const res = await callGasGet({
+            action: 'list_admins',
+            roomId: ROOM_ID,
+            adminId: ADMIN_ID
+          });
+          if (res && res.ok) {
+            const rawList = Array.isArray(res.admins) ? res.admins : (Array.isArray(res.accounts) ? res.accounts : []);
+            mergeAdminAccounts(rawList);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+
+        const allAccounts = mergeAdminAccounts([]);
+        const targetName = normalizeRestoreField(rawName);
+        const targetMemo = normalizeRestoreField(rawMemo);
+
+        const matches = allAccounts.filter((acc) => {
+          const accName = normalizeRestoreField(acc && acc.name);
+          const accMemo = normalizeRestoreField(acc && acc.memo);
+          return accName === targetName && accMemo === targetMemo;
+        });
+
+        if (matches.length === 0) {
+          setAccountStatusMessage(
+            `入力したアカウント名「<strong>${escapeHtml(rawName)}</strong>」とメモ「<strong>${escapeHtml(rawMemo)}</strong>」の両方に一致する admin ID は見つかりませんでした。`
+          );
+          return;
+        }
+
+        if (matches.length === 1) {
+          await restoreAdminById(matches[0].adminId);
+          return;
+        }
+
+        renderRestoreCandidates(matches);
+        setAccountStatusMessage(
+          `<strong>${matches.length}件</strong>の候補が見つかりました。適用する admin ID を選択してください。`
+        );
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     function openAccountModal() {
@@ -2998,8 +3143,10 @@
       if (!modal) return;
       updateModalAdminHeader();
       renderAdminAccountsTable();
+      renderRestoreCandidates([]);
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
+      fetchRegisteredAdmins(false);
     }
 
     function closeAccountModal() {
