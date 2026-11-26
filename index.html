@@ -720,6 +720,9 @@
   <script>
     const ADMIN_ID = typeof getAdminId === 'function' ? getAdminId() : 'default';
     const ALLOWED_THEMES = ['dark', 'yellow', 'neon', 'pop', 'cyber', 'sakura', 'broadcast'];
+    const POLL_INTERVAL_MS = (typeof CONFIG !== 'undefined' && Number(CONFIG.POLL_INTERVAL_MS) > 0)
+      ? Number(CONFIG.POLL_INTERVAL_MS)
+      : 2000;
 
     function isTrailingRoomParam() {
       const search = window.location.search || '';
@@ -764,12 +767,25 @@
     let quizWinDelayTimer = null;
     let quizWinAutoCloseTimer = null;
 
+    function syncConfettiCanvasSize() {
+      const canvas = document.getElementById('quizConfettiCanvas');
+      if (!canvas) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', () => {
+      const overlay = document.getElementById('quizWinOverlay');
+      if (overlay && overlay.classList.contains('is-active')) {
+        syncConfettiCanvasSize();
+      }
+    });
+
     function launchQuizConfetti() {
       const canvas = document.getElementById('quizConfettiCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      syncConfettiCanvasSize();
 
       const palette = ['#facc15', '#f472b6', '#38bdf8', '#34d399', '#a78bfa', '#fb923c', '#ffffff'];
       const particles = Array.from({ length: 145 }, (_, i) => {
@@ -1176,16 +1192,18 @@
       isSubmitting = true;
       (async () => {
         try {
-          const res = await postGas({
-            action: 'vote',
-            roomId: ROOM_ID,
-            adminId: ADMIN_ID,
-            questionId,
-            option,
-            clientId: getClientId()
-          });
-          if (res && !res.ok && res.error) {
-            alert(res.error);
+          if (typeof postGas === 'function') {
+            const res = await postGas({
+              action: 'vote',
+              roomId: ROOM_ID,
+              adminId: ADMIN_ID,
+              questionId,
+              option,
+              clientId: getClientId()
+            });
+            if (res && !res.ok && res.error) {
+              alert(res.error);
+            }
           }
         } catch (e) {
           console.error(e);
@@ -1203,6 +1221,7 @@
       }
 
       try {
+        if (typeof fetchGas !== 'function') return;
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
         if (!data || !data.ok) {
           if (isConnectingRoom) {
@@ -1228,7 +1247,7 @@
         const card = document.getElementById('appCard');
         const headerHtml = buildStreamerHeaderHtml(effectiveAdminId, currentState);
 
-       if (!state || state.status === 'WAITING' || !question) {
+        if (!state || state.status === 'WAITING' || !question) {
           lastResultSignature = '';
           lastCelebratedToken = '';
           dismissQuizWinCelebration();
@@ -1242,7 +1261,8 @@
         }
 
         const isQuiz = String(question.type || '').trim() === 'quiz';
-        const myChoice = getSavedChoice(question.id);
+        const savedChoice = getSavedChoice(question.id);
+        const myChoice = isSubmitting && savedChoice ? savedChoice : savedChoice;
         const tagText = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
 
         if (state.status === 'VOTING') {
@@ -1413,7 +1433,7 @@
 
     applyTheme(currentState);
     pollState();
-    setInterval(pollState, CONFIG.POLL_INTERVAL_MS);
+    setInterval(pollState, POLL_INTERVAL_MS);
     setInterval(updateCountdown, 200);
   </script>
 </body>
