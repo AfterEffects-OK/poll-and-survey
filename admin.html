@@ -1444,14 +1444,16 @@
     <header class="header-bar">
       <div class="header-left">
         <h1 class="header-title">
-          <span>配信</span>
-          <img
-            src="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png"
-            alt=""
-            class="header-title-icon"
-          />
-          <span>票・クイズ 管理パネル</span>
-        </h1>
+            <span>配信</span>
+            <img
+              src="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png"
+              alt=""
+              class="header-title-icon"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+            />
+            <span style="display: none;">投</span>
+            <span>票・クイズ 管理パネル</span>
+          </h1>
         <span id="contextBadge" class="context-pill">admin: default / room: default</span>
       </div>
       <div class="header-actions">
