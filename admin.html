@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票 管理パネル</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#090d16" />
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="shortcut" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
@@ -1068,7 +1070,7 @@
       background: #1d4ed8;
     }
 
-    /* アカウント登録・復元モーダル（横幅スリム化・一覧非表示） */
+    /* アカウント登録・復元モーダル */
     .account-modal-box {
       width: 100%;
       max-width: 540px;
@@ -1158,7 +1160,7 @@
       color: #e2e8f0;
     }
 
-    /* 使い方ガイド用モーダル（タブ対応） */
+    /* 使い方ガイド用モーダル */
     .help-modal-box {
       width: 100%;
       max-width: 920px;
@@ -2250,7 +2252,7 @@
       const nextState = {
         ...currentState,
         ...patch,
-        status: hasStatusPatch ? currentState.status : (patch.status || currentState.status)
+        status: hasStatusPatch ? patch.status : (patch.status || currentState.status)
       };
       currentState = nextState;
 
@@ -2275,7 +2277,7 @@
 
       const activeQObj = latestQuestions.find(q => q.id === (patch.questionId || (sel && sel.value) || currentState.questionId));
       renderStatusButtons(activeQObj ? activeQObj.type : 'poll', hasStatusPatch ? patch.status : null);
-      updateMonitorPanel(buildMonitorSnapshot(nextState), { syncBadge: !hasStatusPatch });
+      updateMonitorPanel(buildMonitorSnapshot(nextState), { syncBadge: true });
       renderAdminCountdown();
 
       if (logMessage) {
@@ -3782,6 +3784,11 @@
       setOptionRows(['', ''], '');
       onQuestionTypeInputChange();
       updateQuestionEditorLockState();
+
+      loadAll();
+      fetchVoteLogs(false);
+      setInterval(loadAll, POLL_INTERVAL_MS);
+      setInterval(renderAdminCountdown, 200);
     });
 
     function syncObsAppearanceInputs(state) {
@@ -3948,6 +3955,11 @@
         const editSel = document.getElementById('editTargetSelect');
         if (editSel && res.id && [...editSel.options].some(o => o.value === res.id)) {
           editSel.value = res.id;
+        }
+        const qSel = document.getElementById('questionSelect');
+        if (qSel && res.id && [...qSel.options].some(o => o.value === res.id)) {
+          qSel.value = res.id;
+          onQuestionSelectChange();
         }
         updateQuestionEditorLockState();
       }
@@ -4160,11 +4172,6 @@
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       }[m]));
     }
-
-    loadAll();
-    fetchVoteLogs(false);
-    setInterval(loadAll, POLL_INTERVAL_MS);
-    setInterval(renderAdminCountdown, 200);
   </script>
 </body>
 </html>
