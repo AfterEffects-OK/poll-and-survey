@@ -4,12 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>配信投票 管理パネル</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#090d16" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="配信投票Admin" />
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="shortcut" type="image/png" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png" />
@@ -2318,7 +2312,6 @@
               const confirmedStatus = (res.state && res.state.status) || patch.status || currentState.status;
               currentState = {
                 ...currentState,
-                ...
                 status: confirmedStatus
               };
               renderStatusBadgeOnly(confirmedStatus);
