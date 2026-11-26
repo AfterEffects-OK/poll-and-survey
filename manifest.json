@@ -1,0 +1,20 @@
+{
+  "name": "配信投票・クイズ 管理パネル",
+  "short_name": "配信投票Admin",
+  "start_url": "./admin.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/AfterEffects-OK/poll-and-survey/main/OBS_poll_icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
