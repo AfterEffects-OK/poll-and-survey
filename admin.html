@@ -2108,6 +2108,11 @@
     let pendingStateVersion = 0;
     let activeStatePatch = null;
 
+    // ポーリング・リクエスト削減用の実行状態管理
+    let isLoadingAll = false;
+    let isFetchingLogs = false;
+    let pollTimerId = null;
+
     function isFieldLockedByActivePatch(fieldName) {
       if (!activeStatePatch) return false;
       if (activeStatePatch.roomId !== ROOM_ID || activeStatePatch.adminId !== ADMIN_ID) {
@@ -2320,7 +2325,7 @@
               renderStatusButtons(activeQObj ? activeQObj.type : 'poll', confirmedStatus);
             }
             if (refreshAfterPost) {
-              await loadAll();
+              await loadAll({ force: true });
             }
           }
         } catch (err) {
@@ -2551,7 +2556,7 @@
           renderContextBadge();
           renderRoomHistoryChips();
           setLog(res.message || `[room: ${ROOM_ID}] 配信名「${currentRoomName || '（未設定）'}」を保存しました。`);
-          await loadAll();
+          await loadAll({ force: true });
         } else {
           currentRoomName = prevRoomName;
           if (prevCachedName) {
@@ -2846,7 +2851,7 @@
       updateQuestionEditorLockState();
       const roomSuffix = isDefaultAdmin() ? '（roomはdefault固定）' : '';
       setLog(`${announcePrefix}admin「${ADMIN_ID}」を呼び出しました。${roomSuffix}`);
-      await Promise.all([loadAll(), fetchVoteLogs(false)]);
+      await Promise.all([loadAll({ force: true }), fetchVoteLogs(false)]);
     }
 
     async function fetchRegisteredAdmins(showFeedback = false) {
@@ -3180,7 +3185,7 @@
       renderContextBadge();
       rememberRoom(ROOM_ID);
       setLog(`配信「${ROOM_ID}」に切り替えました。`);
-      await Promise.all([loadAll(), fetchVoteLogs(false)]);
+      await Promise.all([loadAll({ force: true }), fetchVoteLogs(false)]);
     }
 
     function handleRoomSwitchSubmit(event) {
@@ -3283,7 +3288,10 @@
 
     async function fetchVoteLogs(showFeedback = false) {
       enforceRoomRuleForAdmin();
+      if (isFetchingLogs) return;
+
       const targetRoomAtStart = ROOM_ID;
+      isFetchingLogs = true;
       try {
         const res = await callGasGet({
           action: 'get_logs',
@@ -3321,6 +3329,8 @@
       } catch (e) {
         console.error(e);
         renderVoteLogsTable();
+      } finally {
+        isFetchingLogs = false;
       }
     }
 
@@ -3766,6 +3776,21 @@
       updateQuestionEditorLockState();
     }
 
+    function startPollingLoop() {
+      if (pollTimerId !== null) {
+        clearInterval(pollTimerId);
+      }
+      pollTimerId = setInterval(() => {
+        loadAll({ force: false });
+      }, POLL_INTERVAL_MS);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        loadAll({ force: true });
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
       roomNameMap = loadCachedRoomNames();
       currentRoomName = roomNameMap[ROOM_ID] || '';
@@ -3785,9 +3810,9 @@
       onQuestionTypeInputChange();
       updateQuestionEditorLockState();
 
-      loadAll();
+      loadAll({ force: true });
       fetchVoteLogs(false);
-      setInterval(loadAll, POLL_INTERVAL_MS);
+      startPollingLoop();
       setInterval(renderAdminCountdown, 200);
     });
 
@@ -3951,7 +3976,7 @@
       setLog((res && (res.message || res.error)) || '質問の保存処理が完了しました。');
       if (res && res.ok) {
         markEditing(false);
-        await loadAll();
+        await loadAll({ force: true });
         const editSel = document.getElementById('editTargetSelect');
         if (editSel && res.id && [...editSel.options].some(o => o.value === res.id)) {
           editSel.value = res.id;
@@ -3996,15 +4021,25 @@
         if (!isDefaultAdmin()) {
           resetEditorForm();
         }
-        await loadAll();
+        await loadAll({ force: true });
         updateQuestionEditorLockState();
       }
     }
 
-    async function loadAll() {
+    async function loadAll(options = {}) {
+      const { force = false } = options;
       enforceRoomRuleForAdmin();
+
+      if (!force && typeof document !== 'undefined' && document.hidden) {
+        return;
+      }
+      if (isLoadingAll) {
+        return;
+      }
+
       const targetRoomAtStart = ROOM_ID;
       const opVersionAtFetch = pendingStateVersion;
+      isLoadingAll = true;
 
       try {
         const data = await callGasGet({ roomId: targetRoomAtStart, adminId: ADMIN_ID });
@@ -4108,6 +4143,8 @@
         renderAdminCountdown();
       } catch (e) {
         console.error(e);
+      } finally {
+        isLoadingAll = false;
       }
     }
 
@@ -4164,7 +4201,7 @@
       if (!confirmed) return;
       const res = await callGasPost({ action: 'clear_votes', roomId: ROOM_ID, adminId: ADMIN_ID, questionId });
       setLog((res && (res.message || res.error)) || '投票ログを削除しました。');
-      await Promise.all([loadAll(), fetchVoteLogs(false)]);
+      await Promise.all([loadAll({ force: true }), fetchVoteLogs(false)]);
     }
 
     function escapeHtml(str) {
