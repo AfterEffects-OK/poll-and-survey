@@ -492,14 +492,6 @@
       font-weight: 700;
     }
 
-    /* 詳細情報パネル */
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
     .detail-box {
       background: #0b101b;
       border: 1px solid #273854;
@@ -509,10 +501,6 @@
     }
 
     .detail-box:last-child {
-      margin-bottom: 0;
-    }
-
-    .detail-grid .detail-box {
       margin-bottom: 0;
     }
 
@@ -536,13 +524,6 @@
       max-width: 340px;
       padding: 7px 10px;
       font-size: 13px;
-    }
-
-    .detail-label {
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #93c5fd;
-      margin-bottom: 4px;
     }
 
     .detail-value {
@@ -941,6 +922,40 @@
       return String(raw).trim();
     }
 
+    function resolvePreferredRoomForAdmin(adminId, roomsArr, fallbackRoomId) {
+      const list = Array.isArray(roomsArr) ? roomsArr : [];
+      if (adminId === DEFAULT_ADMIN) {
+        return fallbackRoomId || DEFAULT_ROOM;
+      }
+
+      const ownedRooms = list.filter((rm) => {
+        if (!rm || typeof rm !== 'object') return false;
+        const rId = String(rm.roomId || rm.room_id || '').trim();
+        const rAdmin = String(rm.adminId || rm.admin_id || '').trim();
+        return Boolean(rId) && rAdmin === adminId;
+      });
+
+      const nonDefaultOwned = ownedRooms.filter((rm) => {
+        const rId = String(rm.roomId || rm.room_id || '').trim();
+        return rId !== DEFAULT_ROOM;
+      });
+
+      const candidates = nonDefaultOwned.length ? nonDefaultOwned : ownedRooms;
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => {
+          const bMs = toTimestampMs(b.updatedAt || b.updated_at);
+          const aMs = toTimestampMs(a.updatedAt || a.updated_at);
+          return bMs - aMs;
+        });
+        return String(candidates[0].roomId || candidates[0].room_id || '').trim();
+      }
+
+      if (fallbackRoomId && fallbackRoomId !== DEFAULT_ROOM) {
+        return fallbackRoomId;
+      }
+      return fallbackRoomId || DEFAULT_ROOM;
+    }
+
     function resolveLastUsedInfo(acc, ops) {
       const candidates = [];
 
@@ -1070,7 +1085,7 @@
           activeRow.usageCount = Math.max(activeRow.usageCount, 1);
           activeRow.voteCount = Math.max(activeRow.voteCount, Number((ops && ops.totalVotes) || 0));
           activeRow.lastRoom = activeRoomLabel;
-          activeRow.lastStatus = `現在: ${stLabel}`;
+          activeRow.lastStatus = `現在表示中: ${stLabel}`;
           if (stateMs >= activeRow.lastUsedMs) {
             activeRow.lastUsedMs = stateMs;
             activeRow.lastUsedAt = stateTimeStr;
@@ -1078,24 +1093,44 @@
         }
       }
 
+      const logVotesByQuestion = new Map();
       logs.forEach((lg) => {
         const qId = String((lg && (lg.questionId || lg.question_id)) || '').trim();
         if (!qId) return;
         const row = ensureQuestionRow(qId);
         if (!row) return;
-        row.voteCount += 1;
+        const voterKey = String((lg && (lg.clientId || lg.voterId || lg.voter_id)) || '').trim();
+        if (!logVotesByQuestion.has(qId)) {
+          logVotesByQuestion.set(qId, { uniqueVoters: new Set(), anonCount: 0 });
+        }
+        const bucket = logVotesByQuestion.get(qId);
+        if (voterKey) {
+          bucket.uniqueVoters.add(voterKey);
+        } else {
+          bucket.anonCount += 1;
+        }
         row.usageCount = Math.max(row.usageCount, 1);
         const rId = String((lg && (lg.roomId || lg.room_id)) || activeRoomId).trim();
-        row.lastRoom = rId;
+        if (!row.lastRoom || row.lastRoom === '-') {
+          row.lastRoom = rId;
+        }
         if (!row.lastStatus || row.lastStatus === '未使用') {
-          row.lastStatus = '投票記録あり';
+          row.lastStatus = '投票ログあり';
         }
         const tsRaw = lg && (lg.timestamp || lg.createdAt || lg.ts);
         const tsMs = toTimestampMs(tsRaw);
         if (tsMs >= row.lastUsedMs) {
           row.lastUsedMs = tsMs;
           row.lastUsedAt = formatDateTimeDisplay(tsRaw);
+          if (rId) row.lastRoom = rId;
         }
+      });
+
+      logVotesByQuestion.forEach((bucket, qId) => {
+        const row = map.get(qId);
+        if (!row) return;
+        const totalFromLogs = bucket.uniqueVoters.size + bucket.anonCount;
+        row.voteCount = Math.max(row.voteCount, totalFromLogs);
       });
 
       serverHistory.forEach((h) => {
@@ -1158,8 +1193,9 @@
 
       tbody.innerHTML = filtered.map((row) => {
         const isQuiz = row.type === 'quiz';
+        const isActiveNow = String(row.lastStatus || '').startsWith('現在表示中');
         const typeBadge = `<span class="mini-pill ${isQuiz ? 'quiz' : ''}">${isQuiz ? 'QUIZ' : 'POLL'}</span>`;
-        const usedBadge = `<span class="mini-pill ${row.usageCount > 0 || row.voteCount > 0 ? 'used' : ''}">${escapeHtml(row.lastStatus || '未使用')}</span>`;
+        const usedBadge = `<span class="mini-pill ${isActiveNow || row.usageCount > 0 || row.voteCount > 0 ? 'used' : ''}">${escapeHtml(row.lastStatus || '未使用')}</span>`;
         const optsText = row.options && row.options.length ? `選択肢: ${row.options.join(' / ')}` : '';
         const ansText = isQuiz && row.answer ? `正解: ${row.answer}` : '';
         const subLine = [optsText, ansText].filter(Boolean).join(' ・ ');
@@ -1660,16 +1696,36 @@
     }
 
     async function fetchAdminOperation(adminId) {
-      const targetRoom = adminId === DEFAULT_ADMIN ? DEFAULT_ROOM : '';
-      const res = await callGasGet({
+      const prevOps = operationsByAdmin.get(adminId);
+      const hintRoom = adminId === DEFAULT_ADMIN
+        ? DEFAULT_ROOM
+        : (prevOps && prevOps.roomId && prevOps.roomId !== DEFAULT_ROOM && prevOps.roomId !== '未取得' ? prevOps.roomId : '');
+
+      let res = await callGasGet({
         adminId,
-        ...(targetRoom ? { roomId: targetRoom } : {})
+        ...(hintRoom ? { roomId: hintRoom } : {})
       });
       if (!res || !res.ok) return null;
 
-      const resolvedRoomId = String(res.roomId || (res.state && res.state.roomId) || targetRoom || DEFAULT_ROOM).trim();
-      const roomsArr = Array.isArray(res.rooms) ? res.rooms : [];
-      const matchedRoom = roomsArr.find((r) => String(r && (r.roomId || r.room_id) || '').trim() === resolvedRoomId);
+      let roomsArr = Array.isArray(res.rooms) ? res.rooms : [];
+      const reportedRoomId = String(res.roomId || (res.state && res.state.roomId) || '').trim();
+      const targetRoomId = resolvePreferredRoomForAdmin(adminId, roomsArr, reportedRoomId || hintRoom || DEFAULT_ROOM);
+
+      if (targetRoomId && targetRoomId !== reportedRoomId) {
+        const roomSpecificRes = await callGasGet({
+          adminId,
+          roomId: targetRoomId
+        });
+        if (roomSpecificRes && roomSpecificRes.ok) {
+          res = Object.assign({}, res, roomSpecificRes, {
+            rooms: Array.isArray(roomSpecificRes.rooms) && roomSpecificRes.rooms.length ? roomSpecificRes.rooms : roomsArr
+          });
+          roomsArr = Array.isArray(res.rooms) ? res.rooms : roomsArr;
+        }
+      }
+
+      const resolvedRoomId = String(targetRoomId || res.roomId || (res.state && res.state.roomId) || DEFAULT_ROOM).trim();
+      const matchedRoom = roomsArr.find((r) => String((r && (r.roomId || r.room_id)) || '').trim() === resolvedRoomId);
       const resolvedRoomName = String(
         res.roomName ||
         (matchedRoom && (matchedRoom.roomName || matchedRoom.room_name)) ||
@@ -1682,7 +1738,7 @@
       const qObj = res.question || questionsArr.find((q) => q && q.id === qId) || null;
 
       let logsArr = Array.isArray(res.logs) ? res.logs : (Array.isArray(res.votes) ? res.votes : []);
-      if (!logsArr.length && (GAS_ENDPOINT || typeof window.fetchGas === 'function')) {
+      if (GAS_ENDPOINT || typeof window.fetchGas === 'function') {
         try {
           const logRes = await callGasGet({
             action: 'get_logs',
@@ -1690,9 +1746,12 @@
             roomId: resolvedRoomId
           });
           if (logRes && logRes.ok) {
-            logsArr = Array.isArray(logRes.logs)
+            const fetchedLogs = Array.isArray(logRes.logs)
               ? logRes.logs
               : (Array.isArray(logRes.votes) ? logRes.votes : []);
+            if (fetchedLogs.length || !logsArr.length) {
+              logsArr = fetchedLogs;
+            }
           }
         } catch (e) {}
       }
@@ -1700,6 +1759,8 @@
       const histArr = Array.isArray(res.questionHistory)
         ? res.questionHistory
         : (Array.isArray(res.history) ? res.history : []);
+
+      const matchedRoomUpdatedAt = matchedRoom ? (matchedRoom.updatedAt || matchedRoom.updated_at || 0) : 0;
 
       return {
         adminId,
@@ -1709,8 +1770,8 @@
         questionId: qId,
         questionText: (qObj && qObj.question) ? String(qObj.question) : (qId ? `質問ID: ${qId}` : '出題情報なし'),
         currentQuestion: qObj,
-        stateUpdatedAt: stObj.updatedAt || res.updatedAt || 0,
-        lastUsedAt: String(res.lastUsedAt || res.last_used_at || '').trim(),
+        stateUpdatedAt: stObj.updatedAt || matchedRoomUpdatedAt || res.updatedAt || 0,
+        lastUsedAt: String(res.lastUsedAt || res.last_used_at || matchedRoomUpdatedAt || '').trim(),
         totalVotes: Number(res.totalVotes || 0),
         deadlineAt: Number(stObj.deadlineAt || 0),
         theme: String(stObj.theme || 'dark'),
