@@ -562,7 +562,7 @@
       <div class="top-bar">
         <span id="tagBadge" class="tag">POLL</span>
         <span id="timerDisplay" class="timer-txt"></span>
-      </div>      
+      </div>
       <div id="roomIdDisplay" class="room-id-title"></div>
       <h2 id="qTitle" class="q-title"></h2>
       <div id="rowsContainer" class="rows"></div>
@@ -596,11 +596,14 @@
       'top-right', 'top-left', 'top-center', 'center'
     ];
     const ALLOWED_SIZES = ['normal', 'compact', 'large'];
+    const POLL_INTERVAL_MS = (typeof CONFIG !== 'undefined' && Number(CONFIG.POLL_INTERVAL_MS) > 0)
+      ? Number(CONFIG.POLL_INTERVAL_MS)
+      : 2000;
 
     let currentState = { status: 'WAITING', deadlineAt: 0, theme: 'dark', position: 'bottom-right', size: 'normal' };
     let currentIsQuiz = false;
     let lastResultSignature = '';
-    let renderedQrUrl = '';
+    let renderedQrKey = '';
 
     function resolveActiveRoomId(apiRoomId) {
       const params = new URLSearchParams(window.location.search);
@@ -1043,10 +1046,11 @@
       }
 
       const targetUrl = getVoteTargetUrl();
+      const nextKey = `${ROOM_ID}::${ADMIN_ID}::${targetUrl}`;
       box.classList.add('show');
 
-      if (renderedQrUrl === targetUrl) return;
-      renderedQrUrl = targetUrl;
+      if (renderedQrKey === nextKey) return;
+      renderedQrKey = nextKey;
 
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = false;
@@ -1122,8 +1126,9 @@
 
     async function pollOverlay() {
       try {
+        if (typeof fetchGas !== 'function') return;
         const data = await fetchGas({ roomId: ROOM_ID, adminId: ADMIN_ID });
-        if (!data.ok) return;
+        if (!data || !data.ok) return;
 
         ROOM_ID = resolveActiveRoomId(data.roomId);
         updateRoomIdDisplay(ROOM_ID);
@@ -1138,6 +1143,7 @@
         const isClosed = currentState.status === 'CLOSED';
         const isQuiz = Boolean(question && question.type === 'quiz');
         currentIsQuiz = isQuiz;
+        updateQrHeading(isQuiz);
 
         if (!currentState || currentState.status === 'WAITING' || (isCompact && !isVoting)) {
           lastResultSignature = '';
@@ -1154,7 +1160,6 @@
           lastResultSignature = '';
         }
 
-        updateQrHeading(isQuiz);
         document.getElementById('tagBadge').textContent = isQuiz ? 'QUIZ / クイズ' : 'POLL / アンケート';
         document.getElementById('qTitle').textContent = question ? question.question : '';
 
@@ -1165,7 +1170,7 @@
           ANSWER: '正解発表'
         };
         document.getElementById('stateLabel').textContent = statusMap[currentState.status] || currentState.status;
-        document.getElementById('totalVotesLabel').textContent = showCounts ? `合計 ${totalVotes} 票` : '';
+        document.getElementById('totalVotesLabel').textContent = showCounts ? `合計 ${Number(totalVotes || 0)} 票` : '';
 
         const rows = document.getElementById('rowsContainer');
         if (isClosed) {
@@ -1177,10 +1182,11 @@
             lastResultSignature = resultSig;
           }
 
+          const activeLabelText = isQuiz ? '回答受付中' : '投票受付中';
           rows.innerHTML = (results || []).map((r, idx) => {
             const isCorrect = highlightAnswer && r.label === question.answer;
             const pctVal = showCounts ? Math.max(0, Math.min(100, Number(r.pct || 0))) : 0;
-            const statText = showCounts ? `${r.count}票 (${pctVal}%)` : '投票受付中';
+            const statText = showCounts ? `${Number(r.count || 0)}票 (${pctVal}%)` : activeLabelText;
             const delayMs = 1000 + Math.min(idx * 70, 350);
             const delayStyle = shouldBounce ? `animation-delay: ${delayMs}ms;` : '';
             const bounceClass = shouldBounce ? 'bounce' : '';
@@ -1215,8 +1221,9 @@
 
     updateRoomIdDisplay(ROOM_ID);
     applyAppearance(currentState);
+    updateQrHeading(currentIsQuiz);
     pollOverlay();
-    setInterval(pollOverlay, CONFIG.POLL_INTERVAL_MS);
+    setInterval(pollOverlay, POLL_INTERVAL_MS);
     setInterval(updateTimer, 200);
   </script>
 </body>
